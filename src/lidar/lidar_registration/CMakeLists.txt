@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(lidar_registration)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_BUILD_TYPE "Debug")
 
 find_package (ament_cmake_auto REQUIRED) 
 ament_auto_find_build_dependencies ()
@@ -33,12 +35,17 @@ ament_auto_add_library(${LIDAR_REGISTRATION} SHARED
 target_link_libraries(${LIDAR_REGISTRATION} ${PCL_LIBRARIES})
 
 rclcpp_components_register_node(${LIDAR_REGISTRATION}
-    PLUGIN "upc_radar::Lidar_Registration"
+    PLUGIN "upc_radar::LidarRegistration"
     EXECUTABLE ${LIDAR_REGISTRATION}_node
 )
 
 install(DIRECTORY
   launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+install(DIRECTORY
+  config
   DESTINATION share/${PROJECT_NAME}/
 )
 

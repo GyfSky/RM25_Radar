@@ -1,0 +1,68 @@
+lidar_registration_node:
+  ros__parameters:
+    cost_thres: 0.3
+    map_path: "resource/RM2024.pcd"
+    pub_map_grid_size: 0.01
+    al_map_grid_size: 0.2
+    pc_grid_size: 0.15
+    use_saved_T: true
+
+dynamic_cloud_node:
+  ros__parameters:
+    dynamic.accumulate: 3
+    dynamic.filter_mode: "mesh"
+    sor.thres: 0.8
+    #10
+    sor.MeanK: 8
+    sor.remove_outlier: true
+
+    pc.dis_thres: 0.05
+    pc.thread: 12
+
+    mesh.mesh_ori: "24_bg2align_fix1.stl"
+    mesh.mesh_filter: "24_bg2filter_fix1.stl"
+    mesh.init_translate: [0.0, 0.0, 0.0]
+    #体素大小
+    voxel_grid.voxel_size: 0.08
+    voxel_grid.dilate_size: 1
+    voxel_grid.size.min: [0.150, 0.150, 0.0]
+    voxel_grid.size.max: [27.850, 14.850, 1.500]
+    #地图膨胀
+    #0.17
+    voxel_grid.occupy_expand: 0.22
+
+cluster_node:
+  ros__parameters:
+    cluster.min_pts_k: 1400.0
+    cluster.min_pts: 5
+    #0.3
+    cluster.eps: 0.25
+    cluster.mode: "nor"
+
+kalman_filter_node:
+  ros__parameters:
+    kalman.detect_r: 3.0
+    kalman.car_max_speed: 2.0
+    kalman.dt_: 0.1
+    kalman.sigma_q_x: 40.0
+    kalman.sigma_q_y: 40.0
+    kalman.sigma_r_x: 1.0
+    kalman.sigma_r_y: 1.0
+
+    cost.distance_weight: 1.0
+    cost.distance_thres: 6.0
+    cost.color_weight: 0.0
+    fusion.match_thresh: 0.85
+
+    #----点云聚类和卡尔曼匹配----
+    clu.match_thres: 0.85
+    clu.dis_thres: 2.2
+    #需要新增卡尔曼的两聚类最小距离阈值
+    clu.min_dis_thres: 0.4
+
+    #----相机识别和点云聚类匹配----
+    cam.match_thres: 0.8
+    cam.dis_thres: 1.7
+    cam.dis_wight: 0.95
+    cam.his_weight: 0.05
+    cam.time_offset: 1.2

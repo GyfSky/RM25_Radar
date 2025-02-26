@@ -1,19 +1,26 @@
 #include<lidar_registration.h>
 
 namespace upc_radar {
-    Lidar_Registration::Lidar_Registration(const rclcpp::NodeOptions& node_options) : Node("Lidar_Registration", node_options) 
-    {
-        RCLCPP_INFO(this->get_logger(), "lidar_registration start");
-        std::string target_pcd_file = "resource/remove_rooftop.pcd";
+    LidarRegistration::LidarRegistration(const rclcpp::NodeOptions& node_options) : Node("LidarRegistration", node_options) {
+        
+        RCLCPP_WARN(this->get_logger(), "LidarRegistration node start");
+
+        declare_parameter<double>("cost_thres", 0.3);
+        
+        use_saved_T= declare_parameter<bool>("use_saved_T", false);
+        std::string map_pcd_file = declare_parameter<std::string>("map_path", "resource/RM2024.pcd");   
+        pub_map_grid_size =declare_parameter<double>("pub_map_grid_size", 0.01);
+        al_map_grid_size = declare_parameter<double>("al_map_grid_size", 0.2);
+        pc_grid_size = declare_parameter<double>("pc_grid_size", 0.15);
+        std::cout<<map_pcd_file<<std::endl;
 
         // 从pcd读取场地点云
         target_cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-        if (pcl::io::loadPCDFile(target_pcd_file, *target_cloud_)) 
-        {
-            RCLCPP_ERROR(this->get_logger(), "Failed to load %s", target_pcd_file.c_str());
+        if (pcl::io::loadPCDFile(map_pcd_file, *target_cloud_)) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to load %s", map_pcd_file.c_str());
             return;
         }
-
+    
         //转换pcd点云坐标系
         Eigen::Matrix4f Tran;
         Eigen::Matrix4f Tran1;
@@ -29,17 +36,17 @@ namespace upc_radar {
                 0.013397343457,-0.014718348160,0.999801933765,-0.438632011414,
                 0.000000000000,0.000000000000,0.000000000000,1.000000000000;
 
-        pcl::transformPointCloud(*target_cloud_, *target_cloud_, Tran1);
-        pcl::transformPointCloud(*target_cloud_, *target_cloud_, Tran.inverse());
+        // pcl::transformPointCloud(*target_cloud_, *target_cloud_, Tran1);
+        // pcl::transformPointCloud(*target_cloud_, *target_cloud_, Tran.inverse());
 
         subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-            "/livox/lidar", 10, std::bind(&Lidar_Registration::callback, this, std::placeholders::_1));
+            "/livox/lidar", 10, std::bind(&LidarRegistration::callback, this, std::placeholders::_1));
 
         publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/map", 100);
         
         pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled(new pcl::PointCloud<pcl::PointXYZ>());
         pcl::VoxelGrid<pcl::PointXYZ> voxelgrid_map;
-        voxelgrid_map.setLeafSize(0.01f, 0.01f, 0.01f);
+        voxelgrid_map.setLeafSize(pub_map_grid_size, pub_map_grid_size, pub_map_grid_size);
         voxelgrid_map.setInputCloud(target_cloud_);
         voxelgrid_map.filter(*downsampled);
         timer_ = this->create_wall_timer(std::chrono::seconds(5), [this,downsampled]() {
@@ -53,37 +60,69 @@ namespace upc_radar {
         tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     }
 
-    void Lidar_Registration::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
-    {
+    void LidarRegistration::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg){
+        
+        if(use_saved_T){
+            std::ifstream fin("resource/lidar2world.txt");
+            if (!fin) {
+                RCLCPP_ERROR(this->get_logger(),"file cant open!!!");
+                RCLCPP_ERROR(this->get_logger(),"use mautually!!!");
+                use_saved_T=false;
+            }else{
+                char buf[1024]={0};
+                int num=0;
+                std::vector<double> T_temp;
+                while(fin>>buf){
+                    T_temp.push_back(atof(buf));
+                    num++;
+                    if(num==16) break;
+                }
+                if(num==16){
+                    manual_aligned_=true;
+                    accumulate_time=1;
+                    auto_aligned_=true;
+                    for(int i=0;i<4;i++)
+                        for(int j=0;j<4;j++)
+                            T(i,j)=T_temp[i*4+j];
+                }else{
+                    RCLCPP_ERROR(this->get_logger(),"file broken!!!");
+                    RCLCPP_ERROR(this->get_logger(),"use mautually!!!");
+                    use_saved_T=false;
+                }
+            }
+            fin.close();
+        }
+        cost_thres = get_parameter("cost_thres").as_double();
+
         pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud(new pcl::PointCloud<pcl::PointXYZ>());
         pcl::fromROSMsg(*msg, *source_cloud);
-        if(accumulated_clouds_.size() < accumulate_time)
-        {
+        if(accumulated_clouds_.size() < accumulate_time){
             accumulated_clouds_.push_back(source_cloud);
             return;
         }
-        else
-        {
+        else{
             accumulated_clouds_.erase(accumulated_clouds_.begin());
             accumulated_clouds_.push_back(source_cloud);
         }
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr final_cloud(new pcl::PointCloud<pcl::PointXYZ>());
 
-        for(auto accumulated_cloud : accumulated_clouds_)
-        {
-            for (const auto& point : *accumulated_cloud)
-            {
-                // if(point.x > 5 && point.x < 30 && point.y > -10 && point.y < 8&&point.z<7)
-                //     final_cloud->push_back(point);    
-                if(point.z<1)
+        for(auto accumulated_cloud : accumulated_clouds_){
+            for (const auto& point : *accumulated_cloud){
+                //rm25
+                // if(point.x > 3 && point.x < 30 && point.y > -6 && point.y < 12&&point.z<7)
+                //     final_cloud->push_back(point);
+                //rm24
+                if(point.x > 5 && point.x < 30 && point.y > -10 && point.y < 8&&point.z<7)
                     final_cloud->push_back(point);
+                //lab    
+                // if(point.z<1)
+                //     final_cloud->push_back(point);
             }
         }       
 
             //转换点云格式
-        if(!manual_aligned_)
-        {
+        if(!manual_aligned_){
             auto start=std::chrono::system_clock::now();
 
             std::shared_ptr<open3d::geometry::PointCloud> pc2align(new open3d::geometry::PointCloud);
@@ -97,7 +136,7 @@ namespace upc_radar {
             
             auto end=std::chrono::system_clock::now();
 
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "transform pointcloud time: %f", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0);
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "transform pointcloud time: %fms", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0);
             
             //初始手动匹配
             RCLCPP_WARN(this->get_logger(), "manual_trans start");
@@ -107,21 +146,20 @@ namespace upc_radar {
 
             RCLCPP_WARN(this->get_logger(), "manual_trans end");
         }
-        else if(!auto_aligned_)
-        {
+        if(!auto_aligned_){
             auto t1 = std::chrono::system_clock::now();
             //降采样
             pcl::PointCloud<pcl::PointXYZ>::Ptr target_map_cloud(new pcl::PointCloud<pcl::PointXYZ>());
             pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled(new pcl::PointCloud<pcl::PointXYZ>());
 
             pcl::VoxelGrid<pcl::PointXYZ> voxelgrid_map;
-            voxelgrid_map.setLeafSize(0.2f, 0.2f, 0.2f);
+            voxelgrid_map.setLeafSize(al_map_grid_size, al_map_grid_size, al_map_grid_size);
             voxelgrid_map.setInputCloud(target_cloud_);
             voxelgrid_map.filter(*downsampled);
             *target_map_cloud = *downsampled;
             
             pcl::VoxelGrid<pcl::PointXYZ> voxelgrid_real;
-            voxelgrid_real.setLeafSize(0.15f, 0.15f, 0.15f);
+            voxelgrid_real.setLeafSize(pc_grid_size, pc_grid_size, pc_grid_size);
             voxelgrid_real.setInputCloud(final_cloud);
             voxelgrid_real.filter(*downsampled);
             *final_cloud = *downsampled;
@@ -143,41 +181,50 @@ namespace upc_radar {
 
             RCLCPP_WARN(this->get_logger(), "calib result : %f", registration->getFitnessScore());
                         
-            if(registration->getFitnessScore()<0.3)
-            {
+            if(registration->getFitnessScore()<cost_thres){
                 auto_aligned_ = true;
 
                 Eigen::Matrix4f transform;
                 transform= registration->getFinalTransformation();
                 T=transform.cast<double>() * T;
+                std::ofstream fout("resource/lidar2world.txt");  
+	            if(!fout) 
+                    RCLCPP_ERROR(this->get_logger(),"file cant open!!!");
+	            else {
+                    for(int i=0;i<4;i++){
+                        for(int j=0;j<4;j++)
+                            fout<<T(i,j)<<" ";
+                        fout<<std::endl;
+                    }
+                    fout<<"------------------"<<std::endl;
+		            fout.close();           
+	            }
                 RCLCPP_WARN(this->get_logger(), "auto_trans end");
             }
 
             auto t2 = std::chrono::system_clock::now();
-            std::cout << "auto_trans time   : " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()/1000 << "[s]" << std::endl;
+            std::cout << "auto_trans time :" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()/1000 << "[s]" << std::endl;
         }
         publishTF(T);
     }
 
-    Eigen::Matrix4d Lidar_Registration::manual_trans(std::shared_ptr<open3d::geometry::PointCloud> pc2align, std::shared_ptr<open3d::geometry::PointCloud> mesh_pc)
-    {
+    Eigen::Matrix4d LidarRegistration::manual_trans(std::shared_ptr<open3d::geometry::PointCloud> pc2align, std::shared_ptr<open3d::geometry::PointCloud> mesh_pc){
         /// @brief 手动配准获取初始变换矩阵
         auto picked_pc = select_points(pc2align);
         auto picked_mesh = select_points(mesh_pc);
-
         assert(picked_pc.size() >= 3 && picked_mesh.size() >= 3);
         assert(picked_pc.size() == picked_mesh.size());
 
         std::vector<Eigen::Vector2i> correspondences;
         for (size_t i = 0; i < picked_pc.size(); ++i)
             correspondences.emplace_back(picked_pc[i], picked_mesh[i]);
+
         open3d::pipelines::registration::TransformationEstimationPointToPoint pointToPoint;
         //返回的是将实时点云转换到地图点云的变换
         return pointToPoint.ComputeTransformation(*pc2align, *mesh_pc, correspondences);
     }
 
-    std::vector<size_t> Lidar_Registration::select_points(std::shared_ptr<const open3d::geometry::PointCloud> pcd)
-    {
+    std::vector<size_t> LidarRegistration::select_points(std::shared_ptr<const open3d::geometry::PointCloud> pcd){
         RCLCPP_INFO(this->get_logger(), "Select points...");
         RCLCPP_INFO(this->get_logger(), "  Use [shift + left click] to pick points.");
         RCLCPP_INFO(this->get_logger(), "  Use [shift + right click] to undo point picking.");
@@ -191,8 +238,7 @@ namespace upc_radar {
         return vis_.GetPickedPoints();
     }
 
-    void Lidar_Registration::publishTF(const Eigen::Matrix4d& transform)
-    {
+    void LidarRegistration::publishTF(const Eigen::Matrix4d& transform){
         geometry_msgs::msg::TransformStamped transform_stamped;
         transform_stamped.header.stamp = this->now();
         transform_stamped.header.frame_id = "rm_frame";
@@ -210,4 +256,4 @@ namespace upc_radar {
     }
    
 } // namespace upc_radar
-RCLCPP_COMPONENTS_REGISTER_NODE(upc_radar::Lidar_Registration)
+RCLCPP_COMPONENTS_REGISTER_NODE(upc_radar::LidarRegistration)

@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memory>
+#include <fstream> 
 #include <iostream>
 
 #include <rclcpp/rclcpp.hpp>
@@ -22,22 +23,29 @@
 #include <open3d/Open3D.h>
 #include <open3d/visualization/visualizer/RenderOptionWithEditing.h>
 namespace upc_radar{
-    class Lidar_Registration : public rclcpp::Node
+    class LidarRegistration : public rclcpp::Node
     {
         public:
-        Lidar_Registration(const rclcpp::NodeOptions& node_options);
-        ~Lidar_Registration(){}
+        LidarRegistration(const rclcpp::NodeOptions& node_options);
+        ~LidarRegistration(){}
     
         private:
+        double cost_thres;
+        double pub_map_grid_size;
+        double al_map_grid_size;
+        double pc_grid_size;
+        
         bool manual_aligned_=false;
         bool auto_aligned_=false;
+        bool use_saved_T=false;
+        
         Eigen::Matrix4d T;
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> accumulated_clouds_;
         pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
 
-        int accumulate_time =40;
+        int accumulate_time =30;
         rclcpp::TimerBase::SharedPtr timer_;
         std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
