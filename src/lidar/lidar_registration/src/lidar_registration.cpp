@@ -8,7 +8,7 @@ namespace upc_radar {
         declare_parameter<double>("cost_thres", 0.3);
         
         use_saved_T= declare_parameter<bool>("use_saved_T", false);
-        std::string map_pcd_file = declare_parameter<std::string>("map_path", "resource/RM2024.pcd");   
+        std::string map_pcd_file = declare_parameter<std::string>("map_path", "resource/RM2024.pcd");
         pub_map_grid_size =declare_parameter<double>("pub_map_grid_size", 0.01);
         al_map_grid_size = declare_parameter<double>("al_map_grid_size", 0.2);
         pc_grid_size = declare_parameter<double>("pc_grid_size", 0.15);
@@ -30,14 +30,20 @@ namespace upc_radar {
                 0.000000,0.000000,1.000000,0.000000,
                 0.000000,0.000000,0.000000,1.000000;
 
-        //Tran的逆 cloudcompare更改坐标系
-        Tran<<  0.007337952964,-0.999863266945,-0.014817589894,3.776853322983,
-                0.999883294106,0.007535010576,-0.013287514448,-2.621445655823,
-                0.013397343457,-0.014718348160,0.999801933765,-0.438632011414,
-                0.000000000000,0.000000000000,0.000000000000,1.000000000000;
+        //Tran的逆 cloudcompare更改坐标系 实验室场地
+        // Tran<< -0.117343 ,0.993080 ,0.004741 ,-1.625149,
+        //         -0.993091 ,-0.117341 ,-0.000560 ,2.972910,
+        //         0.000000 ,-0.004774 ,0.999989 ,-0.268606,
+        //         0.000000 ,0.000000 ,0.000000 ,1.000000;
+
+        //RM2025
+        Tran<< 0.000000, 1.000000, 0.000000, -7.502200,
+                -1.000000, 0.000000, 0.000000, 14.005900,
+                0.000000, 0.000000, 1.000000, 0.000000,
+                0.000000, 0.000000, 0.000000, 1.000000;
 
         // pcl::transformPointCloud(*target_cloud_, *target_cloud_, Tran1);
-        // pcl::transformPointCloud(*target_cloud_, *target_cloud_, Tran.inverse());
+        pcl::transformPointCloud(*target_cloud_, *target_cloud_, Tran.inverse());//实验室场地及RM2025用这个
 
         subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
             "/livox/lidar", 10, std::bind(&LidarRegistration::callback, this, std::placeholders::_1));

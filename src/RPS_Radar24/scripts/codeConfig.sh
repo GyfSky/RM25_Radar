@@ -5,7 +5,7 @@ sudo ifconfig enp88s0 192.168.1.50
 sudo ifconfig wlp0s20f3 192.168.1.50
 sudo ifconfig enx68da73ac8032 192.168.1.50
 
-cd /home/thesky/RM_radardemo24
+cd /home/thesky/RM25_Radar
 # . devel/setup.bash
 source install/setup.bash
 

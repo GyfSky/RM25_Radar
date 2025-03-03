@@ -28,8 +28,8 @@ net:
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_238.onnx"       #   onnx文件路径
 #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.trt"         #   engine文件路径
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.onnx"       #   onnx文件路径
-  trt_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_1440.trt"         #   engine文件路径
-  onnx_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_1440.onnx"       #   onnx文件路径
+  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.trt"         #   engine文件路径
+  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.onnx"       #   onnx文件路径
   # 神经网络相关参数
   obj_thres: 0.5        #
   conf_thres: 0.5       #
@@ -48,8 +48,8 @@ net_60:
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_2024X2448.onnx"       #   onnx文件路径
   #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.trt"         #   engine文件路径
   #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.onnx"       #   onnx文件路径
-  trt_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_2464.trt"         #   engine文件路径
-  onnx_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_2464.onnx"       #   onnx文件路径
+  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.trt"         #   engine文件路径
+  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.onnx"       #   onnx文件路径
 #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.trt"         #   engine文件路径
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.onnx"       #   onnx文件路径
 
@@ -66,8 +66,8 @@ net_60:
 net_armor:
   isArmor: true
   # 神经网络相关参数
-  trt_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_armor_1.trt"         #   engine文件路径
-  onnx_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_armor_1.onnx"       #   onnx文件路径
+  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.trt"         #   engine文件路径
+  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.onnx"       #   onnx文件路径
   obj_thres: 0.2        #
   conf_thres: 0.2       #
   nms_thres: 0.45        #
@@ -82,7 +82,7 @@ ImageSavePath:
   ssdgaoyuan: "/home/thesky/bags/img_DATA/radar2023/"    # 保存图片文件夹路径2
 
 map:
-  mapPath: "/home/thesky/RM_radardemo24/src/RPS_Radar24/doc/map_24.png"                    # 小地图
+  mapPath: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/map_24.png"                    # 小地图
   mapImage_winname: "map"
   map_w: 420
   map_h: 225
@@ -95,7 +95,7 @@ test:
 
 Livox:
   lidarTopicName: "/livox/lidar"
-  init_scripts_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/scripts/codeConfig.sh"
+  init_scripts_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/scripts/codeConfig.sh"
 #  lidarTopicName: "/livox/points"
   lidarQueueSize: 1                      
   lidarGetBackgoundVectorSize: 10   
@@ -148,7 +148,7 @@ Hik30:
     input_w: 1440       #  输入onnx的宽
     input_h: 1080       #  输入onnx的长
   source_path:
-    singleImg_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/doc/HiKCA.jpg"                                                   #  图片路径
+    singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/HiKCA.jpg"                                                   #  图片路径
 #    singleImg_path: "/media/plusseven/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/1300.jpg"                                                   #  图片路径
 #    picture_dir: "/media/plusseven/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
 #    picture_dir: "/media/plusseven/EA61-A1AF/datasets/record/I_Hiter/2024-05-24_16_25_09sec/"                      #  图片文件夹路径
@@ -188,7 +188,7 @@ Hik31:
     input_w: 1440       #  输入onnx的宽
     input_h: 1080       #  输入onnx的长
   source_path:
-    singleImg_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/doc/8.jpg"                                                   #  图片路径
+    singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/8.jpg"                                                   #  图片路径
 #    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/shangjiaoR2/images/"                      #  图片文件夹路径
     picture_dir: "/home/thesky/camera/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
 #    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-05_21_21_08/"                      #  图片文件夹路径
@@ -262,7 +262,7 @@ TDT:
     input_w: 4096       #  输入onnx的宽
     input_h: 3000       #  输入onnx的长
   source_path:
-    singleImg_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/doc/HiKCS.jpg"                                                   #  图片路径
+    singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/HiKCS.jpg"                                                   #  图片路径
 #    singleImg_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/doc/7.jpg"                                                   #  图片路径
 #    picture_dir: "/media/plusseven/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
 #    picture_dir: "/media/plusseven/EA61-A1AF/datasets/record/I_Hiter/2024-05-24_16_25_09main/"                      #  图片文件夹路径
@@ -288,7 +288,7 @@ SecondCam:
     input_h: 1080       #  输入onnx的长
 
   source_path:
-    singleImg_path: "/home/thesky/RM_radardemo24/src/RPS_Radar24/doc/32.jpg"                                                   #  图片路径
+    singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/32.jpg"                                                   #  图片路径
     picture_dir: "/home/thesky/camera/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
     #    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-05_21_21_08/"                      #  图片文件夹路径
     picture_dir_start: 1200                                                                   #  从文件夹中的第n张图片开始 #

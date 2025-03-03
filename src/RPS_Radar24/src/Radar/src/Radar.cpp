@@ -2,7 +2,8 @@
 
 std::string getData();
 
-MyRadar::MyRadar(){
+MyRadar::MyRadar(rclcpp::Node* node){
+    this->node = node;
     after = 4000;bafter = after;int start = 0;
 
     this->Modes_ptr = std::shared_ptr<Modes>(new Modes());
@@ -30,7 +31,7 @@ MyRadar::MyRadar(){
 
     //获取图像
     this->MainCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631", "Hik60", Modes_ptr->isSave, disk02,
+        new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631",node, "Hik60", Modes_ptr->isSave, disk02,
                       start));
 
     this->CoordSolve_ptr  = std::shared_ptr<CoordSolver>(new CoordSolver(Modes_ptr->ourPattern));//英雄吊射？？
@@ -41,7 +42,7 @@ MyRadar::MyRadar(){
             std::this_thread::sleep_for(std::chrono::milliseconds (10));
         this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::left,Modes_ptr->ourPattern));
         this->SecCam_Image_ptr = std::shared_ptr<Image>(
-                new Image(Common,Modes_ptr->pictureSource, "00F26632053", "Hik30", Modes_ptr->isSave, disk02,
+                new Image(Common,Modes_ptr->pictureSource, "00F26632053",node, "Hik30", Modes_ptr->isSave, disk02,
                           start));
         this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(this->MainCam_ptr, this->SecCam_ptr, true));
     }else{
@@ -345,48 +346,30 @@ void MyRadar::Init(int argc, char **argv){
 void MyRadar::Save() {
     if(Modes_ptr->isSave == true_){
         YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-        this->node_name = config["save"]["node_name"].as<std::string>();
-        std::string path = config["save"]["save_bag_path"].as<std::string>() + getData() +".bag";
-//        std::string path = "/media/plusseven/KESU/img_DATA/test_dir/2024-05-16_15_51_31.bag";
+        std::string path = config["save"]["save_bag_path"].as<std::string>() + getData();
         std::string topics = config["Livox"]["lidarTopicName"].as<std::string>();
-
-        //----------------------------------------------------------------------------------------------------------------
-
-        std::string all_node_name = "__name:=" +  this->node_name;//需要进行更改
-//        std::string cmd_str = "rosbag record -O " + path + " " + topics + " " + all_node_name + " &";
-        std::string cmd_str = "gnome-terminal -x bash -c 'ros2 bag record -o " + path + " " + topics + " " + all_node_name + " '" + "&";
-//        std::string cmd_str = "rosbag record -O /media/plusseven/KESU/img_DATA/test_dir/bag_name.bag /livox/lidar __name:=mid70 &" ;
-        int ret = system(cmd_str.c_str()); // #include <stdlib.h>
-        std::cout << "cmd_str: " << cmd_str << std::endl;
-        std::cout << "path: " << path << std::endl;
-//-------------------------------------------------------------------------------------------------------------------------
-
-//        std::string path = "./bag_name.bag";
-//        std::string topics = " /livox/lidar";
-//        std::string node_name_ = " __name:=mid70";
-//        std::string cmd_str = "gnome-terminal -x bash -c 'rosbag record -O " + path + topics + node_name_ + "'" ;
-//        int ret = system(cmd_str.c_str()); // #include <stdlib.h>
-//
-//        std::cout << "cmd_str: " << cmd_str << std::endl;
-//        std::cout << "path: " << path << std::endl;
-
-//        std::string cmd_str = "/bin/bash /home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/scripts/record.sh";
-//        int ret = system(cmd_str.c_str());
-
-
-        if(ret != 0){
-            std::cerr << "\033[33m" << "save bag may have error !!! Please check path" << "\033[0m" <<std::endl;
-        }
 
         if(Modes_ptr->pictureSource==camera_){
             MainCam_Image_ptr->setSaveMode();
             this->save_main_dir = config["save"]["save_bag_path"].as<std::string>() + getData() + "main";
+            topics+=" /cam/";
+            topics+=MainCam_Image_ptr->Cam_winname;
             mkdir((this->save_main_dir).c_str(), S_IRWXU);
             if(!is_one_cam){
                 SecCam_Image_ptr->setSaveMode();
                 this->save_sec_dir = config["save"]["save_bag_path"].as<std::string>() + getData() + "sec";
+                topics+=" /cam/";
+                topics+=SecCam_Image_ptr->Cam_winname;
                 mkdir((this->save_sec_dir).c_str(), S_IRWXU);
             }
+        }
+        std::string cmd_str = "gnome-terminal -x bash -c 'ros2 bag record -o " + path + " " + topics+" '" + "&";
+        int ret = system(cmd_str.c_str()); // #include <stdlib.h>
+        std::cout << "cmd_str: " << cmd_str << std::endl;
+        std::cout << "path: " << path << std::endl;
+
+        if(ret != 0){
+            std::cerr << "\033[33m" << "save bag may have error !!! Please check path" << "\033[0m" <<std::endl;
         }
     }
 }
@@ -409,6 +392,8 @@ void MyRadar::Spin(int argc, char **argv){
 //        std::cout << "next step1" << std::endl;
         int a = this->after*2;
         this->mainCamMat = MainCam_Image_ptr->Image_Get(this->after,argc,argv);
+        if(Modes_ptr->pictureSource==camera_)
+            this->time_now = MainCam_Image_ptr->ros_time;////实机用时间戳
         // time_now=rclcpp::Clock().now();
         int after_2 = this->after+1 ;
 
@@ -588,8 +573,9 @@ void MyRadar::Spin(int argc, char **argv){
                         std::vector<float> tlwh = STacks[i].tlwh;
                         bool vertical = tlwh[2] / tlwh[3] > 1.6;
                         if (tlwh[2] * tlwh[3] > 20 && !vertical){
+                            int half_classWithoutCar= MainCam_Image_ptr->classWithoutCar/2;
                             if( -1 < cls && cls < MainCam_Image_ptr->classWithoutCar){
-                                if(cls<=5){
+                                if(cls<half_classWithoutCar){
                                     temp_res.blue_x1[cls]=tlwh[0];
                                     temp_res.blue_y1[cls]=tlwh[1];
                                     temp_res.blue_x2[cls]=tlwh[0]+tlwh[2];
@@ -597,12 +583,12 @@ void MyRadar::Spin(int argc, char **argv){
                                     temp_res.blue_x[cls]=STacks[i].Locate3D.x;
                                     temp_res.blue_y[cls]=STacks[i].Locate3D.y;
                                 }else{
-                                    temp_res.red_x1[cls-6]=tlwh[0];
-                                    temp_res.red_y1[cls-6]=tlwh[1];
-                                    temp_res.red_x2[cls-6]=tlwh[0]+tlwh[2];
-                                    temp_res.red_y2[cls-6]=tlwh[1]+tlwh[3];
-                                    temp_res.red_x[cls-6]=STacks[i].Locate3D.x;
-                                    temp_res.red_y[cls-6]=STacks[i].Locate3D.y;
+                                    temp_res.red_x1[cls-half_classWithoutCar]=tlwh[0];
+                                    temp_res.red_y1[cls-half_classWithoutCar]=tlwh[1];
+                                    temp_res.red_x2[cls-half_classWithoutCar]=tlwh[0]+tlwh[2];
+                                    temp_res.red_y2[cls-half_classWithoutCar]=tlwh[1]+tlwh[3];
+                                    temp_res.red_x[cls-half_classWithoutCar]=STacks[i].Locate3D.x;
+                                    temp_res.red_y[cls-half_classWithoutCar]=STacks[i].Locate3D.y;
                                 }
                             }
                         }
@@ -800,6 +786,8 @@ void MyRadar::Spin(int argc, char **argv){
         // std::cout << "next step1" << std::endl;
         int a = this->after*2;
         this->mainCamMat = MainCam_Image_ptr->Image_Get(this->after,argc,argv);
+        if(Modes_ptr->pictureSource==camera_)
+            this->time_now = MainCam_Image_ptr->ros_time;////实机用时间戳
         int after_2 = this->after+1 ;
         this->secCamMat = SecCam_Image_ptr->Image_Get(this->after,argc,argv);
 
@@ -1016,7 +1004,38 @@ void MyRadar::Spin(int argc, char **argv){
                 for(int i=0;i<u_sec.size();i++ ){
                     STacks.push_back(stracks[1][u_sec[i]]);
                 }
-
+                interfaces::msg::DetectFrame temp_res;
+                temp_res.header.stamp = time_now;
+                for (int i = 0; i < STacks.size(); i++){
+                    int cls = STacks[i].cls;
+                    if(cls != -1){
+                        std::vector<float> tlwh = STacks[i].tlwh;
+                        bool vertical = tlwh[2] / tlwh[3] > 1.6;
+                        if (tlwh[2] * tlwh[3] > 20 && !vertical){
+                            int half_classWithoutCar= MainCam_Image_ptr->classWithoutCar/2;
+                            if( -1 < cls && cls < MainCam_Image_ptr->classWithoutCar){
+                                if(cls<half_classWithoutCar){
+                                    temp_res.blue_x1[cls]=tlwh[0];
+                                    temp_res.blue_y1[cls]=tlwh[1];
+                                    temp_res.blue_x2[cls]=tlwh[0]+tlwh[2];
+                                    temp_res.blue_y2[cls]=tlwh[1]+tlwh[3];
+                                    temp_res.blue_x[cls]=STacks[i].Locate3D.x;
+                                    temp_res.blue_y[cls]=STacks[i].Locate3D.y;
+                                }else{
+                                    temp_res.red_x1[cls-half_classWithoutCar]=tlwh[0];
+                                    temp_res.red_y1[cls-half_classWithoutCar]=tlwh[1];
+                                    temp_res.red_x2[cls-half_classWithoutCar]=tlwh[0]+tlwh[2];
+                                    temp_res.red_y2[cls-half_classWithoutCar]=tlwh[1]+tlwh[3];
+                                    temp_res.red_x[cls-half_classWithoutCar]=STacks[i].Locate3D.x;
+                                    temp_res.red_y[cls-half_classWithoutCar]=STacks[i].Locate3D.y;
+                                }
+                            }
+                        }
+                    }
+                }
+                temp_res.self_color=Modes_ptr->ourPattern;
+                // detect_frame=temp_res;
+                detect_pub->publish(temp_res);
 
 
                 std::cout << "-----------------step  test start--------------" << std::endl;
@@ -1046,7 +1065,8 @@ void MyRadar::Spin(int argc, char **argv){
 //                MainCam_Image_ptr->draw_rusult(STacks, true);
 
                 auto trackStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out);
+                // BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out);
+                BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out,lidar_det);
                 std::cout << "updata is OK" << std::endl;
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 //                std::cout << "fps_track: " << 1000. / (trackEndTime - trackStartTime) << std::endl;

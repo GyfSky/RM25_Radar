@@ -63,6 +63,7 @@ void MatrixCoordinateSystem::set_warring_and_place_by_locate3D(const MapVertex& 
 
 
     if((vex.placeType==holeWarring || vex.placeType==hole) && (((vex.placeColor == PlaceColor::B)) || ((vex.placeColor == PlaceColor::R) && (ourPattern==red) ))){
+        //步兵
         if(((ourPattern==red) && (track.cls < 5 && track.cls > 1)) || ((ourPattern==blue) &&  (track.cls < 11 && track.cls > 7))){
             isWarring[1] = true;
             track.placeType = holeWarring;

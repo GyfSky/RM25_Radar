@@ -319,6 +319,15 @@ void Port::sendPlaneData() {
     if(fly_num > 0){
         fly_num--;
     }
+    if(hole_red_num > 0){
+        hole_red_num--;
+    }
+    if(hole_orange_num > 0){
+        hole_orange_num--;
+    }
+    if(windmill_num > 0){
+        windmill_num--;
+    }
     radarPlaneDataT_times_lock.unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds (3));
 

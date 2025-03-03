@@ -25,7 +25,6 @@ private:
     // cv::Mat Cam_img;
     cv::Mat Cam_cloneing;
     cv::Mat Cam_draw;
-    std::string Cam_winname;
     cv::VideoCapture cap;
     bool Cam_isOpen = false;
     int input_w;
@@ -59,11 +58,14 @@ public:
 //else
 //    std::map<int,std::string> cls_to_string;
     bool is_getPoint2d_mouse_Cam = true;
+    std::string Cam_winname;
+    rclcpp::Node* node;
+    rclcpp::Time ros_time;
     int classWithoutCar;
     cv::Mat Cam_img;
     Image() = default;
     Image(Application application,PictureSource pictureSource,std::string Name = "Hik30",TF Image_isSave=false_,SaveImagePath saveImagePath=disk02,int serial_number = -1);
-    Image(Application application,PictureSource pictureSource,char g_strSerialNumber[64],std::string Name = "Hik30",TF Image_isSave=false_,SaveImagePath saveImagePath=disk02,int serial_number = -1);
+    Image(Application application,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name = "Hik30",TF Image_isSave=false_,SaveImagePath saveImagePath=disk02,int serial_number = -1);
     void Init(int argc,char *argv[]);
 //    cv::Mat Image_Get(int after_picture = 0);
     void GetGammaCorrection(Mat& src, Mat& dst, const float fGamma) ;

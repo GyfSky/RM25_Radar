@@ -6,7 +6,7 @@ gnome-terminal
 
 # 打开新的终端窗口
 gnome-terminal
-cd /home/thesky/RM_radardemo24
+cd /home/thesky/RM25_Radar
 # . devel/setup.bash
 source install/setup.bash
 # catkin_make

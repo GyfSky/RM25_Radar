@@ -38,12 +38,12 @@
 
 // #include "Mouse.h"
 
-# define CV_MAT_MATRIX_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/CVMAT_matrix.yml"
-# define YAML_CONFIC_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/Config.yaml"
-# define YAML_NETCONFIC_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/net.yaml"
-# define YAML_PLACE_CONFIC_PATH  "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/Place.yaml"
-# define YAML_COSTCONFIC_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/cost.yaml"
-# define STITCH_CONFIC_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/imageStitch.yaml"
+# define CV_MAT_MATRIX_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/CVMAT_matrix.yml"
+# define YAML_CONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/Config.yaml"
+# define YAML_NETCONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/net.yaml"
+# define YAML_PLACE_CONFIC_PATH  "/home/thesky/RM25_Radar/src/RPS_Radar24/config/Place.yaml"
+# define YAML_COSTCONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/cost.yaml"
+# define STITCH_CONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/imageStitch.yaml"
 
 
 enum Application{Radar,Common};
@@ -143,8 +143,8 @@ public:
 //double min_(double a,double b);
 //double max_(double a,double b);
 //double get2Ddistance(double x1,double y1, double x2, double y2);
-int initornot(std::array<cv::Point2f,10> predict2d ,cv::Point xy, int pointNum);
-int initornot3D(std::array<Eigen::Matrix<double, 3, 1>,10>  points_reality_3d ,cv::Point3d &xyz, int pointNum);
+int initornot(std::array<cv::Point2f,25> predict2d ,cv::Point xy, int pointNum);
+int initornot3D(std::array<Eigen::Matrix<double, 3, 1>,25>  points_reality_3d ,cv::Point3d &xyz, int pointNum);
 
 double getAngle180(double x, double y);
 double getAngle360(double x, double y);

@@ -32,8 +32,8 @@ Modes::Modes(){
 
 };
 
-bool flag = false;
-cv::Mat img_test;
+bool flag1 = false,flag2=false;
+cv::Mat img1,img2;
 rclcpp::Time ros_time;
 // void getImgTest(const sensor_msgs::msg::CompressedImage::ConstPtr msg) {
 //     cv::Mat img=cv::imdecode(msg->data, cv::IMREAD_COLOR);
@@ -42,27 +42,35 @@ rclcpp::Time ros_time;
 //     flag=true;
 // }
 
-void getImgTest(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
+void getImg1(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
     ros_time=rclcpp::Clock().now();
-    img_test = cv_bridge::toCvCopy(rosImg_ptr, "bgr8")->image;
-    if(!img_test.empty()){
-        // cv::cvtColor(img,img_test,CV_8UC3);
-        // img_test = img;
-        flag=true;
+    img1 = cv::imdecode(rosImg_ptr->data, cv::IMREAD_COLOR);
+    if(!img1.empty()){
+        flag1=true;
+    }else{
+        std::cout << "error!!!!!" << std::endl;
+    }
+}
+void getImg2(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
+    img2 = cv::imdecode(rosImg_ptr->data, cv::IMREAD_COLOR);
+    if(!img2.empty()){
+        flag2=true;
     }else{
         std::cout << "error!!!!!" << std::endl;
     }
 }
 
 int main(int argc, char **argv){
-    MyRadar radar;
     rclcpp::init(argc, argv);
-    auto nh = rclcpp::Node::make_shared("img_listener");
-    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_img;
+    auto nh = rclcpp::Node::make_shared("camera_detector");
+    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_main_img;
+    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_sec_img;
     rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_car;
     rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_armor;
     rclcpp::Subscription<interfaces::msg::DetectResult>::SharedPtr sub_lidar;
-    sub_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/compressed_image", rclcpp::SensorDataQoS(), &getImgTest);
+    sub_main_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/compressed_image", rclcpp::SensorDataQoS(), &getImg1);
+    sub_sec_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/hik30", rclcpp::SensorDataQoS(), &getImg2);
+    MyRadar radar(nh.get());
     // sub_img = nh->create_subscription<sensor_msgs::msg::Image>("/image", 10,
     //     [radar](const sensor_msgs::msg::Image::SharedPtr msg) {
     //         radar.MainCam_Image_ptr->Cam_img = cv_bridge::toCvCopy(msg, "bgr8")->image;
@@ -103,8 +111,11 @@ int main(int argc, char **argv){
     while(rclcpp::ok()){
         auto now_time = std::chrono::steady_clock::now();
         rclcpp::spin_some(nh);////
-        if(flag){////
-            radar.MainCam_Image_ptr->Cam_img= img_test;////
+        if(flag1){////
+            if (!radar.is_one_cam&&!flag2) continue;////
+            radar.MainCam_Image_ptr->Cam_img= img1;////
+            if (!radar.is_one_cam)
+                radar.SecCam_Image_ptr->Cam_img= img2;////
             radar.time_now=ros_time;////
             radar.Init(argc, argv);
             radar.Spin(argc, argv);

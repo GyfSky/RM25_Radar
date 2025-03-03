@@ -7,7 +7,7 @@
  * @return -1 -> 该点 在   凸多边形内
  * @return  1 -> 该点 不在  凸多边形内
  */
-int initornot(std::array<cv::Point2f,10> predict2d ,cv::Point xy, int pointNum){
+int initornot(std::array<cv::Point2f,25> predict2d ,cv::Point xy, int pointNum){
     Eigen::Vector3d p1,p2;
     Eigen::Vector3d x1,x2,temp_x2;
 
@@ -46,7 +46,7 @@ int initornot(std::array<cv::Point2f,10> predict2d ,cv::Point xy, int pointNum){
  * @return -1 -> 该点 在   凸多边形内
  * @return  1 -> 该点 不在  凸多边形内
  */
-int initornot3D(std::array<Eigen::Matrix<double, 3, 1>,10> predict3d ,cv::Point3d &xyz, int pointNum){
+int initornot3D(std::array<Eigen::Matrix<double, 3, 1>,25> predict3d ,cv::Point3d &xyz, int pointNum){
     Eigen::Vector3d p1,p2;
     Eigen::Vector3d x1,x2,temp_x2;
 

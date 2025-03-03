@@ -1,7 +1,7 @@
 #include "../include/Radar.h"
 
 
-MyRadar::MyRadar(){
+MyRadar::MyRadar(rclcpp::Node* node){
     after = 1500;bafter = after;int start = 0;
 
     this->Modes_ptr = std::shared_ptr<Modes>(new Modes());
@@ -10,7 +10,7 @@ MyRadar::MyRadar(){
     this->SecCam_Net_ptr   = std::shared_ptr<Net>(new Net("net"));
 //    this->Armor_Net_ptr   = std::shared_ptr<Net>(new Net("net_armor"));
     myInfer.getDevice(0);
-    myInfer.initModule("/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_armor.trt", 16, 12);
+    myInfer.initModule("/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor.trt", 16, 12);
 
 
     std::cout << "start_SensorParam" << std::endl;
@@ -24,12 +24,12 @@ MyRadar::MyRadar(){
 
     std::cout << "have look" << std::endl;
 
-    this->MainCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631", "Hik60", Modes_ptr->isSave, disk02,
-                      start));
-    this->SecCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Common,Modes_ptr->pictureSource, "00F26632053", "Hik30", Modes_ptr->isSave, disk02,
-                      start));
+    // this->MainCam_Image_ptr = std::shared_ptr<Image>(
+    //     new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631", "Hik60", Modes_ptr->isSave, disk02,
+    //                   start));
+    // this->SecCam_Image_ptr = std::shared_ptr<Image>(
+    //     new Image(Common,Modes_ptr->pictureSource, "00F26632053", "Hik30", Modes_ptr->isSave, disk02,
+    //                   start));
 
     this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, 12, Modes_ptr->Port_isOpen, Modes_ptr->usePort));
 

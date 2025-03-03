@@ -30,17 +30,17 @@ Modes::Modes(){
 
 
 int main(int argc, char **argv){
-    MyRadar radar;
-    radar.Init(argc, argv);
-    while(true){
-        radar.Spin(argc, argv);
-        if(cv::waitKey(1) == 'q'){
-            radar.is_close = true;
-        }
-        if(radar.is_close){
-            break;
-        }
-    }
-    radar.Close();
+    // MyRadar radar;
+    // radar.Init(argc, argv);
+    // while(true){
+    //     radar.Spin(argc, argv);
+    //     if(cv::waitKey(1) == 'q'){
+    //         radar.is_close = true;
+    //     }
+    //     if(radar.is_close){
+    //         break;
+    //     }
+    // }
+    // radar.Close();
     return 0;
 }

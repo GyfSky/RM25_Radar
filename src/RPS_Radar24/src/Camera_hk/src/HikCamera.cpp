@@ -4,7 +4,7 @@
 
 namespace Camera_hk
 {
-    void imageCallback(unsigned char *data, MV_FRAME_OUT_INFO_EX *pFrameInfo, void *pUser)
+    void HikCamera::imageCallback(unsigned char *data, MV_FRAME_OUT_INFO_EX *pFrameInfo, void *pUser)
     {
         auto target =static_cast<HikCamera*>(pUser);
         std::chrono::steady_clock::time_point now= std::chrono::steady_clock::now();
@@ -19,6 +19,7 @@ namespace Camera_hk
         if(pFrameInfo)
         {
                 if(target->pixelFormat==BayerRG8 || target->pixelFormat==BayerGR8){
+                    target->m_time=rclcpp::Clock().now();
                     target->mRawImage = cv::Mat(pFrameInfo->nHeight,pFrameInfo->nWidth,CV_8UC1,data);
 
                     // save
@@ -26,9 +27,13 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
+                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                            msg->header.stamp = rclcpp::Clock().now();
+                            target->img_pub->publish(*msg);
                         }
                     }
                 }else if(target->pixelFormat==BGR8Packed){
+                    target->m_time=rclcpp::Clock().now();
                     target->mRawImage = cv::Mat(pFrameInfo->nHeight,pFrameInfo->nWidth,CV_8UC3,data);
 
                     // save
@@ -36,6 +41,9 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
+                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                            msg->header.stamp = rclcpp::Clock().now();
+                            target->img_pub->publish(*msg);
                         }
                     }
                 } else{
@@ -47,7 +55,7 @@ namespace Camera_hk
 
     }
 
-    void* WorkThread(void* pUser)
+    void* HikCamera::WorkThread(void* pUser)
     {
         auto target =static_cast<HikCamera*>(pUser);
         int nRet = MV_OK;
@@ -103,6 +111,9 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
+                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                            msg->header.stamp = rclcpp::Clock().now();
+                            target->img_pub->publish(*msg);
                         }
                     }
                 }
@@ -114,6 +125,9 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
+                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                            msg->header.stamp = rclcpp::Clock().now();
+                            target->img_pub->publish(*msg);
                         }
                     }
                 } else{
@@ -135,10 +149,12 @@ namespace Camera_hk
 
 }
 
-Camera_hk::HikCamera::HikCamera(std::string save_root_dir,int num_frame,  bool is_always_save) {
+Camera_hk::HikCamera::HikCamera(std::string name,std::string save_root_dir,rclcpp::Node* node,int num_frame,  bool is_always_save) {
     std::cerr << "\033[35m" << "if Fps > 120+, save img mode will make your fps down !!!!" << "\033[0m" << std::endl;
     this->is_will_always_save = is_always_save;
     this->num_frame = num_frame;
+    this->node=node;
+    img_pub=this->node->create_publisher<sensor_msgs::msg::CompressedImage>("/cam/"+name,rclcpp::SensorDataQoS());
 //    this->deviceModel = getDeviceModel();
     if(is_always_save){
         char now[64];
@@ -526,7 +542,13 @@ cv::Mat Camera_hk::HikCamera::getImage()
     img_lock.unlock();
     return img;
 }
-
+rclcpp::Time Camera_hk::HikCamera::getTime() {
+    rclcpp::Time return_time;
+    img_lock.lock();
+    return_time = m_time;
+    img_lock.unlock();
+    return return_time;
+}
 
 void Camera_hk::HikCamera::getDeviceModel() {
     MVCC_STRINGVALUE stStringValue = {0};

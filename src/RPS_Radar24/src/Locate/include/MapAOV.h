@@ -46,8 +46,8 @@ public:
     int missLinesTimes = -1;//
 
     int point_3d_number;//3d点个数
-    std::array<Eigen::Matrix<double, 3, 1>,10> points_reality_3d;//场地中的3d点
-    std::array<cv::Point2f,10> points_predict_2d;//场地在图像中的2d点，数量等于3d点
+    std::array<Eigen::Matrix<double, 3, 1>,25> points_reality_3d;//场地中的3d点
+    std::array<cv::Point2f,25> points_predict_2d;//场地在图像中的2d点，数量等于3d点
     // 用来粗率定位的参数
     std::array<double,3> getH_abc_3d;//
     Eigen::Matrix<double,2,2> matrix_change2;//
@@ -55,7 +55,7 @@ public:
     Eigen::Matrix<double,2,1> matrix_2d;//
 
 public:
-    MapVertex(std::array<Eigen::Matrix<double, 3, 1>,10> points_reality_3d,int point_3d_number,
+    MapVertex(std::array<Eigen::Matrix<double, 3, 1>,25> points_reality_3d,int point_3d_number,
               PlaceColor placeColor,SeeType seeType = Clear,PlaceType_special placeType = ordinary, bool isH = false);
     void get_predict_2d(const Eigen::Matrix<double,4,4> Rt, const double fx, const double fy, const double cx, const double cy);
     void get_roughH_config();
@@ -83,7 +83,7 @@ public:
 
     void get_completeMapGraphMtx();
     void print_AdjacencyMatrix();
-    void push_back_MapVertex(std::vector<MapVertex> &vertexs, std::array<Eigen::Matrix<double, 3, 1>,10> points_reality_3d,int point_3d_number,
+    void push_back_MapVertex(std::vector<MapVertex> &vertexs, std::array<Eigen::Matrix<double, 3, 1>,25> points_reality_3d,int point_3d_number,
                              PlaceColor placeColor,SeeType seeType = Clear, PlaceType_special placeType = ordinary, bool isH = false);
     void creat_dir(int mainVex, int secVex, double x1,double y1,double x2,double y2,int offset = 0, bool isUndirected = true);
     void creat_dir(std::vector<MapVertex> vexs, int mainVex, int secVex, int offset = 0, bool isUndirected = true);
@@ -109,7 +109,16 @@ private:
     void get_behindGround_R_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
     void get_behindGround_B_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
 
-
+    //RM2025
+    void get_fortress_R_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_fortress_B_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_trapezium_R_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_trapezium_B_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_highway_R_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_highway_B_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_central_R_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_central_B_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
+    void get_central_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset = 0);
 };
 
 #endif //JSONCPP_TEST_MAPAOV_H

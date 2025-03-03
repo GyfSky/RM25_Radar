@@ -1,9 +1,12 @@
 lidar_registration_node:
   ros__parameters:
     cost_thres: 0.3
-    map_path: "resource/RM2024.pcd"
+    map_path: "resource/RM2025.pcd"
     pub_map_grid_size: 0.01
-    al_map_grid_size: 0.2
+    #RM2025
+    al_map_grid_size: 0.22
+    #RM2025
+    #al_map_grid_size: 0.2
     pc_grid_size: 0.15
     use_saved_T: true
 

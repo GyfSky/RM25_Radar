@@ -1,8 +1,8 @@
 //
 // Created by plusseven on 23-7-15.
 //
-# define YAML_CONFIC_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/Config.yaml"
-# define YAML_NETCONFIC_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/net.yaml"
+# define YAML_CONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/Config.yaml"
+# define YAML_NETCONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/net.yaml"
 
 #ifndef RADAR2023_WITHTRT_NET_H
 #define RADAR2023_WITHTRT_NET_H

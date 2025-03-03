@@ -51,7 +51,7 @@ Camera::Camera(){
     //    camera.setWhiteBalance();
 }
 
-Camera::Camera(char *g_strSerialNumber, std::string Name, TF Image_isSave) {
+Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, TF Image_isSave) {
 
     //加载默认主相机配置参数
     YAML::Node mainCamConfg = YAML::LoadFile(YAML_CONFIC_PATH);
@@ -68,7 +68,7 @@ Camera::Camera(char *g_strSerialNumber, std::string Name, TF Image_isSave) {
         is_save = true;
     }
     mainCamFuture_ = mainCamExit_.get_future();
-    std::shared_ptr<Camera_hk::HikCamera> HikCamera_sptr(new Camera_hk::HikCamera(save_root_dir,CamNum_,is_save));
+    std::shared_ptr<Camera_hk::HikCamera> HikCamera_sptr(new Camera_hk::HikCamera(Name,save_root_dir,node,CamNum_,is_save));
     HikCamera_sptr_ = HikCamera_sptr;
 
     //初始化主相机

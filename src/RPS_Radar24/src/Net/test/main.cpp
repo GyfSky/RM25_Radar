@@ -10,7 +10,7 @@ int main()
 //    nvinfer1::IHostMemory *data = myInfer.createEngine("/home/plusseven/下载/TRTInferenceForYolov5/best_armor.onnx", 16, 224, 224);
 //    myInfer.saveEngineFile(data, "/home/plusseven/下载/TRTInferenceForYolov5/best_armor.trt");
 //    myInfer.initModule("/home/plusseven/下载/TRTInferenceForYolov5/best_armor.trt", 16, 12);
-    myInfer.initModule("/home/thesky/RM_radardemo24/src/RPS_Radar24/model/best_armor.trt", 16, 12);
+    myInfer.initModule("/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor.trt", 16, 12);
 
     // cv::VideoCapture cap(0);
     std::vector<cv::Mat> frames;

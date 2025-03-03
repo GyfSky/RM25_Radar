@@ -6,6 +6,9 @@
 #include <string>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
+#include <cv_bridge/cv_bridge.h>
 #include "MvCameraControl.h"
 #include<chrono>
 
@@ -71,6 +74,9 @@ namespace Camera_hk
 
         bool g_bExit = false;
         std::mutex img_lock;
+        rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr img_pub;
+        rclcpp::Node* node;
+        rclcpp::Time m_time;
     private:
 
     public:
@@ -79,7 +85,7 @@ namespace Camera_hk
         /*
          * @param num_frame 每隔num_frame张图片取一张图片
          * */
-        HikCamera(std::string save_root_dir,int num_frame = 1,bool is_always_save = true);
+        HikCamera(std::string name,std::string save_root_dir,rclcpp::Node* node,int num_frame = 1,bool is_always_save = true);
         cv::Mat convertToBGR(cv::Mat image);
         void open();
         void open(char g_strSerialNumber[64]);
@@ -113,7 +119,9 @@ namespace Camera_hk
         float getFPS();
         void getResultingFrameRate();
         cv::Mat getImage();
-
+        rclcpp::Time getTime();
+        static void imageCallback(unsigned char *data, MV_FRAME_OUT_INFO_EX *pFrameInfo, void *pUser);
+        static void* WorkThread(void* pUser);
         void setSaveMode();
     };
 

@@ -24,7 +24,6 @@ class MyRadar
 private:
     std::string node_name;
     bool is_first = true;
-    bool is_one_cam = true;
     // int after_picture=1;
     cv::Mat mainCamMat;
     cv::Mat secCamMat;
@@ -50,7 +49,7 @@ private:
     std::shared_ptr<KRepresent> KRepresent_ptr = nullptr;
     // std::shared_ptr<Image> Image_ptr = nullptr;
     // std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
-    std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
+    // std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
 
     // std::shared_ptr<Livox> Livox_ptr = nullptr;
     std::shared_ptr<Net> MainCam_Net_ptr = nullptr;
@@ -91,6 +90,8 @@ private:
     OurPattern ourPattern;
 
 public:
+    bool is_one_cam = true;
+    rclcpp::Node* node;
     interfaces::msg::DetectResult lidar_det;
     bool is_close = false;
     bool is_init=false;
@@ -99,9 +100,10 @@ public:
     interfaces::msg::NetDetect car_det;
     interfaces::msg::NetDetect armor_det;
     interfaces::msg::DetectFrame detect_frame;
-    MyRadar(/* args */);
+    MyRadar(/* args */rclcpp::Node* node);
     ~MyRadar();
     std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
+    std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
     void Init(int argc, char **argv);
     void STrackInit(int classWithoutCar, OurPattern ourPattern);
     void STrackGuess();

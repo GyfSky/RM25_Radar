@@ -16,6 +16,7 @@ public:
     bool is_MainCamWork = true;
     cv::Mat imgMainWait;                                     // 主模组线程缓冲图像
     std::shared_ptr<Camera_hk::HikCamera> HikCamera_sptr_;   // 主相机地址
+    rclcpp::Node* node;
 
 private:
     int CamGain_;                                        // 相机增益
@@ -31,7 +32,7 @@ private:
     std::future<void> mainCamFuture_;
 public:
     Camera();
-    Camera(char g_strSerialNumber[64],std::string Name, TF Image_isSave = false_);
+    Camera(char g_strSerialNumber[64],std::string Name,rclcpp::Node* node,TF Image_isSave = false_);
     void CamMainSet();
     // void CamMainWork();
     void CamMainSave();

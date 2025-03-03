@@ -20,7 +20,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Ofast -Wfatal-errors -
 add_library(General
         ../General/src/General.cpp
         ../General/include/General.h
-        /home/thesky/RM_radardemo24/install/interfaces/include/interfaces/interfaces/msg/rect.hpp
+        /home/thesky/RM25_Radar/install/interfaces/include/interfaces/interfaces/msg/rect.hpp
 )
 
 #jsoncpp

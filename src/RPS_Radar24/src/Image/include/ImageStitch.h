@@ -11,7 +11,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-# define STITCH_CONFIC_PATH "/home/thesky/RM_radardemo24/src/RPS_Radar24/config/imageStitch.yaml"
+# define STITCH_CONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/imageStitch.yaml"
 
 class ImageStitch {
 

@@ -54,14 +54,16 @@ namespace upc_radar{
     //         if (point.x < 3 || point.x > 28 || point.y < 0 || point.y > 15 || point.z < 0 || point.z > 1.35 ||
     //             //或者y(0,5),x(25,28)不要 敌方停机坪和飞镖
     //             (point.y > 0 && point.y < 5 && point.x > 25) ||
+    //             //敌方基地
+    //             (point.y<=8.43&&point.y>=6.5701&&point.x>=25&&point.x<=26.4651)||
     //             //或者y(11,12),x(23,24)不要
-    //             // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24) 
+    //             // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24)
     //             //画四个直线切割大资源岛
     //             ((21.5-2.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.9/sqrt(2))&&
     //             (-6.5-0.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.9/sqrt(2)))||
     //             //前哨站17<point.x&&point.x<18
     //             ((3.1<point.y&&point.y<4.1)&&(10.5<point.x&&point.x<11.25))||
-    //             ((10.9<point.y&&point.y<11.9)&&(16.75<point.x&&point.x<17.5))||
+    //             ((10.9<point.y&&point.y<11.9)&&(16.75<point.x&&point.x<17.5))
     //             //猜是为了减少r4散射点
     //             // ((11<point.y&&point.y<12.25)&&(23<point.x&&point.x<24.1)&&(point.z<0.535))||
     //             //兑换区
@@ -90,6 +92,8 @@ namespace upc_radar{
                 (point.y>12&&point.z>1.3&&point.x<14)||
                 //敌方飞机飞行区
                 (point.y>3&&point.z>1.3&&point.x>14)||
+                //敌方基地
+                (point.y<=8.461&&point.y>=6.6012&&point.x>=26.3&&point.x<=27.1)||
                 //或者y(11,12),x(23,24)不要
                 // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24) 
                 //画四个直线切割大资源岛

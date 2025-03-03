@@ -78,7 +78,7 @@ Image::Image(Application application,PictureSource pictureSource,std::string Nam
 }
 
 //带有序列号 g_strSerialNumber
-Image::Image(Application application,PictureSource pictureSource,char g_strSerialNumber[64],std::string Name,TF Image_isSave,SaveImagePath saveImagePath,int serial_number ){
+Image::Image(Application application,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name,TF Image_isSave,SaveImagePath saveImagePath,int serial_number){
     ////mode
     this->pictureSource = pictureSource;
     this->application = application;
@@ -106,7 +106,7 @@ Image::Image(Application application,PictureSource pictureSource,char g_strSeria
     }
     else if(this->pictureSource == camera_){
         Cam_isOpen = true;
-        this->Camerahk_prt = std::shared_ptr<Camera>(new Camera(g_strSerialNumber, Name, Image_isSave));
+        this->Camerahk_prt = std::shared_ptr<Camera>(new Camera(g_strSerialNumber, Name, node,Image_isSave));
     }
 }
 {//save image or not and save image_path
@@ -233,6 +233,10 @@ cv::Mat Image::Image_Get(int &after_picture,int argc, char **argv){
             // else if (this->useCamera == Cameras::Hikang) this->Cam_img = this->Camerahk_prt->imgMainWait;           /////////
             // else if (this->useCamera == Cameras::Hikang){
             this->Cam_img = this->Camerahk_prt->HikCamera_sptr_->getImage();
+            if (this->Cam_winname=="Hik60") {
+                this->ros_time=this->Camerahk_prt->HikCamera_sptr_->getTime();
+            }
+
             // }         /////////
             // else std::cout << "Maybe Have Error!!!";
             break;

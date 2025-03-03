@@ -353,7 +353,7 @@ std::vector<STrack> PretreatObjs::ArmorInCar(std::vector<TRTInferV1::Object> &ca
     std::vector<STrack> outRestCars;
     for(TRTInferV1::Object &car : cars){
         //这里将数组大小定义成10是为了方便调用函数initornot， 实际上大小定义成4就足够了
-        std::array<cv::Point2f,10> car_4angle ;
+        std::array<cv::Point2f,25> car_4angle ;
         car_4angle[0] = cv::Point2f (float (car.x1),float (car.y1));
         car_4angle[1] = cv::Point2f (float (car.x2),float (car.y1));
         car_4angle[2] = cv::Point2f (float (car.x2),float (car.y2));
@@ -477,7 +477,7 @@ std::vector<std::vector<int>> PretreatObjs::getArmors_wconf(
 //        Eigen::MatrixXd ws_armorYMatrix = Eigen::MatrixXd::Zero(1,14);
         double carY_downLine = car.y1 + car.h * p_carY_downLine;  // 装甲板3/4处（沿y(v)）
         double carY_upLine = car.y1 + car.h * p_carY_upLine;      // 装甲板1/3处（沿y(v)）
-        std::array<cv::Point2f,10> car_4angle ; // 这里将数组大小定义成10是为了方便调用函数initornot， 实际上大小定义成4就足够了
+        std::array<cv::Point2f,25> car_4angle ; // 这里将数组大小定义成10是为了方便调用函数initornot， 实际上大小定义成4就足够了
         car_4angle[0] = cv::Point2f (float (car.x1),float (car.y1));
         car_4angle[1] = cv::Point2f (float (car.x2),float (car.y1));
         car_4angle[2] = cv::Point2f (float (car.x2),float (car.y2));
@@ -722,7 +722,7 @@ void PretreatObjs::ArmorInCar(std::vector<Car> &cars,std::vector<Armor> &armors)
     int num = this->classWithoutCar;
     for(Car &car : cars){
         //这里将数组大小定义成10是为了方便调用函数initornot， 实际上大小定义成4就足够了
-        std::array<cv::Point2f,10> car_4angle ;
+        std::array<cv::Point2f,25> car_4angle ;
         car_4angle[0] = cv::Point2f (float (car.x1),float (car.y1));
         car_4angle[1] = cv::Point2f (float (car.x2),float (car.y1));
         car_4angle[2] = cv::Point2f (float (car.x2),float (car.y2));
@@ -863,7 +863,7 @@ void PretreatObjs::getArmors_wconf(std::vector<Car> &cars,std::vector<Car> &outR
 //        Eigen::MatrixXd ws_armorYMatrix = Eigen::MatrixXd::Zero(1,14);
         double carY_downLine = car.rect.y + car.rect.height * 3/4;  // 装甲板3/4处（沿y(v)）
         double carY_upLine = car.rect.y + car.rect.height / 3;      // 装甲板1/3处（沿y(v)）
-        std::array<cv::Point2f,10> car_4angle ; // 这里将数组大小定义成10是为了方便调用函数initornot， 实际上大小定义成4就足够了
+        std::array<cv::Point2f,25> car_4angle ; // 这里将数组大小定义成10是为了方便调用函数initornot， 实际上大小定义成4就足够了
         car_4angle[0] = cv::Point2f (float (car.x1),float (car.y1));
         car_4angle[1] = cv::Point2f (float (car.x2),float (car.y1));
         car_4angle[2] = cv::Point2f (float (car.x2),float (car.y2));
