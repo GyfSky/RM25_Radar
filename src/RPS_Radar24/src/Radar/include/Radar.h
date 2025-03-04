@@ -90,7 +90,7 @@ private:
     OurPattern ourPattern;
 
 public:
-    bool is_one_cam = true;
+    bool is_one_cam = false;
     rclcpp::Node* node;
     interfaces::msg::DetectResult lidar_det;
     bool is_close = false;

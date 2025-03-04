@@ -7,8 +7,8 @@ Modes::Modes(){
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////------------------------------------- 这里需要修改！！！！---------------------------------------------|
     application   = Application::Radar;//？？
-    // pictureSource = PictureSource::camera_ ;   //图片来源          |
-    pictureSource = PictureSource::ros1 ;
+    pictureSource = PictureSource::camera_ ;   //图片来源          |
+    // pictureSource = PictureSource::ros1 ;
     isOpenMid70   = TF::false_;
     isUseMid70    = TF::false_;
     detectionMode = Detection::netDetection;//？？
@@ -44,6 +44,7 @@ rclcpp::Time ros_time;
 
 void getImg1(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
     ros_time=rclcpp::Clock().now();
+    // ros_time=rosImg_ptr->header.stamp;
     img1 = cv::imdecode(rosImg_ptr->data, cv::IMREAD_COLOR);
     if(!img1.empty()){
         flag1=true;
@@ -68,8 +69,8 @@ int main(int argc, char **argv){
     rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_car;
     rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_armor;
     rclcpp::Subscription<interfaces::msg::DetectResult>::SharedPtr sub_lidar;
-    sub_main_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/compressed_image", rclcpp::SensorDataQoS(), &getImg1);
-    sub_sec_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/hik30", rclcpp::SensorDataQoS(), &getImg2);
+    sub_main_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/Hik60", rclcpp::SensorDataQoS(), &getImg1);
+    sub_sec_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/Hik30", rclcpp::SensorDataQoS(), &getImg2);
     MyRadar radar(nh.get());
     // sub_img = nh->create_subscription<sensor_msgs::msg::Image>("/image", 10,
     //     [radar](const sensor_msgs::msg::Image::SharedPtr msg) {
@@ -110,13 +111,13 @@ int main(int argc, char **argv){
     // }
     while(rclcpp::ok()){
         auto now_time = std::chrono::steady_clock::now();
-        rclcpp::spin_some(nh);////
-        if(flag1){////
-            if (!radar.is_one_cam&&!flag2) continue;////
-            radar.MainCam_Image_ptr->Cam_img= img1;////
-            if (!radar.is_one_cam)
-                radar.SecCam_Image_ptr->Cam_img= img2;////
-            radar.time_now=ros_time;////
+        // rclcpp::spin_some(nh);////
+        // if(flag1){////
+        //     if (!radar.is_one_cam&&!flag2) continue;////
+        //     radar.MainCam_Image_ptr->Cam_img= img1;////
+        //     if (!radar.is_one_cam)
+        //         radar.SecCam_Image_ptr->Cam_img= img2;////
+        //     radar.time_now=ros_time;////
             radar.Init(argc, argv);
             radar.Spin(argc, argv);
             if(cv::waitKey(1) == 'q'){
@@ -125,7 +126,7 @@ int main(int argc, char **argv){
             if(radar.is_close){
                 break;
             }
-        }////
+        // }////
         auto end_time = std::chrono::steady_clock::now();
         float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();    
         RCLCPP_WARN(nh->get_logger(), "time is %f s", dur_time/1000);

@@ -59,6 +59,20 @@ namespace upc_radar{
             PCL_ERROR("Couldn't read file map.pcd \n");
             return;
         }
+        Eigen::Matrix4f Tran;
+        //Tran的逆 cloudcompare更改坐标系 实验室场地
+        // Tran<< -0.117343 ,0.993080 ,0.004741 ,-1.625149,
+        //         -0.993091 ,-0.117341 ,-0.000560 ,2.972910,
+        //         0.000000 ,-0.004774 ,0.999989 ,-0.268606,
+        //         0.000000 ,0.000000 ,0.000000 ,1.000000;
+
+        //RM2025
+        Tran<< 0.000000, 1.000000, 0.000000, -7.502200,
+                -1.000000, 0.000000, 0.000000, 14.005900,
+                0.000000, 0.000000, 1.000000, 0.000000,
+                0.000000, 0.000000, 0.000000, 1.000000;
+
+        pcl::transformPointCloud(*pcd, *pcd, Tran.inverse());//实验室场地及RM2025用这个
         //下采样
         pcl::VoxelGrid<pcl::PointXYZ> sor;
         sor.setInputCloud(pcd);
@@ -123,6 +137,7 @@ namespace upc_radar{
         pcl::toROSMsg(accumulated_cloud, output);
         output.header.frame_id = "rm_frame";
         output.header.stamp = time;
+        // output.header.stamp = msg->header.stamp;
         pub_->publish(output);
         auto end_time = std::chrono::steady_clock::now();
         float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();

@@ -7,11 +7,10 @@ import launch
 from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
-    params_config = os.path.join(get_package_share_directory('lidar_registration'), 'config', 'default.yaml')
+    params_config = os.path.join(get_package_share_directory('rps_radar24'), 'config', 'default.yaml')
     depth_fusion_config = os.path.join(get_package_share_directory('depth_fusion'), 'config', 'depth_fusion.yaml')
     depth_kalman_config = os.path.join(get_package_share_directory('depth_kalman'), 'config', 'depth_kalman.yaml')
-    print(params_config)
-    print(depth_kalman_config)
+
 
     def get_rosbag_player_node(package, plugin):
         return ComposableNode(
@@ -144,7 +143,7 @@ def generate_launch_description():
         package="rps_radar24",
         executable="RadarMain"
     )
-    cmd1 = launch.actions.ExecuteProcess(cmd=['ros2', 'bag', 'play', '../bags/merged_bag_0.db3', '--loop', '--start-offset', '250'])
+
     return LaunchDescription([
             # cmd1,
             camera_detector,

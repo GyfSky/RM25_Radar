@@ -100,7 +100,7 @@ void MyRadar::STrackInit(int classWithoutCar, OurPattern ourPattern){
     if(ourPattern == red){
         this->color_index = 0;
     }else if(ourPattern == blue){
-        this->color_index = 6;
+        this->color_index = classWithoutCar/2;
     }
     this->ourPattern = ourPattern;
 }
