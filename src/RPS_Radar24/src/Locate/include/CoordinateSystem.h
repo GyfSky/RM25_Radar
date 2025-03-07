@@ -9,9 +9,12 @@ private:
     float edge = 0.7; //0.7 约等于 0.8 * 根号3
     float venue_w = 28.0;  // m
     float venue_h = 15.0;  // m
+    int classWithoutCar;
 public:
 //    MatrixCoordinateSystem(std::vector<std::string> Names);
-    MatrixCoordinateSystem() = default;
+    MatrixCoordinateSystem(int classWithoutCar) {
+        this->classWithoutCar=classWithoutCar;
+    }
 //    cv::Mat GetCVMAT_matrix(std::string Name);
 //    void GetCVMAT_matrix();
     void get_Point_2d(cv::Mat T_2self ,cv::Mat K ,cv::Point3f &point3f, cv::Point2f &point2f);

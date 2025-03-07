@@ -64,11 +64,11 @@ void MatrixCoordinateSystem::set_warring_and_place_by_locate3D(const MapVertex& 
 
     if((vex.placeType==holeWarring || vex.placeType==hole) && (((vex.placeColor == PlaceColor::B)) || ((vex.placeColor == PlaceColor::R) && (ourPattern==red) ))){
         //步兵
-        if(((ourPattern==red) && (track.cls < 5 && track.cls > 1)) || ((ourPattern==blue) &&  (track.cls < 11 && track.cls > 7))){
+        if(((ourPattern==red) && (track.cls < classWithoutCar/2-1 && track.cls > 1)) || ((ourPattern==blue) &&  (track.cls < classWithoutCar-1 && track.cls > classWithoutCar/2+1))){
             isWarring[1] = true;
             track.placeType = holeWarring;
         }
-        else if(((ourPattern==red) && (track.cls < 6 || track.cls > 11)) || ((ourPattern==blue) &&  (track.cls < 0 || track.cls > 5))){
+        else if(((ourPattern==red) && (track.cls < classWithoutCar/2 || track.cls > classWithoutCar-1)) || ((ourPattern==blue) &&  (track.cls < 0 || track.cls > classWithoutCar/2-1))){
             isWarring[2] = true;
             track.placeType = holeWarring;
         }
@@ -79,13 +79,13 @@ void MatrixCoordinateSystem::set_warring_and_place_by_locate3D(const MapVertex& 
     }
 
     if(vex.placeType==startupArea && ( ((vex.placeColor == PlaceColor::R) &&(ourPattern==blue)) || ((vex.placeColor == PlaceColor::B) &&(ourPattern==red))) ){
-        if((ourPattern==red) && (track.cls < 6 || track.cls > 11) ){
+        if((ourPattern==red) && (track.cls < classWithoutCar/2 || track.cls > classWithoutCar-1) ){
 //            double B7_conf = std::min(0.95, track.ws_armorConfMatrix(0, 5) + startupArea_car_conf);
 //            track.ws_armorConfMatrix(0, 5) = B7_conf;
             track.placeType = startupArea;
 //            std::cout << "vex.placeType==startupArea: " << track.cls  << "  " << track.ws_armorConfMatrix(0, 5) << std::endl;
         }
-        else if((ourPattern==blue) &&  (track.cls < 0 || track.cls > 5)){
+        else if((ourPattern==blue) &&  (track.cls < 0 || track.cls > classWithoutCar/2-1)){
             track.placeType = startupArea;
         }
     }

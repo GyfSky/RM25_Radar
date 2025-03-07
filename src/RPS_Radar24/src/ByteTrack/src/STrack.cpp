@@ -242,13 +242,13 @@ void STrack::set_confs_by_locate3D(STrack &new_track,OurPattern ourPattern, std:
     else if(new_track.placeType == startupArea){
         this->startupArea_car_conf = this->startupArea_car_conf * this->up_magnification;
         if(ourPattern==red){
-            new_track.ws_armorConfMatrix(0, 5) = std::min(0.84,  new_track.ws_armorConfMatrix(0, 5) + startupArea_car_conf);
+            new_track.ws_armorConfMatrix(0, half_classWithoutCar-1) = std::min(0.84,  new_track.ws_armorConfMatrix(0, half_classWithoutCar-1) + startupArea_car_conf);
 //            if(new_track.ws_armorConfMatrix(0, 5) > new_track.conf_armor){
 //                new_track.conf_armor = new_track.ws_armorConfMatrix(0, 5);
 //            }
         }
         else if(ourPattern==blue){
-            new_track.ws_armorConfMatrix(0, 11)  = std::min(0.84,  new_track.ws_armorConfMatrix(0, 11) + startupArea_car_conf);
+            new_track.ws_armorConfMatrix(0, classWithoutCar-1)  = std::min(0.84,  new_track.ws_armorConfMatrix(0, classWithoutCar-1) + startupArea_car_conf);
 //            if(new_track.ws_armorConfMatrix(0, 11) > new_track.conf_armor){
 //                new_track.conf_armor = new_track.ws_armorConfMatrix(0, 11);
 //            }
@@ -620,7 +620,7 @@ void STrack::classfy_STrack_N(int &num){//??
             ws_armorConfMatrix(0,classWithoutCar-1) = 0;
         }
     }
-    else if(half_classWithoutCar != 6){
+    else if(half_classWithoutCar != 6|| half_classWithoutCar != 5){
         std::cout << "here have error in BYTETracker::classfy_STrack_N22" << std::endl;
     }
 
@@ -652,6 +652,8 @@ void STrack::updata_trackid(int &num) {
             }
         }else if(half_classWithoutCar == 6){
                 track_id = cls;
+        }else if (half_classWithoutCar == 5) {
+            track_id = cls;
         }else{
             std::cout << "here have error in BYTETracker::classfy_STrack_N22" << std::endl;
         }

@@ -36,7 +36,7 @@ net:
   nms_thres: 0.3        #
   batch_size: 1         #
   num_class: 1         #
-  classWithoutCar: 12
+  classWithoutCar: 10
   input_w: 1440       #  输入onnx的宽
   input_h: 1088       #  输入onnx的长
 
@@ -59,7 +59,7 @@ net_60:
   nms_thres: 0.3        #
   batch_size: 1         #
   num_class: 1         #
-  classWithoutCar: 12
+  classWithoutCar: 10
   input_w: 2464       #  输入onnx的宽
   input_h: 2048       #  输入onnx的长
 
@@ -73,7 +73,7 @@ net_armor:
   nms_thres: 0.45        #
   batch_size: 1         #
   num_class: 12         #
-  classWithoutCar: 12
+  classWithoutCar: 10
   input_w: 224       #  输入onnx的宽
   input_h: 224       #  输入onnx的长
 

@@ -2,14 +2,21 @@
 
 std::string getData();
 
+PictureSource MyRadar::getPictureSource() {
+    return this->Modes_ptr->pictureSource;
+}
+
 MyRadar::MyRadar(rclcpp::Node* node){
     this->node = node;
     after = 4000;bafter = after;int start = 0;
 
     this->Modes_ptr = std::shared_ptr<Modes>(new Modes());
+
+    if (this->Modes_ptr->camNumber==1) this->is_one_cam=true;
+    else if (this->Modes_ptr->camNumber==2) this->is_one_cam=false;
+
     this->MainMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
 
-    this->CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem());//坐标转换
     this->KRepresent_ptr = std::shared_ptr<KRepresent>(new KRepresent());//疑似没有用到
     // this->Livox_ptr = std::shared_ptr<Livox>(new Livox());
     //网络相关
@@ -34,7 +41,7 @@ MyRadar::MyRadar(rclcpp::Node* node){
         new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631",node, "Hik60", Modes_ptr->isSave, disk02,
                       start));
 
-    this->CoordSolve_ptr  = std::shared_ptr<CoordSolver>(new CoordSolver(Modes_ptr->ourPattern));//英雄吊射？？
+    // this->CoordSolve_ptr  = std::shared_ptr<CoordSolver>(new CoordSolver(Modes_ptr->ourPattern));//英雄吊射？？
 
     if(!is_one_cam){
         this->SecMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
@@ -48,6 +55,8 @@ MyRadar::MyRadar(rclcpp::Node* node){
     }else{
         this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(Modes_ptr->ourPattern));
     }
+
+    this->CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem(PretreatObjs_ptr->classWithoutCar));//坐标转换
     //串口
     // this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort));
 
@@ -64,48 +73,85 @@ MyRadar::~MyRadar(){
 }
 void MyRadar::STrackInit(int classWithoutCar, OurPattern ourPattern){
     out_init.resize(classWithoutCar);
-    // TODO: 需要跟据yaml的改变而改变？？
-    out_init[0 ] = *new STrack(-1,25.80,8.0); //B1
-    out_init[1 ] = *new STrack(-1,20.00,4.0); //B2
-    out_init[2 ] = *new STrack(-1,26.75,7.5); //B3
-    out_init[3 ] = *new STrack(-1,26.75,7.5); //B4
-    out_init[4 ] = *new STrack(-1,26.75,7.5); //B5
-    out_init[5 ] = *new STrack(-1,23.00,7.5); //B7
+    if (classWithoutCar==6) {
+        // TODO: 需要跟据yaml的改变而改变？？
+        out_init[0 ] = *new STrack(-1,25.80,8.0); //B1
+        out_init[1 ] = *new STrack(-1,20.00,4.0); //B2
+        out_init[2 ] = *new STrack(-1,26.75,7.5); //B3
+        out_init[3 ] = *new STrack(-1,26.75,7.5); //B4
+        out_init[4 ] = *new STrack(-1,26.75,7.5); //B5
+        out_init[5 ] = *new STrack(-1,23.00,7.5); //B7
 
-    out_init[6 ] = *new STrack(-1,2.20,7.0); //R1
-    out_init[7 ] = *new STrack(-1,8.00,11.); //R2
-    out_init[8 ] = *new STrack(-1,1.25,7.5); //R3
-    out_init[9 ] = *new STrack(-1,1.25,7.5); //R4
-    out_init[10] = *new STrack(-1,1.25,7.5); //R5
-    out_init[11] = *new STrack(-1,5.00,7.5); //R7
+        out_init[6 ] = *new STrack(-1,2.20,7.0); //R1
+        out_init[7 ] = *new STrack(-1,8.00,11.); //R2
+        out_init[8 ] = *new STrack(-1,1.25,7.5); //R3
+        out_init[9 ] = *new STrack(-1,1.25,7.5); //R4
+        out_init[10] = *new STrack(-1,1.25,7.5); //R5
+        out_init[11] = *new STrack(-1,5.00,7.5); //R7
 
 
-    out_init[0 ] = *new STrack(-1,0.1,0.1); //B1
-    out_init[1 ] = *new STrack(-1,0.1,0.1); //B2
-    out_init[2 ] = *new STrack(-1,0.1,0.1); //B3
-    out_init[3 ] = *new STrack(-1,0.1,0.1); //B4
-    out_init[4 ] = *new STrack(-1,0.1,0.1); //B5
-    out_init[5 ] = *new STrack(-1,23.00,7.5); //B7
+        out_init[0 ] = *new STrack(-1,0.1,0.1); //B1
+        out_init[1 ] = *new STrack(-1,0.1,0.1); //B2
+        out_init[2 ] = *new STrack(-1,0.1,0.1); //B3
+        out_init[3 ] = *new STrack(-1,0.1,0.1); //B4
+        out_init[4 ] = *new STrack(-1,0.1,0.1); //B5
+        out_init[5 ] = *new STrack(-1,23.00,7.5); //B7
 
-    out_init[6 ] = *new STrack(-1,0.1,0.1); //R1
-    out_init[7 ] = *new STrack(-1,0.1,0.1); //R2
-    out_init[8 ] = *new STrack(-1,0.1,0.1); //R3
-    out_init[9 ] = *new STrack(-1,0.1,0.1); //R4
-    out_init[10] = *new STrack(-1,0.1,0.1); //R5
-    out_init[11] = *new STrack(-1,5.00,7.5); //R7
+        out_init[6 ] = *new STrack(-1,0.1,0.1); //R1
+        out_init[7 ] = *new STrack(-1,0.1,0.1); //R2
+        out_init[8 ] = *new STrack(-1,0.1,0.1); //R3
+        out_init[9 ] = *new STrack(-1,0.1,0.1); //R4
+        out_init[10] = *new STrack(-1,0.1,0.1); //R5
+        out_init[11] = *new STrack(-1,5.00,7.5); //R7
 
-//    windmill_car = {2, 3, 4};   //B3, B4, B5
-    windmill_car = {8, 9, 10};  //R3, R4, R5
+        if(ourPattern == red){
+            this->color_index = 0;
+            windmill_car = {2, 3, 4};   //B3, B4, B5
+        }else if(ourPattern == blue){
+            this->color_index = classWithoutCar/2;
+            windmill_car = {8, 9, 10};  //R3, R4, R5
+        }
 
-    if(ourPattern == red){
-        this->color_index = 0;
-    }else if(ourPattern == blue){
-        this->color_index = classWithoutCar/2;
+    }else if (classWithoutCar==5) {
+        // TODO: 需要跟据yaml的改变而改变？？
+        out_init[0 ] = *new STrack(-1,25.80,8.0); //B1
+        out_init[1 ] = *new STrack(-1,20.00,4.0); //B2
+        out_init[2 ] = *new STrack(-1,26.75,7.5); //B3
+        out_init[3 ] = *new STrack(-1,26.75,7.5); //B4
+        out_init[4 ] = *new STrack(-1,23.00,7.5); //B7
+
+        out_init[5 ] = *new STrack(-1,2.20,7.0); //R1
+        out_init[6 ] = *new STrack(-1,8.00,11.); //R2
+        out_init[7 ] = *new STrack(-1,1.25,7.5); //R3
+        out_init[8 ] = *new STrack(-1,1.25,7.5); //R4
+        out_init[9] = *new STrack(-1,5.00,7.5); //R7
+
+
+        out_init[0 ] = *new STrack(-1,0.1,0.1); //B1
+        out_init[1 ] = *new STrack(-1,0.1,0.1); //B2
+        out_init[2 ] = *new STrack(-1,0.1,0.1); //B3
+        out_init[3 ] = *new STrack(-1,0.1,0.1); //B4
+        out_init[4 ] = *new STrack(-1,23.00,7.5); //B7
+
+        out_init[5 ] = *new STrack(-1,0.1,0.1); //R1
+        out_init[6 ] = *new STrack(-1,0.1,0.1); //R2
+        out_init[7 ] = *new STrack(-1,0.1,0.1); //R3
+        out_init[8 ] = *new STrack(-1,0.1,0.1); //R4
+        out_init[9] = *new STrack(-1,5.00,7.5); //R7
+
+        if(ourPattern == red){
+            this->color_index = 0;
+            windmill_car = {2, 3};   //B3, B4
+        }else if(ourPattern == blue){
+            this->color_index = classWithoutCar/2;
+            windmill_car = {7, 8};  //R3, R4
+        }
     }
+
     this->ourPattern = ourPattern;
 }
 //猜敌方车辆在哪
-void MyRadar::STrackGuess(){
+void MyRadar::STrackGuess(int classWithoutCar){
     if(this->out[1+color_index].cls == -1)     // 工程
     {
         //标记进度为零并且连续丢失帧超过75帧
@@ -117,13 +163,14 @@ void MyRadar::STrackGuess(){
 
         }
     }
-    if(this->out[5+color_index].cls == -1)     // 哨兵
+    int sentry_index=classWithoutCar/2-1;
+    if(this->out[sentry_index+color_index].cls == -1)     // 哨兵
     {
-        if(this->out[5+color_index].judge_radar_mark_data == 0 && this->out[5+color_index].lost_frame_ind_num > 75){
+        if(this->out[sentry_index+color_index].judge_radar_mark_data == 0 && this->out[sentry_index+color_index].lost_frame_ind_num > 75){
             if(ourPattern == red)
-                this->out[5+color_index].Locate3D = {22.4,6.5,0.0};//巡逻区
+                this->out[sentry_index+color_index].Locate3D = {22.4,6.5,0.0};//巡逻区
             else if(ourPattern == blue)
-                this->out[5+color_index].Locate3D = {5.6,8.5,0.0};
+                this->out[sentry_index+color_index].Locate3D = {5.6,8.5,0.0};
 
         }
     }
@@ -605,12 +652,12 @@ void MyRadar::Spin(int argc, char **argv){
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 std::cout << "fps_track: " << trackEndTime - trackStartTime<< std::endl;
 
-                this->STrackGuess();
+                this->STrackGuess(PretreatObjs_ptr->classWithoutCar);
                 //定位英雄，进行pitch轴解算
-                if(out[6-color_index].cls != -1){
-                    double pitch = CoordSolve_ptr->dynamicCalcPitchOffset(out[6-color_index].Locate3D.x, out[6-color_index].Locate3D.y, out[6-color_index].Locate3D.z);
-                    std::cout << "pitch: " << pitch << std::endl;
-                }
+                // if(out[6-color_index].cls != -1){
+                //     double pitch = CoordSolve_ptr->dynamicCalcPitchOffset(out[6-color_index].Locate3D.x, out[6-color_index].Locate3D.y, out[6-color_index].Locate3D.z);
+                //     std::cout << "pitch: " << pitch << std::endl;
+                // }
 //            CooSystem_ptr->solve_reality_3d(CooSystem_ptr->T_Main2world,CooSystem_ptr->fx_M,CooSystem_ptr->fy_M,
 //                                            CooSystem_ptr->cx_M,CooSystem_ptr->cy_M, MapGraph_ptr->vexs,MapGraph_ptr->arcs,tracked_stracks, modes.ourPattern);
 //            CooSystem_ptr->solve_reality_3d(CooSystem_ptr->T_Main2world,CooSystem_ptr->fx_M,CooSystem_ptr->fy_M,
@@ -1071,11 +1118,11 @@ void MyRadar::Spin(int argc, char **argv){
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 //                std::cout << "fps_track: " << 1000. / (trackEndTime - trackStartTime) << std::endl;
 
-                this->STrackGuess();
-                if(out[6-color_index].cls != -1){
-                    double pitch = CoordSolve_ptr->dynamicCalcPitchOffset(out[6-color_index].Locate3D.x, out[6-color_index].Locate3D.y, out[6-color_index].Locate3D.z);
-                    std::cout << "pitch: " << pitch << std::endl;
-                }
+                this->STrackGuess(PretreatObjs_ptr->classWithoutCar);
+                // if(out[6-color_index].cls != -1){
+                //     double pitch = CoordSolve_ptr->dynamicCalcPitchOffset(out[6-color_index].Locate3D.x, out[6-color_index].Locate3D.y, out[6-color_index].Locate3D.z);
+                //     std::cout << "pitch: " << pitch << std::endl;
+                // }
 
 //            CooSystem_ptr->solve_reality_3d(CooSystem_ptr->T_Main2world,CooSystem_ptr->fx_M,CooSystem_ptr->fy_M,
 //                                            CooSystem_ptr->cx_M,CooSystem_ptr->cy_M, MapGraph_ptr->vexs,MapGraph_ptr->arcs,tracked_stracks, modes.ourPattern);

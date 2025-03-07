@@ -436,6 +436,8 @@ void PretreatObjs::update_classfy(int &temp_bestcls, float &conf_armor, Eigen::M
     }
     else if(half_classWithoutCar == 6){
         temp_bestcls = max_index;
+    }else if(half_classWithoutCar == 5){
+        temp_bestcls = max_index;
     }else{
         std::cout << "Please set the update_classfy without T by yourself" << std::endl;
     }
@@ -832,6 +834,16 @@ void PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
 //            std::cout << "armor.w_armorConf: " << w_armorConf << std::endl;
             std::cout << "armor.classId: " << armor.classId << std::endl;
             car_armorConfMatrix(0,armor.classId) += w_armorConf;
+        }else if (half_classWithoutCar==5) {
+            std::cout << "new armor.classId: " << armor.classId << std::endl;
+            if (armor.classId<=3)
+                car_armorConfMatrix(0,armor.classId) += w_armorConf;
+            else if (armor.classId>=5&&armor.classId<=9)
+                car_armorConfMatrix(0,armor.classId-1) += w_armorConf;
+            else if (armor.classId==11)
+                car_armorConfMatrix(0,armor.classId-2) += w_armorConf;
+            else
+                w_getAllArea-=w_armorArea;
         }
     }
     int temp_bestcls = -1;  float conf_armor = 0.0;

@@ -25,6 +25,7 @@ namespace upc_radar{
         }else{
             declare_parameter<double>("pc.dis_thres", 0.1);
             declare_parameter<int>("pc.thread", 12);
+            declare_parameter<std::string>("pc.map_path", "resource/RM2025.pcd");
             prepare_pcd();
             sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("/livox/lidar", 10, std::bind(&DynamicCloud::callback_pc, this, std::placeholders::_1));
         }
@@ -55,7 +56,7 @@ namespace upc_radar{
 
     void DynamicCloud::prepare_pcd(){
         auto pcd = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-        if (pcl::io::loadPCDFile<pcl::PointXYZ>("resource/RM2024.pcd", *pcd) == -1){
+        if (pcl::io::loadPCDFile<pcl::PointXYZ>(get_parameter("pc.map_path").as_string(), *pcd) == -1){
             PCL_ERROR("Couldn't read file map.pcd \n");
             return;
         }

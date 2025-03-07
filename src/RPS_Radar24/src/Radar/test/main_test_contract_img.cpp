@@ -52,7 +52,7 @@ int main(){
     auto Modes_ptr = std::shared_ptr<Modes>(new Modes());
     auto MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::right,Modes_ptr->ourPattern));
     auto SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern));
-    auto CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem());
+    auto CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem(12));
 
     cv::Mat stitch_img_clone = stitch_img.clone();
     cv::Mat change_img_clone = change_img.clone();

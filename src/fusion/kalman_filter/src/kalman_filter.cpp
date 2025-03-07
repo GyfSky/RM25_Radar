@@ -24,6 +24,7 @@ namespace upc_radar{
         declare_parameter<double>("cam.dis_wight",0.95);
         declare_parameter<double>("cam.his_wight",0.05);
         declare_parameter<double>("cam.time_offset",1.2);
+        declare_parameter<int>("classWithoutCar",12);
 
         sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("/livox/lidar_cluster", 10, std::bind(&KalmanFilter::callback, this, std::placeholders::_1));
         sub_dep_ = this->create_subscription<interfaces::msg::DetectResult>("fusion_result", 100, std::bind(&KalmanFilter::dep_callback, this, std::placeholders::_1));
@@ -40,7 +41,7 @@ namespace upc_radar{
         net_pub_=this->create_publisher<sensor_msgs::msg::PointCloud2>("/net_3D", 10);
         ori_pub_=this->create_publisher<sensor_msgs::msg::PointCloud2>("/ori_3D", 10);
         test_pub_= this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_3D", 10);
-        cv::Mat image=cv::imread("/home/thesky/桌面/2.png");
+        cv::Mat image=cv::imread("/home/thesky/RM25_Radar/resource/2.png");
         show_img.create(image.rows, image.cols, CV_8UC3);
         show_img=image.clone();
         // cv::namedWindow("depth",0);
@@ -237,7 +238,6 @@ namespace upc_radar{
     //     //     }
     //     // }
     // }
-
     void KalmanFilter::check(){
         for (int i=0;i<KFs.size();i++) {
             int i_color=KFs[i].get_color(),i_number=KFs[i].get_number(),max_index=i;
@@ -255,22 +255,81 @@ namespace upc_radar{
                     same_lists.push_back(j);
                 }
             }
-            if (same_lists.size()!=1) {
-                for (auto index:same_lists) {
-                    std::set<int> remove_detect;
-                    if (index!=max_index) {
-                        for (int i=0;i<KFs[index].detect_history.size();i++) {
-                            if (KFs[index].detect_history[i].first==i_color&&KFs[index].detect_history[i].second==i_number)
-                                remove_detect.insert(i);
-                        }
+            for (auto index:same_lists) {
+                std::set<int> remove_detect;
+                if (index!=max_index) {
+                    for (int i=0;i<KFs[index].detect_history.size();i++) {
+                        if (KFs[index].detect_history[i].first==i_color&&KFs[index].detect_history[i].second==i_number)
+                            remove_detect.insert(i);
                     }
-                    for (auto idx:remove_detect) {
-                        KFs[index].detect_history.erase(KFs[index].detect_history.begin()+idx);
-                    }
+                }
+                for (auto idx:remove_detect) {
+                    KFs[index].detect_history.erase(KFs[index].detect_history.begin()+idx);
                 }
             }
         }
     }
+    // void KalmanFilter::check(){
+    //     std::set<int> remove_kfs;
+    //     for (int i=0;i<KFs.size();i++) {
+    //         //检查自身位置是否合法
+    //         if(KFs[i].predict_point.x>=27.5||KFs[i].predict_point.x<=0.5||
+    //             KFs[i].predict_point.y>=15.1||KFs[i].predict_point.y<=-0.) {
+    //             remove_kfs.insert(i);
+    //             continue;
+    //         }
+    //         //检查自身速度是否合法
+    //         // int history_size=KFs[i].history.size();
+    //         // if (history_size==1)continue;
+    //         // double distance=Distance(KFs[i].history[history_size-1].second,KFs[i].history[history_size-2].second);
+    //         // double time=KFs[i].history[history_size-1].first-KFs[i].history[history_size-2].first;
+    //         double speed_x=KFs[i].KF.statePost.at<float>(1);
+    //         double speed_y=KFs[i].KF.statePost.at<float>(3);
+    //         double speed=sqrt(speed_x*speed_x+speed_y*speed_y);
+    //         // std::cout<<"distance:"<<distance<<"   time:"<<time<<"  speed:"<<distance/time<<std::endl;
+    //         if(speed>4.7) {
+    //             remove_kfs.insert(i);
+    //             continue;
+    //         }
+    //
+    //         int i_color=KFs[i].get_color(),i_number=KFs[i].get_number(),max_index=i;
+    //         int max_freq=KFs[i].get_freq(i_color,i_number);
+    //         std::vector<int> same_lists;
+    //         same_lists.push_back(i);
+    //         for(int j=i+1;j<KFs.size();j++) {
+    //             //检查是否距离过近
+    //             if(KFs[i].Distance(KFs[i].predict_point,KFs[j].predict_point)<=0.2) {
+    //                 remove_kfs.insert(j);
+    //                 continue;
+    //             }
+    //             //检查颜色编号是否相同
+    //             int j_color=KFs[j].get_color(),j_number=KFs[j].get_number();
+    //             int j_freq=KFs[j].get_freq(j_color,j_number);
+    //             if (i_color==j_color&&i_number==j_number) {
+    //                 if (j_freq>max_freq) {
+    //                     max_freq=j_freq;
+    //                     max_index=j;
+    //                 }
+    //                 same_lists.push_back(j);
+    //             }
+    //         }
+    //         for (auto index:same_lists) {
+    //             std::set<int> remove_detect;
+    //             if (index!=max_index) {
+    //                 for (int i=0;i<KFs[index].detect_history.size();i++) {
+    //                     if (KFs[index].detect_history[i].first==i_color&&KFs[index].detect_history[i].second==i_number)
+    //                         remove_detect.insert(i);
+    //                 }
+    //             }
+    //             for (auto idx:remove_detect) {
+    //                 KFs[index].detect_history.erase(KFs[index].detect_history.begin()+idx);
+    //             }
+    //         }
+    //     }
+    //     for (auto index:remove_kfs) {
+    //         KFs.erase(KFs.begin()+index);
+    //     }
+    // }
     //检查是否有超出地图边界的及近似重合的检测器，并将其删除predict_point
     void KalmanFilter::check_KFs(){
         std::set<int> remove_kfs;
@@ -549,7 +608,7 @@ namespace upc_radar{
                     if(car_num==2||car_num==3||car_num==4){
                         KFs[i].predict_point.x=19.58;
                         KFs[i].predict_point.y=13.15;
-                        RCLCPP_ERROR(this->get_logger(),"enter energy!!!");//打符点
+                        RCLCPP_ERROR(this->get_logger(),"enter energy!!!"); //打符点
                     }
                 }
             }else if(KFs[i].last_time>2.5&&(KFs[i].last_time)<10){

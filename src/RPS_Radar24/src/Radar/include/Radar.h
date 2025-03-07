@@ -106,8 +106,9 @@ public:
     std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
     void Init(int argc, char **argv);
     void STrackInit(int classWithoutCar, OurPattern ourPattern);
-    void STrackGuess();
+    void STrackGuess(int classWithoutCar);
     void STrackClear();
+    PictureSource getPictureSource();
     void Save();
     void Spin(int argc, char **argv);
     void Close();

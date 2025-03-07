@@ -48,7 +48,7 @@
 
 enum Application{Radar,Common};
 enum TF {true_,false_};
-enum PictureSource {picture_dir,single_picture,video,camera_,ros1};
+enum PictureSource {picture_dir,single_picture,video,camera_,ros};
 enum Detection      {netDetection, jsonRect, unityRect};//？？
 // enum Cameras       {DahangHikang,Dahang,Hikang,Hikang30,Hikang31,Hikang60};
 enum OurPattern    {red = 0,blue = 1};
@@ -73,6 +73,7 @@ public:
     OurPattern ourPattern;              //己方颜色
     TF Port_isOpen;UsePort usePort;     //串口的开启与否，所使用的串口
     TF isSave;TF Mid70_isSave;SaveImagePath saveImagePath;   //是否保存图片，保存路径
+    int camNumber;
     Modes();
 
 };

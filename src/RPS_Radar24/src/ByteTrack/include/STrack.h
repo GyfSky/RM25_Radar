@@ -62,7 +62,8 @@ public:
     cv::Point3d Locate3D;
 //    std::vector<Armor> ArmorsInCar; //TODO: del
 //    bool isGuess= false;    // TODO：del
-    Eigen::MatrixXd  ws_armorConfMatrix = Eigen::MatrixXd::Zero(1,12);  //TODO:？？
+    // Eigen::MatrixXd  ws_armorConfMatrix = Eigen::MatrixXd::Zero(1,12);  //TODO:？？
+	Eigen::MatrixXd  ws_armorConfMatrix = Eigen::MatrixXd::Zero(1,10);
     Eigen::MatrixXd  ws_armorConfMatrix_BR = Eigen::MatrixXd::Zero(1,6);
 //    cv::Rect rect;
 //车辆编号？

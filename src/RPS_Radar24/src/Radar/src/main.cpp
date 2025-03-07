@@ -16,6 +16,7 @@ Modes::Modes(){
     Port_isOpen   = TF::false_;                       //串口的开启与否  |
     usePort       = UsePort::USB0;                    //所使用的串口    |
     isSave        = TF::true_;                       //是否保存图片    |
+    camNumber     = 2;
 //    saveImagePath = SaveImagePath::disk02;            //保存路径       |z
 
 //compititon
@@ -28,6 +29,7 @@ Modes::Modes(){
 //    Port_isOpen   = TF::true_  ;                       //串口的开启与否  |
 //    usePort       = UsePort::USB0;                    //所使用的串口    |
 //    isSave        = TF::true_;                       //是否保存图片    |
+//    camNumber     = 2;
 
 
 };
@@ -35,12 +37,6 @@ Modes::Modes(){
 bool flag1 = false,flag2=false;
 cv::Mat img1,img2;
 rclcpp::Time ros_time;
-// void getImgTest(const sensor_msgs::msg::CompressedImage::ConstPtr msg) {
-//     cv::Mat img=cv::imdecode(msg->data, cv::IMREAD_COLOR);
-//
-//     img_test=img.clone();
-//     flag=true;
-// }
 
 void getImg1(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
     ros_time=rclcpp::Clock().now();
@@ -99,25 +95,33 @@ int main(int argc, char **argv){
         });
 
     radar.detect_pub=nh->create_publisher<interfaces::msg::DetectFrame>("/resolve_result", 10);
-    // while(true){
-    //     radar.Init(argc, argv);
-    //     radar.Spin(argc, argv);
-    //     if(cv::waitKey(1) == 'q'){
-    //         radar.is_close = true;
-    //     }
-    //     if(radar.is_close){
-    //         break;
-    //     }
-    // }
-    while(rclcpp::ok()){
-        auto now_time = std::chrono::steady_clock::now();
-        // rclcpp::spin_some(nh);////
-        // if(flag1){////
-        //     if (!radar.is_one_cam&&!flag2) continue;////
-        //     radar.MainCam_Image_ptr->Cam_img= img1;////
-        //     if (!radar.is_one_cam)
-        //         radar.SecCam_Image_ptr->Cam_img= img2;////
-        //     radar.time_now=ros_time;////
+
+    if (radar.getPictureSource()==ros) {
+        while(rclcpp::ok()){
+            auto now_time = std::chrono::steady_clock::now();
+            rclcpp::spin_some(nh);
+            if(flag1){
+                if (!radar.is_one_cam&&!flag2) continue;
+                radar.MainCam_Image_ptr->Cam_img= img1;
+                if (!radar.is_one_cam)
+                    radar.SecCam_Image_ptr->Cam_img= img2;
+                radar.time_now=ros_time;
+                radar.Init(argc, argv);
+                radar.Spin(argc, argv);
+                if(cv::waitKey(1) == 'q'){
+                    radar.is_close = true;
+                }
+                if(radar.is_close){
+                    break;
+                }
+            }
+            auto end_time = std::chrono::steady_clock::now();
+            float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
+            RCLCPP_WARN(nh->get_logger(), "time is %f s", dur_time/1000);
+        }
+    }else if(radar.getPictureSource()==camera_){
+        while(rclcpp::ok()){
+            auto now_time = std::chrono::steady_clock::now();
             radar.Init(argc, argv);
             radar.Spin(argc, argv);
             if(cv::waitKey(1) == 'q'){
@@ -126,11 +130,12 @@ int main(int argc, char **argv){
             if(radar.is_close){
                 break;
             }
-        // }////
-        auto end_time = std::chrono::steady_clock::now();
-        float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();    
-        RCLCPP_WARN(nh->get_logger(), "time is %f s", dur_time/1000);
+            auto end_time = std::chrono::steady_clock::now();
+            float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
+            RCLCPP_WARN(nh->get_logger(), "time is %f s", dur_time/1000);
+        }
     }
+
     radar.Close();
     rclcpp::shutdown();
     return 0;

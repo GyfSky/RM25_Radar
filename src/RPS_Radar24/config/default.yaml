@@ -19,6 +19,7 @@ dynamic_cloud_node:
     sor.MeanK: 8
     sor.remove_outlier: true
 
+    pc.map_path: "resource/RM2025.pcd"
     pc.dis_thres: 0.05
     pc.thread: 12
 
@@ -44,6 +45,7 @@ cluster_node:
 
 kalman_filter_node:
   ros__parameters:
+    classWithoutCar: 12
     kalman.detect_r: 3.0
     kalman.car_max_speed: 2.0
     kalman.dt_: 0.1

@@ -44,7 +44,7 @@ Image::Image(Application application,PictureSource pictureSource,std::string Nam
     else if(this->pictureSource == video){
         //video_path = "/media/plusseven/4E21-0000/2023radarData/important/adapt1.mp4";
         video_path =  config[Name]["source_path"]["video_path"].as<std::string>();
-    }else if(this->pictureSource == ros1){
+    }else if(this->pictureSource == ros){
         // ROS_INFO("ros_img is on the way" );
         // RCLCPP_INFO(node->get_logger(), "ros_img is on the way");
     }
@@ -101,7 +101,7 @@ Image::Image(Application application,PictureSource pictureSource,char g_strSeria
         //video_path = "/media/plusseven/4E21-0000/2023radarData/important/adapt1.mp4";
         video_path =  config[Name]["source_path"]["video_path"].as<std::string>();
     }
-    else if(this->pictureSource == ros1){
+    else if(this->pictureSource == ros){
         std::cout << "ros_img is on the way" << std::endl;
     }
     else if(this->pictureSource == camera_){
@@ -157,7 +157,7 @@ void Image::Init(int argc,char *argv[]){
 //        Camerahk_prt->CamMainSet();
         std::cout << "go on";
     }
-    else if(pictureSource==ros1){
+    else if(pictureSource==ros){
         // rclcpp::init(argc, argv);
         // auto nh = rclcpp::Node::make_shared("img_listener");
         // sub_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/compressed_image", 1, std::bind(&Image::getImg, this, std::placeholders::_1));
@@ -246,7 +246,7 @@ cv::Mat Image::Image_Get(int &after_picture,int argc, char **argv){
         case picture_dir:
             this->Cam_img = cv::imread(this->dynamic_image_path);
             break;
-        case ros1:
+        case ros:
             // auto nh = rclcpp::Node::make_shared("img_listener1");
             // sub_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/compressed_image", 1, std::bind(&Image::getImg, this, std::placeholders::_1));
             // bool ros_img_is_ok = false;

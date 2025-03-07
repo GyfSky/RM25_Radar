@@ -34,7 +34,8 @@ private:
 
     //
     std::vector<int> windmill_car;
-    double sum_windmill_car_conf = 0.84;
+    // double sum_windmill_car_conf = 0.84;
+    double sum_windmill_car_conf = 0.56;
     double startupArea_car_conf = 0.6;
     double windmill_car_conf;
 
