@@ -49,7 +49,9 @@ Net::Net(std::string Name) {
  * @brief 多线程版调用神经网络
  */
 std::vector<std::vector<TRTInferV1::DetectionObj>> Net::NetWork_mlt(std::vector<cv::Mat> &frames){
-        return (this->myInfer.doInference(ref(frames), this->obj_thres, this->conf_thres, this->nms_thres));
+
+        return (this->myInfer.doInference(ref(frames), this->obj_thres, this->conf_thres, this->nms_thres,0));
+
 }
 
 
@@ -84,11 +86,30 @@ void Net::Spin_confs(std::vector<cv::Mat> &frames){
     this->futureObjs_change =  std::async(std::launch::async,func_change,ref(frames));
 }
 
+// void Net::getCarImgs(std::vector<std::vector<TRTInferV1::DetectionObj>> Objs, cv::Mat img, std::vector<cv::Mat> &car_imgs){
+//     for(int i=0;i<Objs.size();i++){
+//         for(auto obj : Objs[i]){
+//             cv::Mat car_img = (img.clone())(cv::Rect(cv::Point_<int>(obj.x1,obj.y1),cv::Point_<int>(obj.x2,obj.y2)));
+//             car_imgs.emplace_back(car_img);
+//         }
+//     }
+// }
+
 void Net::getCarImgs(std::vector<std::vector<TRTInferV1::DetectionObj>> Objs, cv::Mat img, std::vector<cv::Mat> &car_imgs){
-    for(int i=0;i<Objs.size();i++){
-        for(auto obj : Objs[i]){
-            cv::Mat car_img = (img.clone())(cv::Rect(cv::Point_<int>(obj.x1,obj.y1),cv::Point_<int>(obj.x2,obj.y2)));
-            car_imgs.emplace_back(car_img);
+    for(int i=0;i<Objs.size();i++) {
+        std::vector<std::thread> threads;
+        int thread_num=Objs[i].size();
+        std::vector<cv::Mat> car_img(thread_num);
+        for(int j=0;j<thread_num;j++) {
+            threads.push_back(std::thread([i,j,&car_img,img,Objs](){
+                car_img[j]=img.clone()(cv::Rect(cv::Point_<int>(Objs[i][j].x1,Objs[i][j].y1),cv::Point_<int>(Objs[i][j].x2,Objs[i][j].y2)));
+            }));
+        }
+        for(auto &t:threads){
+            t.join();
+        }
+        for(auto &car:car_img){
+            car_imgs.push_back(car);
         }
     }
 }

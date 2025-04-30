@@ -17,6 +17,7 @@
 #include <interfaces/msg/net_detect.hpp>
 #include <interfaces/msg/detect_result.hpp>
 #include <interfaces/msg/detect_obj.hpp>
+#include <interfaces/msg/detect_res.hpp>
 
 // class MyRadar : public Livox
 class MyRadar 
@@ -74,14 +75,19 @@ private:
     std::vector<Armor> armors;
 
     std::vector<cv::Mat> frames;
-    std::vector<STrack> tracked_stracks, lost_stracks, lost_predict_stracks,out,out_init;
+    std::vector<STrack> tracked_stracks, lost_stracks, lost_predict_stracks,out,out_init,to_sentry;
     std::vector<int> windmill_car;
-
+    cv::Rect rect;
+    std::vector<cv::Point2d> dart_center;
+    rclcpp::Time dart_time;
+    bool dart_flag=false;
 
     std::vector<Car> redCars,blueCars,restCars,lastCars;
 
     int after = 0;//图片序号
     int bafter;
+    int value=200;
+    int classWithoutCar;
 
     std::string save_main_dir;
     std::string save_sec_dir;
@@ -97,9 +103,10 @@ public:
     bool is_init=false;
     rclcpp::Time time_now;
     rclcpp::Publisher<interfaces::msg::DetectFrame>::SharedPtr detect_pub;
+    rclcpp::Publisher<interfaces::msg::DetectRes>::SharedPtr res_pub;
     interfaces::msg::NetDetect car_det;
     interfaces::msg::NetDetect armor_det;
-    interfaces::msg::DetectFrame detect_frame;
+
     MyRadar(/* args */rclcpp::Node* node);
     ~MyRadar();
     std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
@@ -108,6 +115,7 @@ public:
     void STrackInit(int classWithoutCar, OurPattern ourPattern);
     void STrackGuess(int classWithoutCar);
     void STrackClear();
+    void getDartWarning(cv::Mat img,int value);
     PictureSource getPictureSource();
     void Save();
     void Spin(int argc, char **argv);

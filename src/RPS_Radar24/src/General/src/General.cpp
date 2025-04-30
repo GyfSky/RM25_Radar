@@ -7,37 +7,85 @@
  * @return -1 -> 该点 在   凸多边形内
  * @return  1 -> 该点 不在  凸多边形内
  */
-int initornot(std::array<cv::Point2f,25> predict2d ,cv::Point xy, int pointNum){
-    Eigen::Vector3d p1,p2;
-    Eigen::Vector3d x1,x2,temp_x2;
+// int initornot(std::array<cv::Point2f,25> predict2d ,cv::Point xy, int pointNum){
+//     Eigen::Vector3d p1,p2;
+//     Eigen::Vector3d x1,x2,temp_x2;
+//
+//     std::vector<cv::Point2f> predict2d_new;
+//
+//     for (auto point: predict2d) {
+//         if (point.x==0 && point.y==0)
+//             continue;
+//         else
+//             predict2d_new.push_back(point);
+//     }
+//
+//     int pointNum_new= predict2d_new.size();
+//     for(int i=0;i<pointNum_new;i++){
+//         if(i==0){
+//             p1 << (predict2d_new[pointNum_new-1].x-xy.x),(predict2d_new[pointNum_new-1].y-xy.y),0;
+//             p2 << (predict2d_new[i].x-xy.x),(predict2d_new[i].y-xy.y),0;
+//             x2 = p1.cross(p2);
+//             temp_x2 = x2;
+//             continue;
+//         }
+//         else{
+//             p1 = p2;
+//             x1 = x2;
+//             p2 << (predict2d_new[i].x-xy.x),(predict2d_new[i].y-xy.y),0;
+//             x2 = p1.cross(p2);
+//         }
+//
+//         if(x2.z()*x1.z()<-1e-6)
+//             return -1;
+//     }
+//
+//     x1 = x2;
+//     x2 = temp_x2;
+//     if(x2.z()*x1.z()<-1e-6){
+//         return -1;
+//     }
+//     else{
+//         return 1;
+//     }
+// }
 
-    for(int i=0;i<pointNum;i++){
-        if(i==0){
-            p1 << (predict2d[pointNum-1].x-xy.x),(predict2d[pointNum-1].y-xy.y),0;
-            p2 << (predict2d[i].x-xy.x),(predict2d[i].y-xy.y),0;
-            x2 = p1.cross(p2);
-            temp_x2 = x2;
-            continue;
+int initornot(const std::array<cv::Point2f, 25> polygon,cv::Point point,int polygonSize) {
+    // 手动闭合多边形：如果多边形的第一个点和最后一个点不同，则复制第一个点到最后一个位置
+    std::array<cv::Point2f, 26> closedPolygon; // 为闭合多边形预留额外空间
+    for (size_t i = 0; i < polygonSize; ++i) {
+        closedPolygon[i] = polygon[i];
+    }
+    // if (polygon[0] != polygon[polygonSize-1]) { // 如果多边形未闭合，则手动闭合
+        closedPolygon[polygonSize] = polygon[0];
+    // } else {
+    //     // 如果已经闭合了，则直接使用原大小
+    //     closedPolygon[polygonSize] = closedPolygon[polygonSize-1];
+    // }
+
+    int counter = 0;
+    double xinters;
+    cv::Point2f p1, p2;
+
+    p1 = closedPolygon[0];
+    for (size_t i = 1; i <= polygonSize; i++) {
+        p2 = closedPolygon[i];
+        if (point.y > std::min(p1.y, p2.y)) {
+            if (point.y <= std::max(p1.y, p2.y)) {
+                if (point.x <= std::max(p1.x, p2.x)) {
+                    if (p1.y != p2.y) {
+                        xinters = (point.y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x;
+                        if (p1.x == p2.x || point.x <= xinters)
+                            counter++;
+                    }
+                }
+            }
         }
-        else{
-            p1 = p2;
-            x1 = x2;
-            p2 << (predict2d[i].x-xy.x),(predict2d[i].y-xy.y),0;
-            x2 = p1.cross(p2);
-        }
-
-        if(x2.z()*x1.z()<-1e-6)
-            return -1;
+        p1 = p2;
     }
 
-    x1 = x2;
-    x2 = temp_x2;
-    if(x2.z()*x1.z()<-1e-6){
-        return -1;
-    }
-    else{
-        return 1;
-    }
+    if ( counter % 2 == 1) return 1;
+    else return -1;
 }
 
 /**

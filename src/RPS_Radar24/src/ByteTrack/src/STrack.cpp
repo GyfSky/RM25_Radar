@@ -5,6 +5,11 @@
 STrack::STrack(int cls, float x, float y){
     this->cls = cls;
     this->Locate3D = cv::Point3d(x,y,-1.0);
+    tlwh.resize(4);
+    tlwh[0]=1;
+    tlwh[1]=1;
+    tlwh[2]=1;
+    tlwh[3]=1;
 }
 
 STrack::STrack(){
@@ -173,7 +178,7 @@ STrack::STrack(float x1, float y1, float w, float h, int cls,float conf, float c
     static_tlbr();
 }
 
-STrack::STrack(float x1, float y1, float w, float h, float conf) {
+STrack::STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar) {
     //    vexSerialNum.resize(5);
     _tlwh.resize(4);
     _tlwh = {x1, y1, w, h};
@@ -199,9 +204,12 @@ STrack::STrack(float x1, float y1, float w, float h, float conf) {
 
 //    _tlwh.max_size();
 
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-    this->classWithoutCar = config["net"]["classWithoutCar"].as<int>();
+    // YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
+    // this->classWithoutCar = config["net"]["classWithoutCar"].as<int>();
+    this->classWithoutCar=classWithoutCar;
     this->half_classWithoutCar = classWithoutCar/2;
+    std::cout<<"---------classWithoutCar:"<<classWithoutCar<<std::endl;
+    std::cout<<"---------half_classWithoutCar:"<<half_classWithoutCar<<std::endl;
 
 
 //    this->Locate3D = car.Locate3D;  // TODO:
@@ -416,6 +424,7 @@ void STrack::update(STrack &new_track, int frame_id, OurPattern ourPattern,std::
 //    this->change_Locate3Ds = new_track.change_Locate3Ds;
 //    this->old_Locate3D = new_track.old_Locate3D;
 //    this->oldH = new_track.oldH;
+    //更新新轨迹的置信度，同时更新当前跟踪器的windmill_car_conf，startupArea_car_conf，placeType
     set_confs_by_locate3D(new_track, ourPattern, windmill_car);
 //    std::cout << "1 this->ws_armorConfMatrix: " << this->ws_armorConfMatrix << std::endl;
 //根据新轨迹的置信度 更新 当前跟踪器的置信度
@@ -620,7 +629,7 @@ void STrack::classfy_STrack_N(int &num){//??
             ws_armorConfMatrix(0,classWithoutCar-1) = 0;
         }
     }
-    else if(half_classWithoutCar != 6|| half_classWithoutCar != 5){
+    else if(half_classWithoutCar != 6&& half_classWithoutCar != 5){
         std::cout << "here have error in BYTETracker::classfy_STrack_N22" << std::endl;
     }
 

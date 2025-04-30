@@ -12,6 +12,7 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/features/normal_3d.h>
 
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
@@ -47,41 +48,37 @@ namespace upc_radar{
                //构建方程之后微调一下
     };
     //rm25
-    // void get_filtered_cloud(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud){
-    //     for (size_t i = 0; i < origin_cloud.size(); i++){
-    //         auto &point = origin_cloud.points[i];
-    //         //point.x < 3大致为己方停机坪   point.z > 1.4
-    //         if (point.x < 3 || point.x > 28 || point.y < 0 || point.y > 15 || point.z < 0 || point.z > 1.35 ||
-    //             //或者y(0,5),x(25,28)不要 敌方停机坪和飞镖
-    //             (point.y > 0 && point.y < 5 && point.x > 25) ||
-    //             //敌方基地
-    //             (point.y<=8.43&&point.y>=6.5701&&point.x>=25&&point.x<=26.4651)||
-    //             //或者y(11,12),x(23,24)不要
-    //             // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24)
-    //             //画四个直线切割大资源岛
-    //             ((21.5-2.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.9/sqrt(2))&&
-    //             (-6.5-0.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.9/sqrt(2)))||
-    //             //前哨站17<point.x&&point.x<18
-    //             ((3.1<point.y&&point.y<4.1)&&(10.5<point.x&&point.x<11.25))||
-    //             ((10.9<point.y&&point.y<11.9)&&(16.75<point.x&&point.x<17.5))
-    //             //猜是为了减少r4散射点
-    //             // ((11<point.y&&point.y<12.25)&&(23<point.x&&point.x<24.1)&&(point.z<0.535))||
-    //             //兑换区
-    //             // (point.x>28-2.0234&&point.x<28-1.0234)&&(point.y > 10.955+0.1 && point.y < 10.955 + 1.6 - 0.1)&&(point.z>0.4&&point.z<1.5)||
-    //             // little_engine_filter(point)
-    //         ///TODO: 此处代码混乱，需要重构，全部替换成Lambda表达式的过滤器形式
-    //         ){
-    //             continue;
-    //         }
-    //         // else
-    //         //     if(point.x<=3&&point.x>=-3&&point.y<=10&&point.z<1)
-    //         //         filtered_cloud.push_back(point);
-    //         // if(point.z<1)
-    //             filtered_cloud.push_back(point);
-    //     }
-    // }
+    void get_filtered_cloud25(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud){
+        for (size_t i = 0; i < origin_cloud.size(); i++){
+            auto &point = origin_cloud.points[i];
+            //point.x < 3大致为己方停机坪   point.z > 1.4
+            if (point.x < 3 || point.x > 28 || point.y < 0 || point.y > 15 || point.z < 0 || point.z > 1.35 ||
+                //或者y(0,5),x(25,28)不要 敌方停机坪和飞镖
+                (point.y > 0 && point.y < 5 && point.x > 25) ||
+                //敌方基地
+                (point.y<=8.45&&point.y>=6.55&&point.x>=24.93&&point.x<=26.5)||
+                //或者y(11,12),x(23,24)不要
+                // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24)
+                //画四个直线切割大资源岛
+                ((21.5-2.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.9/sqrt(2))&&
+                (-6.5-0.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.9/sqrt(2)))||
+                //前哨站17<point.x&&point.x<18
+                ((3.1<point.y&&point.y<4.1)&&(10.5<point.x&&point.x<11.25))||
+                ((10.9<point.y&&point.y<11.9)&&(16.75<point.x&&point.x<17.5))
+                //猜是为了减少r4散射点
+                // ((11<point.y&&point.y<12.25)&&(23<point.x&&point.x<24.1)&&(point.z<0.535))||
+                //兑换区
+                // (point.x>28-2.0234&&point.x<28-1.0234)&&(point.y > 10.955+0.1 && point.y < 10.955 + 1.6 - 0.1)&&(point.z>0.4&&point.z<1.5)||
+                // little_engine_filter(point)
+            ///TODO: 此处代码混乱，需要重构，全部替换成Lambda表达式的过滤器形式
+            ){
+                continue;
+            }
+            filtered_cloud.push_back(point);
+        }
+    }
     //rm24
-    void get_filtered_cloud(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud){
+    void get_filtered_cloud24(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud){
         for (size_t i = 0; i < origin_cloud.size(); i++){
             auto &point = origin_cloud.points[i];
             //point.x < 3大致为己方停机坪   point.z > 1.4
@@ -93,9 +90,9 @@ namespace upc_radar{
                 //敌方飞机飞行区
                 (point.y>3&&point.z>1.3&&point.x>14)||
                 //敌方基地
-                (point.y<=8.461&&point.y>=6.6012&&point.x>=26.3&&point.x<=27.1)||
+                (point.y<=8.5&&point.y>=6.6512&&point.x>=25.75&&point.x<=27.65)||
                 //或者y(11,12),x(23,24)不要
-                // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24) 
+                // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24)
                 //画四个直线切割大资源岛
                 ((21.5-0.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+0.9/sqrt(2))&&
                 (-6.5-2.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+2.9/sqrt(2)))||
@@ -110,10 +107,14 @@ namespace upc_radar{
             ){
                 continue;
             }
-            // else
-            //     if(point.x<=3&&point.x>=-3&&point.y<=10&&point.z<1)
-            //         filtered_cloud.push_back(point);
-            // if(point.z<1)
+                filtered_cloud.push_back(point);
+        }
+    }
+
+    void get_filtered_cloudlab(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud) {
+        for (size_t i = 0; i < origin_cloud.size(); i++){
+            auto &point = origin_cloud.points[i];
+            if(point.x<=7.07&&point.y<=10&&point.x>=-3&&point.y>=-3&&point.z<1.2)
                 filtered_cloud.push_back(point);
         }
     }
@@ -148,14 +149,25 @@ namespace upc_radar{
         void callback_pc(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
         void GetDynamicCloud(pcl::PointCloud<pcl::PointXYZ> &input_cloud,pcl::PointCloud<pcl::PointXYZ> &output_cloud,float threshold,int thread_num);
         void callback_mesh(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+        void seg_normal(pcl::PointCloud<pcl::PointXYZ> pcl2cloud,pcl::PointCloud<pcl::PointXYZ> &pcl2cloud_out);
     private:
+        std::string frame_id;
+        std::string sub_topic;
+        std::string pub_topic;
         int thread_num = 12;
         double dis_thres=0.1;
         int accumulate_time = 3;
         bool remove_outlier=false;
+        double leaf_size=0.04;
+        double x_bound=0.4;
+        double y_bound=0.4;
+        double z_bound_high=0.7;
+        double gradient_threshold=0.25;
+        bool is_real =false;
         pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud;
         pcl::KdTreeFLANN<pcl::PointXYZ> kd_Tree;
-        std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> accumulated_clouds_;
+        std::vector<pcl::PointCloud<pcl::PointXYZ>> accumulated_clouds_;
+        std::string situation;
 
         bool mesh_filter_mode;
         bool is_grid_prepared=false;
@@ -168,6 +180,7 @@ namespace upc_radar{
         tf2_ros::TransformListener tf_listener_;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_raw;
     };
 }
 

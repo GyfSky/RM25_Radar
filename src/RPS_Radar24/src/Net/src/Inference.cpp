@@ -53,7 +53,55 @@ namespace TRTInferV1
                                          { return isSuppressed[idx_t++]; }),
                           input_boxes.end());
     }
-
+      void TRTInfer::decodeout(std::vector<DetectionObj> &res, cv::Mat &frame, float *pdata, float &confidence_threshold)
+    {
+        int padh = 0, padw = 0;
+        float r = std::min(this->input_dims.d[3] / (frame.cols * 1.0), this->input_dims.d[2] / (frame.rows * 1.0));
+        int unpad_w = r * frame.cols;
+        int unpad_h = r * frame.rows;
+        float ratioh = (float)frame.rows / unpad_h, ratiow = (float)frame.cols / unpad_w;
+        padw = this->input_dims.d[3] - unpad_w;
+        padh = this->input_dims.d[2] - unpad_h;
+        padw /= 2;
+        padh /= 2;
+        int out1 = output_dims.d[1];
+        for (int i=0;i<out1;i++)
+        {
+            float max=0;
+            int id=0;
+            for (int j=0;j<num_classes+4;j++)
+            {
+                // std::cout<<pdata[i*(num_classes+12)+j]<<"\n";
+                if (j>3&&pdata[i*(num_classes+4)+j]>max)
+                {
+                    id=j-4;
+                    max = pdata[i*(num_classes+4)+j];
+                }
+            }
+            if (max>confidence_threshold)
+            {
+                // std::cout<<id<<std::endl;
+                const float x = pdata[i*(num_classes+4)];
+                const float y = pdata[i*(num_classes+4)+1];
+                const float w = pdata[i*(num_classes+4)+2];
+                const float h = pdata[i*(num_classes+4)+3];
+                const int cls = id;
+                float xmin = (x-w/2-padw)*ratiow;
+                float ymin = (y-h/2-padh)*ratioh;
+                float xmax = (x+w/2-padw)*ratiow;
+                float ymax = (y+h/2-padh)*ratioh;
+                // std::vector<std::pair<float,float>> keypoints;
+                // for (int k=0;k<7;k+=2)
+                // {
+                //     float x1 = (pdata[i*(num_classes+12)+num_classes+4+k]-padw)*ratiow;
+                //     float y1 = (pdata[i*(num_classes+12)+num_classes+4+k+1]-padh)*ratioh;
+                //     keypoints.emplace_back(x1, y1);
+                // }
+                if (xmin >= 0. && ymin >= 0. && xmax <= float(frame.cols) && ymax <= float(frame.rows))
+                    res.emplace_back(DetectionObj{cls,max,xmin,ymin,xmax,ymax});
+            }
+        }
+    }
     void TRTInfer::decode_output(std::vector<DetectionObj> &res, cv::Mat &frame, float *pdata, float &obj_threshold, float &confidence_threshold, float &nms_threshold)
     {
         //初始化填充高度和宽度为0。
@@ -135,12 +183,19 @@ namespace TRTInferV1
         this->nms(res, nms_threshold);
     }
 
-    void TRTInfer::postprocess(std::vector<std::vector<DetectionObj>> &batch_res, std::vector<cv::Mat> &frames, float &obj_threshold, float &confidence_threshold, float &nms_threshold)
+    void TRTInfer::postprocess(std::vector<std::vector<DetectionObj>> &batch_res, std::vector<cv::Mat> &frames, float &obj_threshold, float &confidence_threshold, float &nms_threshold,int flag)
     {
         for (int b = 0; b < int(frames.size()); ++b)
         {
             auto &res = batch_res[b];
-            this->decode_output(res, frames[b], &this->output[b * this->output_size], obj_threshold, confidence_threshold, nms_threshold);
+            if (flag) {
+                this->decodeout(res, frames[b], &this->output[b * this->output_size], confidence_threshold);
+                this->nms(res, nms_threshold);
+            }//yolov8
+
+            else
+                this->decode_output(res, frames[b], &this->output[b * this->output_size],obj_threshold, confidence_threshold,nms_threshold);
+                //yolov5
         }
     }
 
@@ -261,7 +316,54 @@ namespace TRTInferV1
         serialize_output_stream.close();
     }
 
-    std::vector<std::vector<DetectionObj>> TRTInfer::doInference(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold)
+    // std::vector<std::vector<DetectionObj>> TRTInfer::doInference(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold)
+    // {
+    //     if(!this->_is_inited)
+    //     {
+    //         this->gLogger.log(ILogger::Severity::kERROR,"Module not inited !");
+    //         return {};
+    //     }
+    //     if (frames.size() == 0 || int(frames.size()) > this->input_dims.d[0])
+    //     {
+    //         this->gLogger.log(ILogger::Severity::kWARNING, "Invalid frames size");
+    //         return {};
+    //     }
+    //     std::vector<std::vector<DetectionObj>> batch_res(frames.size());
+    //     cudaStream_t stream = nullptr;
+    //     CHECK(cudaStreamCreate(&stream));
+    //     float *buffer_idx = (float *)buffers[this->inputIndex];
+    //     for (size_t b = 0; b < frames.size(); ++b)
+    //     {
+    //         cv::Mat &img = frames[b];
+    //         if (img.empty())
+    //             continue;
+    //         size_t size_image = img.cols * img.rows * 3;
+    //         size_t size_image_dst = this->input_dims.d[3] * this->input_dims.d[2] * 3;
+    //         memcpy(img_host, img.data, size_image);
+    //         CHECK(cudaMemcpyAsync(img_device, img_host, size_image, cudaMemcpyHostToDevice, stream));
+    //         preprocess_kernel_img(img_device, img.cols, img.rows, buffer_idx,
+    //                               this->input_dims.d[3], this->input_dims.d[2], stream);
+    //         buffer_idx += size_image_dst;
+    //     }
+    //     this->context->setOptimizationProfileAsync(0, stream);
+    //     this->context->setTensorAddress(INPUT_BLOB_NAME, this->buffers[this->inputIndex]);
+    //     this->context->setTensorAddress(OUTPUT_BLOB_NAME, this->buffers[this->outputIndex]);
+    //     bool success = this->context->enqueueV3(stream);
+    //     if (!success)
+    //     {
+    //         this->gLogger.log(ILogger::Severity::kERROR, "DoInference failed");
+    //         CHECK(cudaStreamDestroy(stream));
+    //         return {};
+    //     }
+    //     CHECK(cudaMemcpyAsync(this->output, buffers[this->outputIndex], frames.size() * this->output_size * sizeof(float), cudaMemcpyDeviceToHost, stream));
+    //     CHECK(cudaStreamSynchronize(stream));
+    //     CHECK(cudaStreamDestroy(stream));
+    //
+    //     this->postprocess(batch_res, frames, obj_threshold, confidence_threshold, nms_threshold);
+    //
+    //     return batch_res;
+    // }
+        std::vector<std::vector<DetectionObj>> TRTInfer::doInference(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold,int flag)
     {
         if(!this->_is_inited)
         {
@@ -303,12 +405,11 @@ namespace TRTInferV1
         CHECK(cudaMemcpyAsync(this->output, buffers[this->outputIndex], frames.size() * this->output_size * sizeof(float), cudaMemcpyDeviceToHost, stream));
         CHECK(cudaStreamSynchronize(stream));
         CHECK(cudaStreamDestroy(stream));
-        
-        this->postprocess(batch_res, frames, obj_threshold, confidence_threshold, nms_threshold);
+
+        this->postprocess(batch_res, frames, obj_threshold, confidence_threshold, nms_threshold, flag);
 
         return batch_res;
     }
-
     void TRTInfer::calculate_inter_frame_compensation(const int limited_fps)
     {
         std::chrono::system_clock::time_point start_t = std::chrono::system_clock::now();
@@ -318,19 +419,19 @@ namespace TRTInferV1
         this->inter_frame_compensation = std::chrono::duration<double, std::micro>(end_t - start_t).count() - limit_work_time;
     }
 
-    std::vector<std::vector<DetectionObj>> TRTInfer::doInferenceLimitFPS(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold, const int limited_fps)
-    {
-        double limit_work_time = 1000000L / limited_fps;
-        std::chrono::system_clock::time_point start_t = std::chrono::system_clock::now();
-        std::vector<std::vector<DetectionObj>> result = this->doInference(frames, obj_threshold, confidence_threshold, nms_threshold);
-        std::chrono::system_clock::time_point end_t = std::chrono::system_clock::now();
-        std::chrono::duration<double, std::micro> work_time = end_t - start_t;
-        if (work_time.count() < limit_work_time)
-        {
-            std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(limit_work_time - work_time.count() - this->inter_frame_compensation));
-        }
-        return result;
-    }
+    // std::vector<std::vector<DetectionObj>> TRTInfer::doInferenceLimitFPS(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold, const int limited_fps)
+    // {
+    //     double limit_work_time = 1000000L / limited_fps;
+    //     std::chrono::system_clock::time_point start_t = std::chrono::system_clock::now();
+    //     std::vector<std::vector<DetectionObj>> result = this->doInference(frames, obj_threshold, confidence_threshold, nms_threshold);
+    //     std::chrono::system_clock::time_point end_t = std::chrono::system_clock::now();
+    //     std::chrono::duration<double, std::micro> work_time = end_t - start_t;
+    //     if (work_time.count() < limit_work_time)
+    //     {
+    //         std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(limit_work_time - work_time.count() - this->inter_frame_compensation));
+    //     }
+    //     return result;
+    // }
 
     IHostMemory *TRTInfer::createEngine(const std::string onnx_path, unsigned int maxBatchSize, int input_h, int input_w)
     {

@@ -4,7 +4,26 @@ from launch_ros.actions import ComposableNodeContainer, Node
 from launch.actions import Shutdown
 from launch import LaunchDescription
 import launch
+import numpy as np
 from ament_index_python.packages import get_package_share_directory
+from tf2_geometry_msgs.tf2_geometry_msgs import _decompose_affine
+
+def get_matrix_tf_broadcaster(cali: np.array, fr: str, child_fr: str):
+    quat, trans = _decompose_affine(cali)
+    return Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        namespace='radar',
+        name=fr+'_to_'+child_fr,
+        arguments=['--x', str(trans[0]),
+                   '--y', str(trans[1]),
+                   '--z', str(trans[2]),
+                   '--qw', str(quat[0]),
+                   '--qx', str(quat[1]),
+                   '--qy', str(quat[2]),
+                   '--qz', str(quat[3]),
+                   '--frame-id', fr,
+                   '--child-frame-id', child_fr],)
 def generate_launch_description():
 
     params_config = os.path.join(get_package_share_directory('rps_radar24'), 'config', 'default.yaml')
@@ -61,12 +80,12 @@ def generate_launch_description():
             extra_arguments=[{'use_intra_process_comms': True},
                              {'use_multi_threaded_executor': True}],
         )
-    
-    def get_dynamic_cloud_node(package, plugin):
+    def get_dynamic_cloud_node(package, plugin,ns):
         return ComposableNode(
             package=package,
             plugin=plugin,
             name='dynamic_cloud_node',
+            namespace=ns,
             parameters=[params_config],
             extra_arguments=[{'use_intra_process_comms': True},
                              {'use_multi_threaded_executor': True}],
@@ -123,17 +142,26 @@ def generate_launch_description():
     depth_fusion_node = get_depth_fusion_node('depth_fusion', 'upc_radar::DepthFusion')
     depth_kalman_node=get_depth_kalman_node('depth_kalman','upc_radar::DepthKalman')
     kalman_filter_node=get_kalman_filter_node('kalman_filter','upc_radar::KalmanFilter')
-    dynamic_cloud_node=get_dynamic_cloud_node('dynamic_cloud','upc_radar::DynamicCloud')
+    dynamic_cloud_node=get_dynamic_cloud_node('dynamic_cloud','upc_radar::DynamicCloud','')
+    mid70_dynamic_cloud_node=get_dynamic_cloud_node('dynamic_cloud','upc_radar::DynamicCloud','mid70')
+    avia_dynamic_cloud_node=get_dynamic_cloud_node('dynamic_cloud','upc_radar::DynamicCloud','avia')
     cluster_node = get_cluster_node('cluster', 'upc_radar::Cluster')
     convert_img_node=get_convert_img_node('convert_img','upc_radar::ConvertImg')
     foxglove_node = get_foxglove_node('foxglove_bridge', 'foxglove_bridge::FoxgloveBridge')
+    lidar_tf=get_matrix_tf_broadcaster(
+        np.array([[0.931131,-0.364569,-0.00916904,-0.0436413],
+                  [0.364089,0.927882,0.080458,-0.0966152],
+                  [-0.0208247,-0.0782553,0.996716,0.0200581],
+                  [0.,0.,0.,1.],]), 'lidar_avia_frame', 'lidar_mid70_frame'),
 
     # 创建节点容器
     lidar_detector = get_container(
                                     lidar_registration_node,
                                     kalman_filter_node,
-                                    dynamic_cloud_node,
-                                    cluster_node,
+                                    # dynamic_cloud_node,
+                                    mid70_dynamic_cloud_node,
+                                    avia_dynamic_cloud_node,
+                                    # cluster_node,
                                     # depth_fusion_node,
                                     # depth_kalman_node,
                                     #convert_img_node,
@@ -145,7 +173,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-            # cmd1,
-            camera_detector,
+            # camera_detector,
+            *lidar_tf,
             lidar_detector
             ])

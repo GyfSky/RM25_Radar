@@ -47,10 +47,10 @@ MyRadar::~MyRadar(){
 
 void MyRadar::Init(int argc, char **argv){
 
-    MainCam_Image_ptr->Init(argc, argv); 
+    MainCam_Image_ptr->Init(argc, argv);
     SecCam_Image_ptr->Init(argc, argv);
 
-    
+
     if(MainCam_Image_ptr->is_getPoint2d_mouse_Cam && SecCam_Image_ptr->is_getPoint2d_mouse_Cam){
 
         while(mainCamMat.empty() && secCamMat.empty()){
@@ -172,7 +172,7 @@ void MyRadar::Spin(int argc, char **argv){
 //            Armors = Armor_Net_ptr->NetWork_mlt(car_imgs_clone);
 //        }
 //        Armors = Armor_Net_ptr->NetWork_mlt(car_imgs);
-            Armors = myInfer.doInference(car_imgs,0.2, 0.5, 0.45);
+            Armors = myInfer.doInference(car_imgs,0.2, 0.5, 0.45,0);
             for (int i(0); i < int(car_imgs.size()); ++i)
             {
                 for (int j(0); j < int(Armors[i].size()); ++j)

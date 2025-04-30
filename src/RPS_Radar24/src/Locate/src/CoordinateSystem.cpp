@@ -62,15 +62,26 @@ void MatrixCoordinateSystem::set_warring_and_place_by_locate3D(const MapVertex& 
     }
 
 
-    if((vex.placeType==holeWarring || vex.placeType==hole) && (((vex.placeColor == PlaceColor::B)) || ((vex.placeColor == PlaceColor::R) && (ourPattern==red) ))){
+    // if((vex.placeType==holeWarring || vex.placeType==hole) && (((vex.placeColor == PlaceColor::B)) || ((vex.placeColor == PlaceColor::R) && (ourPattern==red) ))){
+    //     //步兵
+    //     if(((ourPattern==red) && (track.cls < classWithoutCar/2-1 && track.cls > 1)) || ((ourPattern==blue) &&  (track.cls < classWithoutCar-1 && track.cls > classWithoutCar/2+1))){
+    //         isWarring[1] = true;
+    //         track.placeType = holeWarring;
+    //     }
+    //     else if(((ourPattern==red) && (track.cls < classWithoutCar/2 || track.cls > classWithoutCar-1)) || ((ourPattern==blue) &&  (track.cls < 0 || track.cls > classWithoutCar/2-1))){
+    //         isWarring[2] = true;
+    //         track.placeType = holeWarring;
+    //     }
+    // }
+    if((vex.placeType==stepsWarring || vex.placeType==steps) && (((vex.placeColor == PlaceColor::B)&& (ourPattern==blue)) || ((vex.placeColor == PlaceColor::R) && (ourPattern==red) ))){
         //步兵
         if(((ourPattern==red) && (track.cls < classWithoutCar/2-1 && track.cls > 1)) || ((ourPattern==blue) &&  (track.cls < classWithoutCar-1 && track.cls > classWithoutCar/2+1))){
             isWarring[1] = true;
-            track.placeType = holeWarring;
+            track.placeType = stepsWarring;
         }
         else if(((ourPattern==red) && (track.cls < classWithoutCar/2 || track.cls > classWithoutCar-1)) || ((ourPattern==blue) &&  (track.cls < 0 || track.cls > classWithoutCar/2-1))){
             isWarring[2] = true;
-            track.placeType = holeWarring;
+            track.placeType = stepsWarring;
         }
     }
     if(vex.placeType== windmill && ( ((vex.placeColor == PlaceColor::R) &&(ourPattern==blue)) || ((vex.placeColor == PlaceColor::B) &&(ourPattern==red))) ){
@@ -257,9 +268,9 @@ void  MatrixCoordinateSystem::solve_reality_3d(const cv::Mat T_, const double fx
             std::cout << "have one error in getLocate3D" << std::endl;
         } else { //TODO: -0.5 because map have error
             track.Locate3D.x = ((((A * i - c) * Hight + (A * tz - tx)) * (e - B * h) -
-                               ((B * i - f) * Hight + (B * tz - ty)) * (b - A * h)) / Z) - 0.5;
+                               ((B * i - f) * Hight + (B * tz - ty)) * (b - A * h)) / Z);
             track.Locate3D.y = (((a - A * g) * ((B * i - f) * Hight + (B * tz - ty)) -
-                               (d - B * g) * ((A * i - c) * Hight + (A * tz - tx))) / Z) - 0.5;
+                               (d - B * g) * ((A * i - c) * Hight + (A * tz - tx))) / Z);
 
             coordinateCorrection(track.Locate3D, ourPattern);
             track._Locate3D = track.Locate3D;

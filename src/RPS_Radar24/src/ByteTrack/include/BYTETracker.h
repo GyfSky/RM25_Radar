@@ -19,7 +19,7 @@ public:
 //	vector<STrack> update(const vector<Object>& objects);
 	void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<Car> &cars);
 	void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections, vector<STrack> &out);
-    void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections, vector<STrack> &out,interfaces::msg::DetectResult lidar_det);
+    void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections, vector<STrack> &out,vector<STrack> &to_sentry,interfaces::msg::DetectResult lidar_det);
 
 private:
     void set_windmill_car(std::vector<int> windmill_car);

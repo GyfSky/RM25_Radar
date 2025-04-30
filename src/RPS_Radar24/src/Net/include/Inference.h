@@ -77,9 +77,9 @@ namespace TRTInferV1
 
     private:
         void nms(std::vector<DetectionObj> &input_boxes, float &nms_threshold);
+        void decodeout(std::vector<DetectionObj> &res, cv::Mat &frame, float *pdata, float &confidence_threshold);
+        void postprocess(std::vector<std::vector<DetectionObj>> &batch_res, std::vector<cv::Mat> &frames, float &obj_threshold, float &confidence_threshold, float &nms_threshold,int flag);
         void decode_output(std::vector<DetectionObj> &res, cv::Mat &frame, float *pdata, float &obj_threshold, float &confidence_threshold, float &nms_threshold);
-        void postprocess(std::vector<std::vector<DetectionObj>> &batch_res, std::vector<cv::Mat> &frames, float &obj_threshold, float &confidence_threshold, float &nms_threshold);
-
         //changes
         void nms(std::vector<Object> &input_boxes, float &nms_threshold);
         void decode_output(std::vector<Object> &res, cv::Mat &frame, float *pdata, float &obj_threshold, float &confidence_threshold, float &nms_threshold);
@@ -130,7 +130,7 @@ namespace TRTInferV1
          * @param nms_threshold
          * 非极大值抑制阈值
          */
-        std::vector<std::vector<DetectionObj>> doInference(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold);
+        std::vector<std::vector<DetectionObj>> doInference(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold,int flag);
         // changes
         std::vector<std::vector<Object>> doInference_confs(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold);
         /**

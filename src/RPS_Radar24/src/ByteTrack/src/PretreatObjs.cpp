@@ -808,7 +808,7 @@ void PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
 }
 
 
-void PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::DetectionObj> armors) {
+bool PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::DetectionObj> armors) {
     auto trackStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 //        float carLocate2D[2] = {(car.x1+car.x2)/2, (car.y1+car.y2)/2};
     double w_getAllArea = 0.0;  // 得到所有在car里面装甲版的总面积
@@ -817,7 +817,7 @@ void PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
     double carY_downLine = car.tlwh[3] * p_carY_downLine;  // 装甲板3/4处（沿y(v)）//？？
     double carY_upLine = car.tlwh[3] * p_carY_upLine;      // 装甲板1/3处（沿y(v)）//？？
     std::vector<double> tempBest_w_armorConf(this->classWithoutCar,0.0);
-    Eigen::MatrixXd car_armorConfMatrix = Eigen::MatrixXd::Zero(1,groupNum * half_classWithoutCar); ////TODO:
+    Eigen::MatrixXd car_armorConfMatrix = Eigen::MatrixXd::Zero(1,12); ////TODO:
 //        std::vector<int> temp_bestindexs_BRN;
     for(auto armor : armors){
         //找装甲板的中点
@@ -830,31 +830,54 @@ void PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
         //add
         double w_armorConf = w_armorArea * w_armorY * armor.confidence;
 //                Eigen::MatrixXd  car_armorConfMatrix = Eigen::MatrixXd::Zero(1,20); ///TODO:
-        if(half_classWithoutCar==6){    // G, 1，2，3，4，5
-//            std::cout << "armor.w_armorConf: " << w_armorConf << std::endl;
-            std::cout << "armor.classId: " << armor.classId << std::endl;
-            car_armorConfMatrix(0,armor.classId) += w_armorConf;
-        }else if (half_classWithoutCar==5) {
-            std::cout << "new armor.classId: " << armor.classId << std::endl;
-            if (armor.classId<=3)
-                car_armorConfMatrix(0,armor.classId) += w_armorConf;
-            else if (armor.classId>=5&&armor.classId<=9)
-                car_armorConfMatrix(0,armor.classId-1) += w_armorConf;
-            else if (armor.classId==11)
-                car_armorConfMatrix(0,armor.classId-2) += w_armorConf;
-            else
-                w_getAllArea-=w_armorArea;
-        }
+//         if(half_classWithoutCar==6){    // G, 1，2，3，4，5
+// //            std::cout << "armor.w_armorConf: " << w_armorConf << std::endl;
+//             std::cout << "armor.classId: " << armor.classId << std::endl;
+//             car_armorConfMatrix(0,armor.classId) += w_armorConf;
+//         }else if (half_classWithoutCar==5) {
+//             std::cout << "new armor.classId: " << armor.classId << std::endl;
+//             if (armor.classId<=3)
+//                 car_armorConfMatrix(0,armor.classId) += w_armorConf;
+//             else if (armor.classId>=5&&armor.classId<=9)
+//                 car_armorConfMatrix(0,armor.classId-1) += w_armorConf;
+//             else if (armor.classId==11)
+//                 car_armorConfMatrix(0,armor.classId-2) += w_armorConf;
+//             else
+//                 w_getAllArea-=w_armorArea;
+//         }
+        std::cout << "armor.classId: " << armor.classId << std::endl;
+        if (armor.classId==4||armor.classId==10)
+            w_getAllArea -= w_armorArea;
+        car_armorConfMatrix(0,armor.classId) += w_armorConf;
     }
     int temp_bestcls = -1;  float conf_armor = 0.0;
+    Eigen::MatrixXd car_ConfMatrix = Eigen::MatrixXd::Zero(1,groupNum*half_classWithoutCar);
     if(w_getAllArea>1e-6) {
         car_armorConfMatrix /= w_getAllArea; // (conf1*S1*y1 +...+confn*Sn*yn)/(S1+...+Sn)
     }
     set_confs_by_locate3D(car.windmill_car_conf, car.startupArea_car_conf);
     update_classfy(temp_bestcls, conf_armor,car_armorConfMatrix);
-    car.init_track(temp_bestcls, conf_armor, car_armorConfMatrix);
+    if (half_classWithoutCar==5) {
+        if (temp_bestcls>=5&&temp_bestcls<=9) {
+            temp_bestcls-=1;
+        }else if (temp_bestcls==11) {
+            temp_bestcls-=2;
+        }else if (temp_bestcls==4||temp_bestcls==10) {
+            return true;
+        }
+        for (int i=0;i<12;i++) {
+            if (i<=3)
+                car_ConfMatrix(0,i) = car_armorConfMatrix(0,i);
+            else if (i>=5&&i<=9)
+                car_ConfMatrix(0,i-1) = car_armorConfMatrix(0,i);
+            else if (i==11)
+                car_ConfMatrix(0,i-2) = car_armorConfMatrix(0,i);
+        }
+    }
+    car.init_track(temp_bestcls, conf_armor, car_ConfMatrix);
     auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 //    std::cout << "get_Armors_w_conf_Double_net: " << 1000./(trackEndTime - trackStartTime) << std::endl;
+    return false;
 }
 
 /**

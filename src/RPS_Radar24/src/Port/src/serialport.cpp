@@ -19,7 +19,10 @@ bool SerialPort::initSerialPort(const char *port_path)
 //    this->port_path = port_path;
 //    const char *cmd_system = "sudo chmod 777 " + port_path;
     std::cout << "give sudo to port" << std::endl;
-    system("sudo chmod 777 /dev/ttyUSB0");
+	std::string command = "echo \\\' | sudo -S chmod 777 ";
+	command += port_path;
+	std::cout<<"potr command: "<<command<< std::endl;
+    system(command.c_str());
 //    system("'");
 //    system("/n");
 

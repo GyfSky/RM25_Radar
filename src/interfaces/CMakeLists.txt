@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/NetDetect.msg"
   "msg/DetectObj.msg"
   "msg/ImageByte.msg"
+  "msg/DetectRes.msg"
   DEPENDENCIES geometry_msgs std_msgs
 )
 

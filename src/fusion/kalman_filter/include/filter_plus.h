@@ -11,7 +11,7 @@
 #include <rclcpp/rclcpp.hpp>
 #pragma once
 
-float Distance(pcl::PointXYZ &a, pcl::PointXYZ &b) {
+float Distance(pcl::PointXYZI &a, pcl::PointXYZI &b) {
     return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
 
@@ -19,12 +19,15 @@ class Kalman_filter_plus {
 
     public:
     cv::KalmanFilter KF;
+    int point_size=0;
 
     rclcpp::Node* node;
     float last_time = 0;//丢失的总时间，即没有观测到目标，只进行预测
     std::chrono::steady_clock::time_point timer;//最后更新时间
-    std::vector<std::pair<double, pcl::PointXYZ>> history;//放最佳估计点，时间，坐标
+    std::vector<std::pair<double, pcl::PointXYZI>> history;//放最佳估计点，时间，坐标
+    std::vector<cv::Rect> rect_2d;
     std::vector<std::pair<int ,int>> detect_history;//放相机匹配结果，第一个是颜色，第二个是编号
+    std::vector<double> detect_time;
     int max_history = 40;
     int max_detect_history = 15;
 
@@ -50,7 +53,7 @@ class Kalman_filter_plus {
         return duration.count() / 1000.0;
     }
 
-    Kalman_filter_plus(pcl::PointXYZ &input,rclcpp::Time time,rclcpp::Node* node) {
+    Kalman_filter_plus(pcl::PointXYZI &input,rclcpp::Time time,rclcpp::Node* node,cv::Rect rect) {
 
         this->node=node;
         dt_=node->get_parameter("kalman.dt_").as_double();
@@ -60,7 +63,9 @@ class Kalman_filter_plus {
         sigma_r_y=node->get_parameter("kalman.sigma_r_y").as_double();
         
         predict_point = pcl::PointXY(input.x, input.y);
+        point_size = input.intensity;
         history.push_back(std::make_pair(GetTimeByRosTime(time), input));
+        rect_2d.push_back(rect);
         timer = std::chrono::steady_clock::now();
         int stateSize = 4;//状态的维数
         int measSize = 2;//测量的维数
@@ -155,17 +160,22 @@ class Kalman_filter_plus {
         return max_number; // 返回出现次数最多的数字
     }
 
-    int get_freq(int colcor,int number) {
+    //得到给定颜色和编号的检测数量和最近时间
+    std::pair<int,double> get_freq(int colcor,int number) {
         int count=0;
-        for (auto pair: detect_history)
-            if (pair.first==colcor && pair.second==number)
+        double max_time=0;
+        for (int i=0;i<detect_history.size();i++) {
+            if (detect_history[i].first==colcor && detect_history[i].second==number) {
+                if (detect_time[i]>max_time) max_time=detect_time[i];
                 count++;
-
-        return count;
+            }
+        }
+        return std::pair(count,max_time);
     }
 
-    void update(pcl::PointXYZ &input, rclcpp::Time time) {
+    void update(pcl::PointXYZI &input, rclcpp::Time time,cv::Rect rect) {
         timer = std::chrono::steady_clock::now();
+        point_size = input.intensity;
         cv::Mat meas = cv::Mat::zeros(2, 1, CV_32F);
         meas.at<float>(0) = input.x;
         meas.at<float>(1) = input.y;
@@ -176,8 +186,10 @@ class Kalman_filter_plus {
         last_time = 0;
         auto temp_point = input;
         history.push_back(std::make_pair(GetTimeByRosTime(time), temp_point));
+        rect_2d.push_back(rect);
         if(history.size() > max_history){
             history.erase(history.begin());
+            rect_2d.erase(rect_2d.begin());
         }
     }
 
@@ -231,7 +243,7 @@ class Kalman_filter_plus {
         // std::cout<<"last time"<<history.back().first-input_time<<std::endl;
 
         if(differ_time>TIME_THRESHOLD) {
-            RCLCPP_ERROR(node->get_logger(),"differ_time is too large");
+            // RCLCPP_ERROR(node->get_logger(),"differ_time is too large");
             return 0;
         }//首先找到离相机取帧时间戳最近的点
         return return_time;
@@ -256,7 +268,7 @@ class Kalman_filter_plus {
         // std::cout<<"last time"<<history.back().first-input_time<<std::endl;
 
         if(differ_time>TIME_THRESHOLD) {
-            RCLCPP_ERROR(node->get_logger(),"differ_time is too large");
+            // RCLCPP_ERROR(node->get_logger(),"differ_time is too large");
             return ;
         }//首先找到离相机取帧时间戳最近的点
 

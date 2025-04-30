@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(dynamic_cloud)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_BUILD_TYPE "Debug")
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
@@ -33,4 +34,10 @@ rclcpp_components_register_node(${DYNAMIC_CLOUD}
         PLUGIN "upc_radar::DynamicCloud"
         EXECUTABLE ${DYNAMIC_CLOUD}_node
 )
+
+install(TARGETS
+        dynamic_cloud
+        DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_auto_package()

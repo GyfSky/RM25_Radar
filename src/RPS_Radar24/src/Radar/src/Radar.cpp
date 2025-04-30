@@ -27,8 +27,8 @@ MyRadar::MyRadar(rclcpp::Node* node){
 
     std::cout << "start_SensorParam" << std::endl;
 
-    // this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::right,Modes_ptr->ourPattern));
-    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("TDT",CamPosition::right,Modes_ptr->ourPattern));
+    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern));
+    // this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("TDT",CamPosition::left,Modes_ptr->ourPattern));
     //MainCam_ptr->K 将 MainCam_ptr的内参赋值给 K
     this->Lidar_ptr = std::shared_ptr<SensorParam>(new SensorParam("Livox",MainCam_ptr->K,CamPosition::right,Modes_ptr->ourPattern));
 
@@ -47,18 +47,19 @@ MyRadar::MyRadar(rclcpp::Node* node){
         this->SecMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
         this->SecCam_Net_ptr   = std::shared_ptr<Net>(new Net("net"));
             std::this_thread::sleep_for(std::chrono::milliseconds (10));
-        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::left,Modes_ptr->ourPattern));
+        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern));
         this->SecCam_Image_ptr = std::shared_ptr<Image>(
                 new Image(Common,Modes_ptr->pictureSource, "00F26632053",node, "Hik30", Modes_ptr->isSave, disk02,
                           start));
-        this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(this->MainCam_ptr, this->SecCam_ptr, true));
+        this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(this->MainCam_ptr, this->SecCam_ptr, false));
     }else{
         this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(Modes_ptr->ourPattern));
     }
 
     this->CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem(PretreatObjs_ptr->classWithoutCar));//坐标转换
+    this->classWithoutCar=PretreatObjs_ptr->classWithoutCar;
     //串口
-    // this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort));
+    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort));
 
 
     //test
@@ -73,7 +74,7 @@ MyRadar::~MyRadar(){
 }
 void MyRadar::STrackInit(int classWithoutCar, OurPattern ourPattern){
     out_init.resize(classWithoutCar);
-    if (classWithoutCar==6) {
+    if (classWithoutCar==12) {
         // TODO: 需要跟据yaml的改变而改变？？
         out_init[0 ] = *new STrack(-1,25.80,8.0); //B1
         out_init[1 ] = *new STrack(-1,20.00,4.0); //B2
@@ -112,7 +113,7 @@ void MyRadar::STrackInit(int classWithoutCar, OurPattern ourPattern){
             windmill_car = {8, 9, 10};  //R3, R4, R5
         }
 
-    }else if (classWithoutCar==5) {
+    }else if (classWithoutCar==10) {
         // TODO: 需要跟据yaml的改变而改变？？
         out_init[0 ] = *new STrack(-1,25.80,8.0); //B1
         out_init[1 ] = *new STrack(-1,20.00,4.0); //B2
@@ -215,7 +216,61 @@ void MyRadar::STrackClear(){
             track.cls = -1;
         }
         track.Locate3D = {0.0,0.0,0.0};
+        track.is_det=false;
     }
+    for(auto &track: to_sentry){
+        if(track.cls == -1){
+            track.lost_frame_ind_num++;//对没跟踪的车辆进行丢失帧数加1
+        }else{
+            track.cls = -1;
+        }
+        track.Locate3D = {0.0,0.0,0.0};
+        track.vx_3d = 0.0;
+        track.vy_3d = 0.0;
+        track.is_det=false;
+    }
+}
+
+void MyRadar::getDartWarning(cv::Mat img,int value) {
+    cv::Mat rect_img=img(rect);
+    cv::cvtColor(rect_img,rect_img,CV_BGR2GRAY);
+    cv::threshold(rect_img, rect_img, value, 255, cv::THRESH_BINARY);
+    cv::Mat contourImage = cv::Mat::zeros(rect_img.size(), CV_8UC3);
+    if (rclcpp::Clock().now().seconds()-dart_time.seconds()<22) {
+        dart_center.clear();
+        cv::putText(contourImage, "Dart", cv::Point(10, 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+        RCLCPP_ERROR(node->get_logger(), "--Dart Detect!!!");
+    }else {
+        dart_flag=false;
+        vector<vector<cv::Point>> contours;
+        _OutputArray hierarchy;
+        cv::findContours(rect_img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+        for (auto contour: contours) {
+            auto minRect=cv::minAreaRect(contour);
+            std::cout<<"\033[31m"<<"Dart area: "<<minRect.size.area()<<"\033[0m"<<std::endl;
+            std::cout<<"\033[31m"<<"Dart height: "<<minRect.size.height<<", Dart width: "<<minRect.size.width<<"\033[0m"<<std::endl;
+            cv::Size2d rectSize = minRect.size;
+            float width = rectSize.width;
+            float height = rectSize.height;
+            if (height/width > 1.2|| width/height >1.2||height*width < 20) continue;
+            cv::Point2f vertices[4];
+            minRect.points(vertices);
+            auto center=minRect.center;
+            dart_center.push_back(center);
+            if (dart_center.size()>20) dart_center.erase(dart_center.begin());
+            std::vector<cv::Point> box(vertices, vertices + 4);
+            cv::polylines(contourImage, contour, true, cv::Scalar(0, 255, 255), 1);
+            cv::polylines(contourImage, box, true, cv::Scalar(0, 255, 0), 1);
+        }
+        if (dart_center.empty())return;
+        if (dart_center.front().y-dart_center.back().y>double(rect.height)/3.0) {
+            dart_time=rclcpp::Clock().now();
+            dart_flag=true;
+            cv::circle(contourImage, dart_center.back(), 5, cv::Scalar(0, 0, 255), -1);
+        }
+    }
+    cv::imshow("Dart", rect_img);
+    cv::imshow("Dart1", contourImage);
 }
 
 
@@ -325,6 +380,7 @@ void MyRadar::Init(int argc, char **argv){
     }else{//此处可以考虑引入激光雷达间接获得坐标转换关系
         std::cerr << "error" << std::endl;
     }
+    rect=cv::Rect(cv::Point(0,0),cv::Point(1,1));
 
 
     if(!is_one_cam && SecCam_Image_ptr->is_getPoint2d_mouse_Cam){
@@ -336,7 +392,8 @@ void MyRadar::Init(int argc, char **argv){
 
         // ROS_INFO("step1");
         std::cout<<"---step1---"<<std::endl;
-        SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60");
+        rect =GetRect_mouse(secCamMat,"Hik30");
+        SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik30");
 //        SecCam_ptr->pts_pnp_2d = pts_pnp_2d_sec;
         // ROS_INFO("step2");
         std::cout<<"---step2---"<<std::endl;
@@ -376,15 +433,19 @@ void MyRadar::Init(int argc, char **argv){
     //test
     // Livox_ptr->spin();
     this->Save();
-    // if(Port_ptr->is_openPort) {
-    //     Port_ptr->clearBuff();
-    //     Port_ptr->start();
-    // }
+    if(Port_ptr->is_openPort) {
+        Port_ptr->clearBuff();
+        Port_ptr->start();
+    }
 
     this->STrackInit(PretreatObjs_ptr->classWithoutCar, Modes_ptr->ourPattern);
     PretreatObjs_ptr->set_windmill_car(this->windmill_car);//？？
     this->out.assign(this->out_init.begin(), this->out_init.end());//out为输出结果
-    // Port_ptr->updataSTrackData(this->out_init);
+    this->to_sentry.assign(this->out_init.begin(), this->out_init.end());
+    if(Port_ptr->is_openPort){
+        Port_ptr->updataSTrackData(this->out_init);
+        Port_ptr->updataSentryData(this->to_sentry);
+    }
     std::cout << "---------------------make is ok2------------------" << std::endl;
     is_init = true;
 }
@@ -464,10 +525,11 @@ void MyRadar::Spin(int argc, char **argv){
 //        if(cv::waitKey(1) == 'q'){
 //            this->is_close = true;
 //        }
-
+            cv::createTrackbar("threshold", "Dart", &value, 255);
             if(bafter !=after){//即当after改变时，才进行下一帧的识别，否则会重复识别 后面会自动加1
                 std::cout << "after: " << after << std::endl;
                 std::cout << "next step7" << std::endl;
+                getDartWarning(mainImg_draw,value);
 
                 // if (car_det.index.size()==0||armor_det.index.size()==0)return;
                 // std::cout<<car_det.obj.size();
@@ -518,7 +580,11 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "next step8" << std::endl;
 
                 std::vector<cv::Mat> car_imgs;
+                auto now_time = std::chrono::steady_clock::now();
                 MainCam_Net_ptr->getCarImgs({DetectionObjs[0]},mainCamMat,car_imgs);
+                auto end_time = std::chrono::steady_clock::now();
+                float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
+                std::cout<<"\033[31m"<<"---------net time: "<<dur_time<<" ms"<<"\033[0m"<<std::endl;
 
 //        Armor_Net_ptr->Spin(car_imgs);
 //        vector<vector<TRTInferV1::DetectionObj>> Armors(Armor_Net_ptr->futureObjs.get());
@@ -532,9 +598,23 @@ void MyRadar::Spin(int argc, char **argv){
 //            Armors.push_back((Armor_Net_ptr->NetWork_mlt({car_img}))[0]);
                     std::vector<Mat> car_img_s(1);
                     car_img_s[0].push_back(car_img);
-                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.01, 0.45))[0]);
+                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.2, 0.45,0))[0]);
 //            Armors.push_back((Armor_Net_ptr->NetWork_mlt(car_imgs))[0]);
                 }
+                // std::map<int,int> id_map={{0,5},{1,0},{2,1},{3,2},{4,3},
+                //     {5,11},{6,6},{7,7},{8,8},{9,9}};
+                // for (auto i=Armors.begin();i!=Armors.end();i++) {
+                //     for (auto j=i->begin();j!=i->end();j++) {
+                //         j->classId=id_map[j->classId];
+                //     }
+                // }
+                // for (auto i:Armors) {
+                //     for (auto armor:i) {
+                //         RCLCPP_ERROR(node->get_logger(), "armor classId: %d", armor.classId);
+                //         armor.classId=id_map[armor.classId];
+                //     }
+                // }
+                // MainCam_Image_ptr->draw_test(DetectionObjs[0],Armors);
 //----------------------------------------------------
 
 //        for (int i(0); i < int(car_imgs.size()); ++i)
@@ -561,9 +641,9 @@ void MyRadar::Spin(int argc, char **argv){
                 float match_thresh = 0.85;
                 std::vector<std::vector<STrack>> stracks(cam_num);
 
-                // auto netEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                auto netEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-                // std::cout << "fps_netTime: " << (netEndTime - netStartTime) << std::endl;
+                std::cout << "fps_netTime: " << (netEndTime - netStartTime) << std::endl;
                 auto trackStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 
@@ -574,7 +654,7 @@ void MyRadar::Spin(int argc, char **argv){
                             // car.x2=car.x2/0.6;
                             // car.y1=car.y1/0.6;
                             // car.y2=car.y2/0.6;
-                            STrack sTrack(car.x1, car.y1,(car.x2-car.x1), (car.y2-car.y1), car.confidence);
+                            STrack sTrack(car.x1, car.y1,(car.x2-car.x1), (car.y2-car.y1), car.confidence,this->classWithoutCar);
                             //图像中的二维坐标
                             sTrack.setRectInPrimaryCam(car.x1, car.y1,(car.x2-car.x1), (car.y2-car.y1), p);
                             stracks[i].push_back(sTrack);
@@ -584,75 +664,120 @@ void MyRadar::Spin(int argc, char **argv){
                     }
                 }
 
-                std::vector<bool> isWarring(4, false) ;
+                auto e1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                // std::cout << "setRectInPrimaryCam: " << e1 - trackStartTime<< std::endl;
+                std::vector<bool> isWarring(5, false) ;
+                if(dart_flag)
+                    isWarring[4]=true;
                 //此处解算得到的坐标为机器人在官方小地图中的坐标
                 CooSystem_ptr->solve_reality_3d(MainCam_ptr->T_2world, MainCam_ptr->fx, MainCam_ptr->fy,
                                                 MainCam_ptr->cx, MainCam_ptr->cy, MainMapGraph_ptr->vexs,MainMapGraph_ptr->arcs,stracks[0], Modes_ptr->ourPattern, isWarring);
-                // Port_ptr->setWarring(isWarring);
-                // Port_ptr->updataRadarMarkData(tracked_stracks);
-                // Port_ptr->updataRadarMarkData(lost_stracks);
-                // Port_ptr->updataRadarMarkData(lost_predict_stracks);
+                if(Port_ptr->is_openPort) {
+                    Port_ptr->setWarring(isWarring);
+                    Port_ptr->updataRadarMarkData(tracked_stracks);
+                    Port_ptr->updataRadarMarkData(lost_stracks);
+                    Port_ptr->updataRadarMarkData(lost_predict_stracks);
+                }
+
+                auto e2 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                // std::cout << "solve_reality_3d: " << e2 - e1<< std::endl;
 
                 int car_num = 0;
                 for(int cam=0; cam<cam_num ; cam++){
                     std::cout <<  "stracks.size" << stracks[cam].size() << std::endl;
                     int cam_cars_num = stracks[cam].size();
+                    std::vector<int> remove_lists;
                     for(int i=0;i<cam_cars_num;i++){
                         //更新跟踪器的cls
                         //Armors[i+car_num]为第一层网络每个检测框对应的装甲板
-                        PretreatObjs_ptr->get_Armors_w_conf_Double_net(stracks[cam][i],Armors[i+car_num]);
+                        bool flag=PretreatObjs_ptr->get_Armors_w_conf_Double_net(stracks[cam][i],Armors[i+car_num]);
+                        if (flag) remove_lists.push_back(i);
                         std::cout << "stracks[cam][i].Locate3D: " << stracks[cam][i].cls << " " << stracks[cam][i].Locate3D.x << " " << stracks[cam][i].Locate3D.y << std::endl;
                     }
+                    for (auto i:remove_lists)
+                        stracks[cam].erase(stracks[cam].begin()+i);
                     car_num += cam_cars_num;
                 }
+                auto e3 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                // std::cout << "get_Armors_w_conf_Double_net: " << e3 - e2<< std::endl;
 
                 std::cout << "next step9.5" << std::endl;
 
-                std::vector<STrack> STacks;
+                std::vector<STrack> STacks,send_data;
 
                 STacks.insert(STacks.end(),stracks[0].begin(),stracks[0].end());
 
+                std::vector<std::vector<float>> cost_confMatrix_vec;
+                int num_strack,num_cls;
+                vector<vector<int> > matches_cls;
+                vector<int> u_strack, u_cls;
+                matches_cls.clear();u_strack.clear();u_cls.clear();
+                Eigen::MatrixXd cost_confMatrix = costMatrix_ptr->getCost_confMatrix(STacks,num_strack,num_cls);
+                std::cout << "cost_confMatrix _ cls:  " << std::endl << cost_confMatrix << std::endl;
+                eigenMat2VecVec(cost_confMatrix, cost_confMatrix_vec);
+                costMatrix_ptr->linear_assignment(cost_confMatrix_vec, num_strack, num_cls, 0.9, matches_cls, u_strack, u_cls);
+
+                for (int i=0; i < matches_cls.size(); i++) {
+                    STacks[matches_cls[i][0]].cls = matches_cls[i][1];
+                    send_data.push_back(STacks[matches_cls[i][0]]);
+                }
+                // MainCam_Image_ptr->draw_rusult(send_data, true);
                 interfaces::msg::DetectFrame temp_res;
+                interfaces::msg::DetectRes final_res;
+                final_res.header.stamp = time_now;
                 temp_res.header.stamp = time_now;
-                for (int i = 0; i < STacks.size(); i++){
-                    int cls = STacks[i].cls;
+                for (int i = 0; i < send_data.size(); i++){
+                    int cls = send_data[i].cls;
                     if(cls != -1){
-                        std::vector<float> tlwh = STacks[i].tlwh;
+                        std::vector<float> tlwh = send_data[i].tlwh;
                         bool vertical = tlwh[2] / tlwh[3] > 1.6;
                         if (tlwh[2] * tlwh[3] > 20 && !vertical){
                             int half_classWithoutCar= MainCam_Image_ptr->classWithoutCar/2;
                             if( -1 < cls && cls < MainCam_Image_ptr->classWithoutCar){
+                                interfaces::msg::DetectObj obj;
+                                obj.x1 = tlwh[0];
+                                obj.y1 = tlwh[1];
+                                obj.x2 = tlwh[0]+tlwh[2];
+                                obj.y2 = tlwh[1]+tlwh[3];
+                                obj.confidence = send_data[i].conf_armor;
+                                obj.classid = cls;
+                                obj.x = send_data[i].Locate3D.x;
+                                obj.y = send_data[i].Locate3D.y;
+                                final_res.obj.push_back(obj);
                                 if(cls<half_classWithoutCar){
                                     temp_res.blue_x1[cls]=tlwh[0];
                                     temp_res.blue_y1[cls]=tlwh[1];
                                     temp_res.blue_x2[cls]=tlwh[0]+tlwh[2];
                                     temp_res.blue_y2[cls]=tlwh[1]+tlwh[3];
-                                    temp_res.blue_x[cls]=STacks[i].Locate3D.x;
-                                    temp_res.blue_y[cls]=STacks[i].Locate3D.y;
+                                    temp_res.blue_x[cls]=send_data[i].Locate3D.x;
+                                    temp_res.blue_y[cls]=send_data[i].Locate3D.y;
                                 }else{
                                     temp_res.red_x1[cls-half_classWithoutCar]=tlwh[0];
                                     temp_res.red_y1[cls-half_classWithoutCar]=tlwh[1];
                                     temp_res.red_x2[cls-half_classWithoutCar]=tlwh[0]+tlwh[2];
                                     temp_res.red_y2[cls-half_classWithoutCar]=tlwh[1]+tlwh[3];
-                                    temp_res.red_x[cls-half_classWithoutCar]=STacks[i].Locate3D.x;
-                                    temp_res.red_y[cls-half_classWithoutCar]=STacks[i].Locate3D.y;
+                                    temp_res.red_x[cls-half_classWithoutCar]=send_data[i].Locate3D.x;
+                                    temp_res.red_y[cls-half_classWithoutCar]=send_data[i].Locate3D.y;
                                 }
                             }
                         }
                     }
                 }
                 temp_res.self_color=Modes_ptr->ourPattern;
-                // detect_frame=temp_res;
+                final_res.self_color=Modes_ptr->ourPattern;
                 detect_pub->publish(temp_res);
-
+                res_pub->publish(final_res);
                 std::cout << "-----------------step  test start--------------" << std::endl;
 
-                BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out,lidar_det);
+                BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out,to_sentry,lidar_det);
                 std::cout << "updata is OK" << std::endl;
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 std::cout << "fps_track: " << trackEndTime - trackStartTime<< std::endl;
 
                 this->STrackGuess(PretreatObjs_ptr->classWithoutCar);
+                // for (auto stack:to_sentry) {
+                //     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "to_sentry: %f ,%f" , stack.vx_3d, stack.vy_3d);
+                // }
                 //定位英雄，进行pitch轴解算
                 // if(out[6-color_index].cls != -1){
                 //     double pitch = CoordSolve_ptr->dynamicCalcPitchOffset(out[6-color_index].Locate3D.x, out[6-color_index].Locate3D.y, out[6-color_index].Locate3D.z);
@@ -740,9 +865,10 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "lost_predict_stracks  " << lost_predict_stracks.size() << std::endl;
 
 
-                // if(Port_ptr->is_openPort){
-                //     Port_ptr->updataSTrackData(out);
-                // }
+                if(Port_ptr->is_openPort){
+                    Port_ptr->updataSTrackData(this->out);
+                    Port_ptr->updataSentryData(this->to_sentry);
+                }
 
 
 //        MainCam_Image_ptr->draw_rusult(UnityRect_ptr->rect, xyz, mainImg_draw);
@@ -859,10 +985,11 @@ void MyRadar::Spin(int argc, char **argv){
 //        if(cv::waitKey(1) == 'q'){
 //            this->is_close = true;
 //        }
-
+            cv::createTrackbar("threshold", "Dart", &value, 255);
             if(bafter !=after){
                 std::cout << "next step7" << std::endl;
                 std::cout << "after: " << after << std::endl;
+                getDartWarning(secImg_draw,value);
 
                 // DetectionObjs = MainCam_Net_ptr->futureObjs.get();
                 std::vector<cv::Mat> main_frames({mainCamMat});
@@ -891,8 +1018,16 @@ void MyRadar::Spin(int argc, char **argv){
 //            Armors.push_back((Armor_Net_ptr->NetWork_mlt({car_img}))[0]);
                     std::vector<Mat> car_img_s(1);
                     car_img_s[0].push_back(car_img);
-                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.01, 0.45))[0]);
+                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.01, 0.45,0))[0]);
                 }
+
+                // std::map<int,int> id_map={{0,5},{1,0},{2,1},{3,2},{4,3},
+                //     {5,11},{6,6},{7,7},{8,8},{9,9}};
+                // for (auto i=Armors.begin();i!=Armors.end();i++) {
+                //     for (auto j=i->begin();j!=i->end();j++) {
+                //         j->classId=id_map[j->classId];
+                //     }
+                // }
 
                 auto netEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 std::cout << "car_imgs.size(): " << car_imgs.size() << std::endl;
@@ -968,12 +1103,12 @@ void MyRadar::Spin(int argc, char **argv){
                         if(i==0){
 //                            mainobj = PretreatObjs_ptr->objs2newMainObjs(car, PretreatObjs_ptr->main_translation);
 //                            STrack sTrack(mainobj.x1, mainobj.y1,(mainobj.x2-mainobj.x1), (mainobj.y2-mainobj.y1), mainobj.confidence);
-                            STrack sTrack(car.x1, car.y1,(car.x2-car.x1), (car.y2-car.y1), car.confidence);
+                            STrack sTrack(car.x1, car.y1,(car.x2-car.x1), (car.y2-car.y1), car.confidence,this->classWithoutCar);
                             sTrack.setRectInPrimaryCam(car.x1, car.y1,(car.x2-car.x1), (car.y2-car.y1), p);
                             stracks[i].push_back(sTrack);
                         }else if(i ==1){
                             mainobj = PretreatObjs_ptr->objs2newMainObjs(car, PretreatObjs_ptr->H);
-                            STrack sTrack(mainobj.x1, mainobj.y1,mainobj.x2-mainobj.x1, mainobj.y2-mainobj.y1, mainobj.confidence);
+                            STrack sTrack(mainobj.x1, mainobj.y1,mainobj.x2-mainobj.x1, mainobj.y2-mainobj.y1, mainobj.confidence,this->classWithoutCar);
                             sTrack.setRectInPrimaryCam(car.x1, car.y1,(car.x2-car.x1), (car.y2-car.y1), p);
                             stracks[i].push_back(sTrack);
 
@@ -983,17 +1118,21 @@ void MyRadar::Spin(int argc, char **argv){
                     }
                 }
 
-                std::vector<bool> isWarring(4, false) ;
+                std::vector<bool> isWarring(5, false) ;
+                if(dart_flag)
+                    isWarring[4]=true;
                 CooSystem_ptr->solve_reality_3d(MainCam_ptr->T_2world, MainCam_ptr->fx, MainCam_ptr->fy,
                                                 MainCam_ptr->cx, MainCam_ptr->cy, MainMapGraph_ptr->vexs,MainMapGraph_ptr->arcs,stracks[0], Modes_ptr->ourPattern, isWarring);
                 CooSystem_ptr->solve_reality_3d(SecCam_ptr->T_2world, SecCam_ptr->fx, SecCam_ptr->fy,
                                                 SecCam_ptr->cx, SecCam_ptr->cy, SecMapGraph_ptr->vexs,SecMapGraph_ptr->arcs,stracks[1], Modes_ptr->ourPattern, isWarring);
                 // CooSystem_ptr->solve_reality_3d(SecCam_ptr->T_2world, SecCam_ptr->fx, SecCam_ptr->fy,
                 //                                 SecCam_ptr->cx, SecCam_ptr->cy, SecMapGraph_ptr->vexs,SecMapGraph_ptr->arcs,cars, Modes_ptr->ourPattern);
-                // Port_ptr->setWarring(isWarring);
-                // Port_ptr->updataRadarMarkData(tracked_stracks);
-                // Port_ptr->updataRadarMarkData(lost_stracks);
-                // Port_ptr->updataRadarMarkData(lost_predict_stracks);
+                if(Port_ptr->is_openPort) {
+                    Port_ptr->setWarring(isWarring);
+                    Port_ptr->updataRadarMarkData(tracked_stracks);
+                    Port_ptr->updataRadarMarkData(lost_stracks);
+                    Port_ptr->updataRadarMarkData(lost_predict_stracks);
+                }
 
 
 //        Armor_Net_ptr->Spin(car_imgs);
@@ -1002,9 +1141,13 @@ void MyRadar::Spin(int argc, char **argv){
                 for(int cam=0; cam<cam_num ; cam++){
                     std::cout <<  "stracks.size" << stracks[cam].size() << std::endl;
                     int cam_cars_num = stracks[cam].size();
+                    std::vector<int> remove_lists;
                     for(int i=0;i<cam_cars_num;i++){
-                        PretreatObjs_ptr->get_Armors_w_conf_Double_net(stracks[cam][i],Armors[i+car_num]);
+                        bool flag=PretreatObjs_ptr->get_Armors_w_conf_Double_net(stracks[cam][i],Armors[i+car_num]);
+                        if (flag) remove_lists.push_back(i);
                     }
+                    for (auto i:remove_lists)
+                        stracks[cam].erase(stracks[cam].begin()+i);
                     car_num += cam_cars_num;
                 }
 // 图像拼接可视化
@@ -1022,7 +1165,7 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "dists: " << std::endl << cost_matrix << std::endl;
                 costMatrix_ptr->linear_assignment(dists, dist_size, dist_size_size, match_thresh, matches, u_main, u_sec);
 
-                std::vector<STrack> STacks;
+                std::vector<STrack> STacks,send_data;
                 std::cout << "next step9.9" << std::endl;
 
                 for(int i=0;i<matches.size();i++ ){
@@ -1051,38 +1194,68 @@ void MyRadar::Spin(int argc, char **argv){
                 for(int i=0;i<u_sec.size();i++ ){
                     STacks.push_back(stracks[1][u_sec[i]]);
                 }
+
+                std::vector<std::vector<float>> cost_confMatrix_vec;
+                int num_strack,num_cls;
+                vector<vector<int> > matches_cls;
+                vector<int> u_strack, u_cls;
+                matches_cls.clear();u_strack.clear();u_cls.clear();
+                Eigen::MatrixXd cost_confMatrix = costMatrix_ptr->getCost_confMatrix(STacks,num_strack,num_cls);
+                std::cout << "cost_confMatrix _ cls:  " << std::endl << cost_confMatrix << std::endl;
+                eigenMat2VecVec(cost_confMatrix, cost_confMatrix_vec);
+                costMatrix_ptr->linear_assignment(cost_confMatrix_vec, num_strack, num_cls, 0.9, matches_cls, u_strack, u_cls);
+
+                for (int i=0; i < matches_cls.size(); i++) {
+                    STacks[matches_cls[i][0]].cls = matches_cls[i][1];
+                    send_data.push_back(STacks[matches_cls[i][0]]);
+                }
+
                 interfaces::msg::DetectFrame temp_res;
+                interfaces::msg::DetectRes final_res;
+                final_res.header.stamp = time_now;
                 temp_res.header.stamp = time_now;
-                for (int i = 0; i < STacks.size(); i++){
-                    int cls = STacks[i].cls;
+                for (int i = 0; i < send_data.size(); i++){
+                    int cls = send_data[i].cls;
                     if(cls != -1){
-                        std::vector<float> tlwh = STacks[i].tlwh;
+                        std::vector<float> tlwh = send_data[i].tlwh;
                         bool vertical = tlwh[2] / tlwh[3] > 1.6;
                         if (tlwh[2] * tlwh[3] > 20 && !vertical){
                             int half_classWithoutCar= MainCam_Image_ptr->classWithoutCar/2;
                             if( -1 < cls && cls < MainCam_Image_ptr->classWithoutCar){
+                                interfaces::msg::DetectObj obj;
+                                obj.x1 = tlwh[0];
+                                obj.y1 = tlwh[1];
+                                obj.x2 = tlwh[0]+tlwh[2];
+                                obj.y2 = tlwh[1]+tlwh[3];
+                                obj.confidence = send_data[i].conf_armor;
+                                obj.classid = cls;
+                                obj.x = send_data[i].Locate3D.x;
+                                obj.y = send_data[i].Locate3D.y;
+                                final_res.obj.push_back(obj);
                                 if(cls<half_classWithoutCar){
                                     temp_res.blue_x1[cls]=tlwh[0];
                                     temp_res.blue_y1[cls]=tlwh[1];
                                     temp_res.blue_x2[cls]=tlwh[0]+tlwh[2];
                                     temp_res.blue_y2[cls]=tlwh[1]+tlwh[3];
-                                    temp_res.blue_x[cls]=STacks[i].Locate3D.x;
-                                    temp_res.blue_y[cls]=STacks[i].Locate3D.y;
+                                    temp_res.blue_x[cls]=send_data[i].Locate3D.x;
+                                    temp_res.blue_y[cls]=send_data[i].Locate3D.y;
                                 }else{
                                     temp_res.red_x1[cls-half_classWithoutCar]=tlwh[0];
                                     temp_res.red_y1[cls-half_classWithoutCar]=tlwh[1];
                                     temp_res.red_x2[cls-half_classWithoutCar]=tlwh[0]+tlwh[2];
                                     temp_res.red_y2[cls-half_classWithoutCar]=tlwh[1]+tlwh[3];
-                                    temp_res.red_x[cls-half_classWithoutCar]=STacks[i].Locate3D.x;
-                                    temp_res.red_y[cls-half_classWithoutCar]=STacks[i].Locate3D.y;
+                                    temp_res.red_x[cls-half_classWithoutCar]=send_data[i].Locate3D.x;
+                                    temp_res.red_y[cls-half_classWithoutCar]=send_data[i].Locate3D.y;
                                 }
                             }
                         }
                     }
                 }
                 temp_res.self_color=Modes_ptr->ourPattern;
+                final_res.self_color=Modes_ptr->ourPattern;
                 // detect_frame=temp_res;
                 detect_pub->publish(temp_res);
+                res_pub->publish(final_res);
 
 
                 std::cout << "-----------------step  test start--------------" << std::endl;
@@ -1113,7 +1286,7 @@ void MyRadar::Spin(int argc, char **argv){
 
                 auto trackStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 // BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out);
-                BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out,lidar_det);
+                BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out,to_sentry,lidar_det);
                 std::cout << "updata is OK" << std::endl;
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 //                std::cout << "fps_track: " << 1000. / (trackEndTime - trackStartTime) << std::endl;
@@ -1151,9 +1324,10 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "lost_stracks  " << lost_stracks.size() << std::endl;
                 std::cout << "lost_predict_stracks  " << lost_predict_stracks.size() << std::endl;
 
-                // if(Port_ptr->is_openPort){
-                //     Port_ptr->updataSTrackData(out);
-                // }
+                if(Port_ptr->is_openPort){
+                    Port_ptr->updataSTrackData(this->out);
+                    Port_ptr->updataSentryData(this->to_sentry);
+                }
 
 
 //        MainCam_Image_ptr->draw_rusult(UnityRect_ptr->rect, xyz, mainImg_draw);
@@ -1256,7 +1430,10 @@ void MyRadar::Close(){
         // }
     }
     // Livox_ptr->close();
-    // Port_ptr->close();
+    if(Port_ptr->is_openPort) {
+        Port_ptr->close();
+    }
+
 
     std::cout << "close" << std::endl;
 

@@ -39,7 +39,7 @@ namespace upc_radar{
             occupy(pt_grid_int);
             o3d_grid.AddVoxel({ pt_grid_int, color });
         }
-        inline void occupy(const Eigen::Vector3i& pt_grid_int, Eigen::Vector3d color = { 0.5, 0.5, 0.5 }){
+        inline void occupy(const Eigen::Vector3i pt_grid_int, Eigen::Vector3d color = { 0.5, 0.5, 0.5 }){
             /// @brief 将点 pt 所在的体素置为 true
             if ((pt_grid_int.array() >= grid_size.array()).any() || (pt_grid_int.array() < 0).any())
                 return;

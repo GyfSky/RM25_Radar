@@ -6,6 +6,21 @@
 #include "interfaces/msg/detect_result.hpp"
 #include "interfaces/msg/detect_frame.hpp"
 
+#include "interfaces/msg/detect_res.hpp"
+#include "interfaces/msg/detect_obj.hpp"
+#include <open3d/Open3D.h>
+#include <pcl/features/moment_of_inertia_estimation.h>
+#include <pcl/ml/kmeans.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <tbb/parallel_for.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/features/normal_3d.h>
+
+#include <mutex>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -24,6 +39,40 @@
 
 namespace upc_radar{
 
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,sensor_msgs::msg::PointCloud2> MySyncPolicy;
+
+    struct BucketSet {
+        std::vector<char> bucket;
+        size_t size;
+        size_t now_first;
+        void insert(size_t value){
+            if (!bucket[value]) {
+                bucket[value] = true;
+                ++size;
+                if (value < now_first)
+                    now_first = value;
+            }
+        }
+        void erase(size_t value){
+            if (bucket[value]) {
+                bucket[value] = false;
+                --size;
+                if (size == 0)
+                    now_first = -1;
+                //当前最小值被删除, 往后遍历更新最小值
+                else if (value == now_first) {
+                    for (size_t i = value + 1; i < bucket.size(); ++i){
+                        if (bucket[i]) {
+                            now_first = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        BucketSet(size_t real_size):bucket(real_size, false),size(0),now_first(-1){}
+    };
+
     class KalmanFilter :public rclcpp::Node
     {
         public:
@@ -34,21 +83,43 @@ namespace upc_radar{
         int self_color;
         double match_thresh=0.45;
         std::vector<Kalman_filter_plus> KFs;
+        std::mutex mtx;
+        bool is_one_lidar = false;
+        int min_points=3;
+        double eps=0.25;
 
         interfaces::msg::DetectFrame detect_msg;
         interfaces::msg::DetectResult dep_msg;
+        interfaces::msg::DetectRes cam_msg;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
         rclcpp::Subscription<interfaces::msg::DetectFrame>::SharedPtr sub_detect_;
         rclcpp::Subscription<interfaces::msg::DetectResult>::SharedPtr sub_dep_;
         rclcpp::Publisher<interfaces::msg::DetectResult>::SharedPtr lidar_detect_pub_;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_point_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cluster;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_kmeans;
+
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> mid70_sub;
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> avia_sub;
+        std::shared_ptr<message_filters::Synchronizer<MySyncPolicy>> sync;
 
         void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+        void PcTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2);
+        std::vector<int> NormalDBSCAN(const open3d::geometry::PointCloud cloud,double eps,size_t min_points,std::vector<std::vector<int>> &nbs);
+        std::vector<int> NormalDBSCAN(const open3d::geometry::PointCloud cloud,double eps,size_t min_points,std::vector<std::vector<int>> &nbs,std::vector<std::vector<int>> &clusters);
+        std::vector<int> NormalDBSCAN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,double eps,size_t min_points);
+
+        void get_cluster(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,std::vector<open3d::geometry::PointCloud> &out);
+        void get_2drect(std::vector<open3d::geometry::PointCloud> pcs,Eigen::Transform<float, 3, 2> transform,std::vector<cv::Rect> &rects);
+        void get_cluster_id(std::vector<Clus_pc>&clus_pcs,std::vector<open3d::geometry::PointCloud> pcs,std::vector<cv::Rect>rects);
         void detect_callback(const interfaces::msg::DetectFrame::SharedPtr msg);
         void dep_callback(const interfaces::msg::DetectResult::SharedPtr msg);
-        void check_KFs();
-        void check();
+        void check_KFs(std::vector<Kalman_filter_plus> &KFs_);
+        void check(std::vector<Kalman_filter_plus> &KFs_);
+
+        rclcpp::Subscription<interfaces::msg::DetectRes>::SharedPtr sub_cam_;
+        void cam_callback(const interfaces::msg::DetectRes::SharedPtr msg);
 
         //-------------------------------------------//
         cv::Mat show_img;

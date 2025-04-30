@@ -142,6 +142,7 @@ Eigen::MatrixXd CostMatrix::getIouAndDistancetCost(vector<STrack*> &atracks, vec
             //各个的权值之和大概为1
             if(atracks[a]->state != TrackState::New && atracks[a]->state != TrackState::Tracked) {//跟丢的情况
                 //iou和二维距离的置信度降低，三维距离的置信度增加
+                //iou:0.133  2d:0.175 3d:0.6625
                 cost_matrix(a,b) = iou * (1 - this->w_rectDistance * (4./3) - this->w_3dDistance) +
                                    rectDistance * this->w_rectDistance * (1./2.) + distance * (this->w_3dDistance + this->w_rectDistance * (3./4.));
             }else{//已跟踪的情况及新增跟踪器的情况
@@ -447,10 +448,10 @@ Eigen::MatrixXd CostMatrix::getCost_confMatrix(std::vector<STrack*> &strack_pool
 }
 
 Eigen::MatrixXd CostMatrix::getCost_confMatrix(std::vector<STrack> &strack_pool,int &num_strack,int &num_cls){
-    num_strack = strack_pool.size();num_cls = 14 + 6;////TODO:
-    Eigen::MatrixXd cost_confMatrix = Eigen::MatrixXd::Zero(num_strack,num_cls);
+    num_strack = strack_pool.size();num_cls = classWithoutCar;////TODO:
+    Eigen::MatrixXd cost_confMatrix = Eigen::MatrixXd::Ones(num_strack,num_cls);
     for(int k=0; k<strack_pool.size(); k++){
-        cost_confMatrix.block(k,0,1,14) = strack_pool[k].ws_armorConfMatrix.block(0,0,1,14);
+        cost_confMatrix.block(k,0,1,classWithoutCar) -= strack_pool[k].ws_armorConfMatrix.block(0,0,1,classWithoutCar);
 //        cost_confMatrix.block(k,14,1,6) = Eigen::MatrixXd::Ones(1,6) * 0.1;
     }
     return cost_confMatrix;

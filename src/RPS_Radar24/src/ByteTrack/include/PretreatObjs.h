@@ -110,7 +110,7 @@ public:
 
     void set_confs_by_locate3D(double &windmill_car_conf, double &startupArea_car_conf);
     void get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::Object> armors);
-    void get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::DetectionObj> armors);
+    bool get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::DetectionObj> armors);
 
     //    void updataStrack_ws_confMatrixs(STrack &sTrack);
 };

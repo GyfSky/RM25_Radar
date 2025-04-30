@@ -202,6 +202,7 @@ namespace byte_kalman
             else mean(i) = mean_vel(i - 6);
         }
 
+		//标准差向量
         KAL_MEAN_3d std_R;
         std_R(0) = 2 * _R_weight_position * measurement[3];
         std_R(1) = 2 * _R_weight_position * measurement[3];

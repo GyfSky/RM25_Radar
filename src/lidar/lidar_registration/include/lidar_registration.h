@@ -5,6 +5,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/features/normal_3d.h>
 
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tf2_ros/transform_broadcaster.h>
@@ -38,6 +40,10 @@ namespace upc_radar{
         bool manual_aligned_=false;
         bool auto_aligned_=false;
         bool use_saved_T=false;
+        bool use_prepoints=true;
+        std::string situation;
+        std::string child_frame_id;
+        std::string sub_topic;
         
         Eigen::Matrix4d T;
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> accumulated_clouds_;

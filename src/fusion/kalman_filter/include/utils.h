@@ -7,7 +7,9 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <builtin_interfaces/msg/duration.hpp>
-#include<random>
+#include <random>
+#include <opencv2/core/eigen.hpp>
+#include <pcl/point_cloud.h>
 
 
 template <typename T>
@@ -22,7 +24,78 @@ void eigenMat2VecVec(Eigen::MatrixXd &eigen,std::vector<std::vector<T>> &vecVec)
     }
 }
 
-Eigen::MatrixXd getCloudCost(pcl::PointCloud<pcl::PointXYZ>atracks, std::vector<Kalman_filter_plus>btracks,
+struct One_{
+    int mutli_in=0;
+    std::vector<int> I_utrack;
+    pcl::PointCloud<pcl::PointXYZI> kmeans_pc;
+};
+
+struct Clus_pc{
+    double time;
+    int color=2;
+    int num=-1;
+    Eigen::Vector3d center;
+};
+
+int initornot(std::array<cv::Point2f,5> AABB ,pcl::PointXY xy, int pointNum){
+    Eigen::Vector3d p1,p2;
+    Eigen::Vector3d x1,x2,temp_x2;
+
+    for(int i=0;i<pointNum;i++){
+        if(i==0){
+            p1 << (AABB[pointNum-1].x-xy.x),(AABB[pointNum-1].y-xy.y),0;
+            p2 << (AABB[i].x-xy.x),(AABB[i].y-xy.y),0;
+            x2 = p1.cross(p2);
+            temp_x2 = x2;
+            continue;
+        }
+        else{
+            p1 = p2;
+            x1 = x2;
+            p2 << (AABB[i].x-xy.x),(AABB[i].y-xy.y),0;
+            x2 = p1.cross(p2);
+        }
+
+        if(x2.z()*x1.z()<-1e-6)
+            return -1;
+    }
+
+    x1 = x2;
+    x2 = temp_x2;
+    if(x2.z()*x1.z()<-1e-6){
+        return -1;
+    }
+    else{
+        return 1;
+    }
+}
+
+Eigen::MatrixXd getCost_confMatrix(std::vector<Kalman_filter_plus> &KFs,int &num_strack,int &num_cls) {
+    num_strack=KFs.size();
+    num_cls=10;
+    Eigen::MatrixXd cost_matrix = Eigen::MatrixXd::Ones(num_strack,num_cls);
+
+    for (int index=0;index<num_strack;index++) {
+        std::array<std::array<int,6>,2> color_number={{
+            {{0, 0, 0, 0, 0, 0}},  // 第一个子数组 红
+            {{0, 0, 0, 0, 0, 0}}  // 第二个子数组 蓝
+        }};
+        for(int i=0;i<KFs[index].detect_history.size();i++){
+            color_number[KFs[index].detect_history[i].first][KFs[index].detect_history[i].second]++;
+        }
+        for (int cls=0;cls<num_cls;cls++) {
+            if (cls<5) {
+                cost_matrix(index, cls)=double(color_number[0][cls])/double(KFs[index].max_detect_history);
+            }else {
+                cost_matrix(index, cls)=double(color_number[1][cls-5])/double(KFs[index].max_detect_history);
+            }
+            cost_matrix(index, cls)=1-cost_matrix(index, cls);
+        }
+    }
+    return cost_matrix;
+}
+
+Eigen::MatrixXd getCloudCost(pcl::PointCloud<pcl::PointXYZI>atracks, std::vector<Kalman_filter_plus>btracks,
     int &atracks_size, int &btracks_size,double distance_thres){
     atracks_size=atracks.points.size();btracks_size=btracks.size();
     if (atracks_size*btracks_size==0){
@@ -30,20 +103,65 @@ Eigen::MatrixXd getCloudCost(pcl::PointCloud<pcl::PointXYZ>atracks, std::vector<
         return cost_matrix;
     }
     double distance_cost;
+    double mah_cost;
+    double size_cost;
+    std::vector<Eigen::Matrix2d> conv(btracks_size);
+    std::vector<Eigen::Vector2d> mean(btracks_size);
+    for (int b=0;b<btracks_size;b++) {
+        int his_size=btracks[b].history.size();
+        double meanX = 0.0, meanY = 0.0,cov00=0,cov01=0,cov11=0;
+        for (auto pair: btracks[b].history) {
+            meanX += pair.second.x;
+            meanY += pair.second.y;
+        }
+        meanX /= his_size;
+        meanY /= his_size;
+        mean[b]<<meanX,meanY;
+
+        for (auto pair: btracks[b].history) {
+            cov00 += (pair.second.x - meanX) * (pair.second.x - meanX);
+            cov01 += (pair.second.x - meanX) * (pair.second.y - meanY);
+            cov11 += (pair.second.y - meanY) * (pair.second.y - meanY);
+        }
+
+        cov00 /= (his_size - 1);
+        cov01 /= (his_size - 1);
+        cov11 /= (his_size - 1);
+        conv[b]<<cov00,cov01,cov01,cov11;
+    }
     Eigen::MatrixXd  cost_matrix = Eigen::MatrixXd::Zero(atracks_size,btracks_size);
     for(int a = 0; a<atracks_size; a++){
         for(int b=0;b<btracks_size;b++){
             double distance=sqrt(pow(atracks.points[a].x-btracks[b].predict_point.x,2)+pow(atracks.points[a].y-btracks[b].predict_point.y,2));
+            double speed=sqrt(pow(btracks[b].KF.statePost.at<float>(1),2)+pow(btracks[b].KF.statePost.at<float>(3),2));
+            // if (distance>btracks[b].last_time*speed*3)
+            //     distance=distance_thres;
             distance_cost=distance<distance_thres?distance/distance_thres:1;
-            cost_matrix(a,b)=distance_cost;
-            // cost_matrix(a,b)=1-cost_matrix(a,b);
+            size_cost=atracks.points[a].intensity>btracks[b].point_size?btracks[b].point_size/atracks.points[a].intensity:atracks.points[a].intensity/btracks[b].point_size;
+            size_cost=1-size_cost;
+            Eigen::Matrix2d cov_eigen;
+            cov_eigen<<btracks[b].KF.errorCovPost.at<float>(0,0),btracks[b].KF.errorCovPost.at<float>(0,2),
+                                        btracks[b].KF.errorCovPost.at<float>(2,0),btracks[b].KF.errorCovPost.at<float>(2,2);
+
+            // std::cout<<"cov: "<<cov_eigen<<std::endl;
+
+            Eigen::Vector2d kal_pos,pc_pos;
+            kal_pos<<btracks[b].predict_point.x,btracks[b].predict_point.y;
+            pc_pos<<atracks.points[a].x,atracks.points[a].y;
+            Eigen::Vector2d d = pc_pos - mean[b];
+            mah_cost=sqrt(d.transpose() * conv[b].inverse() * d);
+            mah_cost=mah_cost<distance_thres?mah_cost/distance_thres:1;
+            // std::cout<<"mah dis: "<<mah_cost<<"  dis_cost: "<<distance<<std::endl;
+            cost_matrix(a,b)=mah_cost*0.4+distance_cost*0.6;
+            // cost_matrix(a,b)=distance_cost;
         }
+        // std::cout<<"--------------"<<std::endl;
     }
     return cost_matrix;
 }
 
 Eigen::MatrixXd getFusionCost(std::vector<Kalman_filter_plus> atracks,std::vector<std::array<double, 4>> btracks,
-    int &atracks_size, int &btracks_size,double distance_thres,double time_id,double dis_wight,double his_wight){
+    int &atracks_size, int &btracks_size,double distance_thres,double time_id,std::vector<bool> is_det,double dis_wight,double his_wight){
     atracks_size=atracks.size();btracks_size=btracks.size();
     if (atracks_size*btracks_size==0){
         Eigen::MatrixXd cost_matrix;
@@ -52,6 +170,12 @@ Eigen::MatrixXd getFusionCost(std::vector<Kalman_filter_plus> atracks,std::vecto
     double distance_cost,history_cost;
     Eigen::MatrixXd  cost_matrix = Eigen::MatrixXd::Zero(atracks_size,btracks_size);
     for(int a = 0; a<atracks_size; a++){
+        if (is_det[a]) {
+            for(int b=0;b<btracks_size;b++) {
+                cost_matrix(a,b)=1;
+            }
+            continue;
+        }
         bool flag=false;
         double x=0,y=0,min_time=10;
         std::array<std::array<int,6>,2> color_number={{
@@ -283,7 +407,8 @@ void vis_kal_maker(int type,visualization_msgs::msg::MarkerArray &vis_array,int 
     else if (type==4) temp_name="dep_";
 
     text.header.frame_id=central_point.header.frame_id="rm_frame";
-    text.header.stamp=central_point.header.stamp=rclcpp::Clock().now();
+    text.header.stamp=rclcpp::Clock().now();
+    central_point.header.stamp=rclcpp::Clock().now();
     text.ns=temp_name+"txts";
     central_point.ns=temp_name+"points";
     central_point.action = visualization_msgs::msg::Marker::ADD;

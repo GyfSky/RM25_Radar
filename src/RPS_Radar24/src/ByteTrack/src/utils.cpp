@@ -54,6 +54,7 @@ void BYTETracker::multi_predict(vector<STrack> &stracks, byte_kalman::KalmanFilt
             if (stracks[i].state != TrackState::Tracked)
             {
 //                stracks[i].lost_frame_ind_num++;
+            	//令h的速度为零
                 stracks[i].mean3D[9] = 0;
             }
             int distance = get2Ddistance(stracks[i].Locate3D.x,stracks[i].Locate3D.y,stracks[i]._Locate3D.x,stracks[i]._Locate3D.y);

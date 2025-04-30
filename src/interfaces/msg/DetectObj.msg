@@ -1,6 +1,8 @@
 int8 classid
-float64 confidence
-float64 x1
-float64 y1
-float64 x2
-float64 y2
+float32 confidence
+float32 x1
+float32 y1
+float32 x2
+float32 y2
+float32 x
+float32 y

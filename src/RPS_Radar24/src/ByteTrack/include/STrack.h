@@ -7,7 +7,7 @@ using namespace cv;
 using namespace std;
 
 enum TrackState { New = 0, Tracked, Lost, Removed, LostCopy, LostCopy_PredictOver };
-enum PlaceType_special { flySlope, hole, ordinary, four, windmill, is_windmill,holeWarring, startupArea };//？？
+enum PlaceType_special { flySlope, hole, ordinary, four, windmill, is_windmill,holeWarring, startupArea,steps,stepsWarring };//？？
 
 //class STrack : public Car
 class STrack
@@ -20,7 +20,7 @@ public:
 	STrack();
 	~STrack();
 
-    STrack(float x1, float y1, float w, float h, float conf);
+    STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar);
     void init_track(int cls, float conf_armor, Eigen::MatrixXd car_armorConfMatrix);
     void updataSTrack(OurPattern ourPattern);
     void setRectInPrimaryCam(float x1, float y1, float w, float h, float p);
@@ -118,6 +118,8 @@ public:
     double angle;
 
     double p_focus = 0.98;
+
+	bool is_det=false;
 private:
 	byte_kalman::KalmanFilter kalman_filter;
 };

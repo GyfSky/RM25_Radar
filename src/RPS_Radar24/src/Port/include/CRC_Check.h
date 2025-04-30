@@ -50,7 +50,8 @@ typedef enum
     INTERACTION_RADAR_DECISION         =0x0121,// 雷达自主决策指令
 ////RADAR input(read)
     CMD_RADAR_MARK_DATA_T              =0x020C,// 雷达标记进度数据，固定以 1Hz频率发送
-    CMD_RADAR_INFO_T                   =0x020E // 雷达自主决策信息同步，固定以1Hz 频率发送
+    CMD_RADAR_INFO_T                   =0x020E, // 雷达自主决策信息同步，固定以1Hz 频率发送
+    CMD_SENTRY_RADAR_T                 =0x02FD //哨兵2雷达的子内容cmd_id
 } judge_data_cmd_id_e;
 
 
@@ -189,10 +190,32 @@ typedef union {
         uint16_t sender_id;
         uint16_t receiver_id;
 //        uint8_t user_data[45];
-        uint8_t char_data[11];
+        uint8_t char_data[13];
     } data;
     unsigned char  u_char8[sizeof(data)];
 }RADAR_SENF_TO_PLANE_DATA_T;
+
+typedef union {
+    struct {
+        uint16_t data_cmd_id;
+        uint16_t sender_id;
+        uint16_t receiver_id;
+        //        uint8_t user_data[45];
+        uint16_t char_data[20];
+    } data;
+    unsigned char  u_char8[sizeof(data)];
+}RADAR_SEND_TO_SENTRY_DATA_T;
+
+typedef union {
+    struct {
+        uint16_t data_cmd_id;
+        uint16_t sender_id;
+        uint16_t receiver_id;
+        //        uint8_t user_data[45];
+        float char_data[10];
+    } data;
+    unsigned char  u_char8[sizeof(data)];
+}RADAR_RECIEVE_SENTRY_DATA_T;
 
 //typedef union{
 //    struct
@@ -209,10 +232,10 @@ typedef union {
     struct
     {
         uint8_t dart_remaining_time;
-        uint16_t new_hit_target:2;
+        uint16_t new_hit_target:3;
         uint16_t cumulative_hit_time:3;
         uint16_t target:2;
-        uint16_t nothing:9;
+        uint16_t nothing:8;
     }data;
     unsigned char u_char8[3];
 }DART_INFO_T;
@@ -221,14 +244,14 @@ typedef union {
 typedef union {
     struct
     {
-        uint8_t mark_hero_progress;
-        uint8_t mark_engineer_progress;
-        uint8_t mark_standard_3_progress;
-        uint8_t mark_standard_4_progress;
-        uint8_t mark_standard_5_progress;
-        uint8_t mark_sentry_progress;
+        uint8_t mark_hero_progress:1;
+        uint8_t mark_engineer_progress:1;
+        uint8_t mark_standard_3_progress:1;
+        uint8_t mark_standard_4_progress:1;
+        uint8_t mark_sentry_progress:1;
+        uint8_t else_:3;
     }data;
-    unsigned char u_char8[6];
+    unsigned char u_char8[1];
 }RADAR_MARK_DATA_T;
 
 
@@ -276,12 +299,12 @@ typedef union {
         uint16_t red_5_robot_HP;
         uint16_t red_7_robot_HP;
         uint16_t red_outpost_HP;
-        uint16_t red_base_HP;
+        uint16_t else1;
         uint16_t blue_1_robot_HP;
         uint16_t blue_2_robot_HP;
         uint16_t blue_3_robot_HP;
         uint16_t blue_4_robot_HP;
-        uint16_t blue_5_robot_HP;
+        uint16_t else2;
         uint16_t blue_7_robot_HP;
         uint16_t blue_outpost_HP;
         uint16_t blue_base_HP;
@@ -292,22 +315,21 @@ typedef union {
 typedef union {
     struct
     {
-        uint32_t blood_replenishment_front:1;
-        uint32_t blood_replenishment_in:1;
+        uint32_t supply_not_overlap:1;
+        uint32_t supply_overlap:1;
         uint32_t supply_area:1;
 
-        uint32_t activate_energy_trap:1;
         uint32_t small_buff:1;
         uint32_t big_buff:1;
 
         uint32_t circular_heights:2;
-        uint32_t trapezoidal_heights_3:2;
-        uint32_t trapezoidal_heights_4:2;
+        uint32_t trapezoidal_heights:2;
 
-        uint32_t virtual_shield_remaining:7;
         uint32_t dart_hit_time:9;
-        uint32_t dart_hit_target:2;
+        uint32_t dart_hit_target:3;
         uint32_t center_gain:2;
+
+        uint32_t else_:9;
 
     }data;
     unsigned char u_char8[4];

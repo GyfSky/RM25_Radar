@@ -77,6 +77,7 @@ public:
     void draw_rusult(std::vector<Car> &cars,std::vector<Armor> &armors,cv::Mat img,std::string winname = "draw");
     void draw_rusult(std::vector<STrack> output_stracks, bool is_cls = false);
     void draw_rusult(cv::Rect rect, cv::Point3d xyz, cv::Mat img_draw);
+    void draw_test(vector<TRTInferV1::DetectionObj> car,vector<vector<TRTInferV1::DetectionObj>> Armors);
 //    void draw_line(Place &place);
     void draw_line(std::vector<MapVertex> &vexs);
     cv::Scalar get_color(int idx);

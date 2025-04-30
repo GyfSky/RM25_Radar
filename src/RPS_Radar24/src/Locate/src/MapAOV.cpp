@@ -304,29 +304,47 @@ void MapGraphMtx::get_lib_placeConfig(std::vector<MapVertex> &vexs, PlaceColor p
 
 ////左下  红方---------------------------------------------------------------------------------------------------------------
     //1.上坡  TODO
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(0,0,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(1.134,0,0)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(1.134,-2.323,0)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(0,-2.323,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(0+3,0+2.323,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(1.134+3,0+2.323,0)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(1.134+3,-2.323+2.323,0)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(0+3,-2.323+2.323,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide ,four, true);
 
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(-3,0.16,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(0,0.16,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(0,-2.323,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(-3,-2.323,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(-3+3,0.16+2.323,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(0+3,0.16+2.323,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(0+3,-2.323+2.323,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(-3+3,-2.323+2.323,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide ,four, true);
 
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(-1.25,0.16,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(-1.86,0.16,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(-1.86,1.92,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(-1.25,1.50,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(-1.25+3,0.16+2.323,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(-1.86+3,0.16+2.323,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(-1.86+3,1.92+2.323,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(-1.25+3,1.50+2.323,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide ,four, true);
 
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(-3,0.16,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(-2,0.16,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(-2.0,1.54,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(-3.0,1.54,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(-3+3,0.16+2.323,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(-2+3,0.16+2.323,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(-2.0+3,1.54+2.323,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(-3.0+3,1.54+2.323,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide ,four, true);
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(2.22, 5.127, 0.3)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(4.755,3.352,0.3)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(6.755,3.352,0.3)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(5.793, 4.026, 0.3)));
+    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(6.108, 4.476, 0.3)));
+    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(7.07, 3.803, 0.3)));
+    temp_onegroup_points.at(6) = ((Eigen::Matrix<double, 3, 1>(7.576, 3.803, 0.3)));
+    temp_onegroup_points.at(7) = ((Eigen::Matrix<double, 3, 1>(7.576,6.511,0.3)));
+    temp_onegroup_points.at(8) = ((Eigen::Matrix<double, 3, 1>(5.335,8.079,0.3)));
+    temp_onegroup_points.at(9) = ((Eigen::Matrix<double, 3, 1>(3.376,8.051,0.3)));
+    temp_onegroup_points.at(10) = ((Eigen::Matrix<double, 3, 1>(4.297,7.406,0.3)));
+    temp_onegroup_points.at(11) = ((Eigen::Matrix<double, 3, 1>(3.982,6.955,0.3)));
+    temp_onegroup_points.at(12) = ((Eigen::Matrix<double, 3, 1>(3.061,7.6,0.3)));
+    temp_onegroup_points.at(13) = ((Eigen::Matrix<double, 3, 1>(2.22,7.629,0.3)));
+    temp_onegroup_points.at(14) = ((Eigen::Matrix<double, 3, 1>(1.69,8.0,0.3)));
+
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 15, placeColor, Bhide ,four, true);
 }
 
 /**
@@ -1252,10 +1270,15 @@ void MapGraphMtx::get_central_R_placeConfig(std::vector<MapVertex> &vexs, PlaceC
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(10.4461,4.9437,0.0)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(10.6650,4.4392,0.0)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(11.4287,4.7706,0.3)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(11.7329,4.7390,0.3)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(11.4184,5.5188,0.3)));
-    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(11.2098,5.2751,0.3)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 6, placeColor, Bhide,ordinary, false);
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(11.2098,5.2751,0.3)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,ordinary, false);
+
+    //20坡后
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(11.4287,4.7706,0.3)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(11.7329,4.7390,0.3)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(11.4184,5.5188,0.3)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(11.2098,5.2751,0.3)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Clear,ordinary, false);
 
     //10.5坡
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(9.7486,2.0,0.2)));
@@ -1269,21 +1292,21 @@ void MapGraphMtx::get_central_R_placeConfig(std::vector<MapVertex> &vexs, PlaceC
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(9.5350,8.3001,0.2)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(10.0,8.3001,0.2)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(10.0,6.6999,0.2)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,steps, false);
 
     //双极台阶跨越预警1
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(9.5350,6.6999,0.0)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(9.5350,8.3001,0.0)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(8.715,8.3001,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(8.715,6.6999,0.0)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,stepsWarring, false);
 
     //二级台阶+双极台阶跨越预警2
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(10.0,6.6999,0.3)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(10.0,8.3001,0.3)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(11.2404,8.3001,0.3)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(11.2404,6.6999,0.3)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Clear,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Clear,stepsWarring, false);
 }
 
 void MapGraphMtx::get_central_B_placeConfig(std::vector<MapVertex> &vexs, PlaceColor placeColor, int offset) {
@@ -1293,10 +1316,15 @@ void MapGraphMtx::get_central_B_placeConfig(std::vector<MapVertex> &vexs, PlaceC
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-10.4461,15-4.9437,0.0)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-10.6650,15-4.4392,0.0)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-11.4287,15-4.7706,0.3)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-11.7329,15-4.7390,0.3)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-11.4184,15-5.5188,0.3)));
-    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(28-11.2098,15-5.2751,0.3)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 6, placeColor, Rhide,ordinary, false);
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-11.2098,15-5.2751,0.3)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,ordinary, false);
+
+    //20坡后
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-11.4287,15-4.7706,0.3)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-11.7329,15-4.7390,0.3)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-11.4184,15-5.5188,0.3)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-11.2098,15-5.2751,0.3)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Clear,ordinary, false);
 
     //10.5坡
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-9.7486,15-2.0,0.2)));
@@ -1310,21 +1338,21 @@ void MapGraphMtx::get_central_B_placeConfig(std::vector<MapVertex> &vexs, PlaceC
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-9.5350,15-8.3001,0.2)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-10.0,15-8.3001,0.2)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-10.0,15-6.6999,0.2)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,steps, false);
 
     //双极台阶跨越预警1
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-9.5350,15-6.6999,0.0)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-9.5350,15-8.3001,0.0)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-8.715,15-8.3001,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-8.715,15-6.6999,0.0)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,stepsWarring, false);
 
     //二级台阶+双极台阶跨越预警2
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-10.0,15-6.6999,0.3)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-10.0,15-8.3001,0.3)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-11.2404,15-8.3001,0.3)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-11.2404,15-6.6999,0.3)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Clear,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Clear,stepsWarring, false);
 }
 
 void MapGraphMtx::get_central_placeConfig(std::vector<MapVertex> &vexs, PlaceColor placeColor, int offset) {
@@ -1744,7 +1772,7 @@ void MapGraphMtx::print_AdjacencyMatrix() {
 
 void MapGraphMtx::get_completeMapGraphMtx() {
     std::vector<MapVertex> R_vexs, B_vexs;
-    // get_lib_placeConfig(this->vexs, B);
+    get_lib_placeConfig(this->vexs, B);
     // get_rt_B_placeConfig(this->vexs, B); //TODO: (2,4)
     // get_mid_B_placeConfig(this->vexs, B);
     // get_rb_B_placeConfig(this->vexs, B);
@@ -1761,19 +1789,19 @@ void MapGraphMtx::get_completeMapGraphMtx() {
 
     //RM2025
     //堡垒
-    get_fortress_R_placeConfig(this->vexs, R);
-    get_fortress_B_placeConfig(this->vexs, B);
-
-    //梯高
-    get_trapezium_R_placeConfig(this->vexs, R);
-    get_trapezium_B_placeConfig(this->vexs, B);
-
-    get_highway_R_placeConfig(this->vexs, R);
-    get_highway_B_placeConfig(this->vexs, B);
-
-    get_central_R_placeConfig(this->vexs, R);
-    get_central_B_placeConfig(this->vexs, B);
-    get_central_placeConfig(this->vexs, R);
+    // get_fortress_R_placeConfig(this->vexs, R);
+    // get_fortress_B_placeConfig(this->vexs, B);
+    //
+    // //梯高
+    // get_trapezium_R_placeConfig(this->vexs, R);
+    // get_trapezium_B_placeConfig(this->vexs, B);
+    //
+    // get_highway_R_placeConfig(this->vexs, R);
+    // get_highway_B_placeConfig(this->vexs, B);
+    //
+    // get_central_R_placeConfig(this->vexs, R);
+    // get_central_B_placeConfig(this->vexs, B);
+    // get_central_placeConfig(this->vexs, R);
 //    get_midGround_R_placeConfig(this->vexs, R);
 //    get_midGround_B_placeConfig(this->vexs, B);
 //    get_behindGround_R_placeConfig(this->vexs, R);
