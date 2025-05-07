@@ -121,7 +121,7 @@ int main(int argc, char **argv){
             std::cout<<"\033[31m"<<"time is : "<<dur_time/1000<<" s"<<"\033[0m"<<std::endl;
         }
     }else if(radar.getPictureSource()==camera_||radar.getPictureSource()==video){
-        while(rclcpp::ok()){
+        while(true){
             auto now_time = std::chrono::steady_clock::now();
             radar.Init(argc, argv);
             radar.Spin(argc, argv);

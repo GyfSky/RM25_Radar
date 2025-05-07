@@ -1772,7 +1772,7 @@ void MapGraphMtx::print_AdjacencyMatrix() {
 
 void MapGraphMtx::get_completeMapGraphMtx() {
     std::vector<MapVertex> R_vexs, B_vexs;
-    get_lib_placeConfig(this->vexs, B);
+    // get_lib_placeConfig(this->vexs, B);
     // get_rt_B_placeConfig(this->vexs, B); //TODO: (2,4)
     // get_mid_B_placeConfig(this->vexs, B);
     // get_rb_B_placeConfig(this->vexs, B);
@@ -1789,19 +1789,19 @@ void MapGraphMtx::get_completeMapGraphMtx() {
 
     //RM2025
     //堡垒
-    // get_fortress_R_placeConfig(this->vexs, R);
-    // get_fortress_B_placeConfig(this->vexs, B);
-    //
-    // //梯高
-    // get_trapezium_R_placeConfig(this->vexs, R);
-    // get_trapezium_B_placeConfig(this->vexs, B);
-    //
-    // get_highway_R_placeConfig(this->vexs, R);
-    // get_highway_B_placeConfig(this->vexs, B);
-    //
-    // get_central_R_placeConfig(this->vexs, R);
-    // get_central_B_placeConfig(this->vexs, B);
-    // get_central_placeConfig(this->vexs, R);
+    get_fortress_R_placeConfig(this->vexs, R);
+    get_fortress_B_placeConfig(this->vexs, B);
+
+    //梯高
+    get_trapezium_R_placeConfig(this->vexs, R);
+    get_trapezium_B_placeConfig(this->vexs, B);
+
+    get_highway_R_placeConfig(this->vexs, R);
+    get_highway_B_placeConfig(this->vexs, B);
+
+    get_central_R_placeConfig(this->vexs, R);
+    get_central_B_placeConfig(this->vexs, B);
+    get_central_placeConfig(this->vexs, R);
 //    get_midGround_R_placeConfig(this->vexs, R);
 //    get_midGround_B_placeConfig(this->vexs, B);
 //    get_behindGround_R_placeConfig(this->vexs, R);

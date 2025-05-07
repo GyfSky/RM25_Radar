@@ -256,10 +256,10 @@ cv::Mat Image::Image_Get(int &after_picture,int argc, char **argv){
             std::cerr << "no picture" << std::endl;
             break;
     }
-    this->Cam_cloneing = this->Cam_img.clone();//clone为深拷贝
+    // this->Cam_cloneing = this->Cam_img.clone();//clone为深拷贝
     this->Cam_draw     = this->Cam_img.clone();
     if(application==Application::Radar){
-        this->map_cloneing = this->map_img.clone();
+        // this->map_cloneing = this->map_img.clone();
         this->map_draw     = this->map_img.clone();
     }
     if(cv::waitKey(1) == 'x'){

@@ -363,14 +363,14 @@ void Port::getData() {
                         enemys_lock.lock();
                         memcpy(enemys.u_char8, buff + ptr, temp_frameHeader.data.data_length);
                         enemys_lock.unlock();
-                        std::cout << "enemys: " << std::to_string(enemys.u_char8[2]) << std::endl;
+                        // std::cout << "enemys: " << std::to_string(enemys.u_char8[2]) << std::endl;
                     }break;
                     case CMD_RADAR_INFO_T:
                     {
                         vulnerability_times_lock.lock();
                         memcpy(vulnerability_times.u_char8, buff + ptr, temp_frameHeader.data.data_length );
+                        RCLCPP_ERROR(rclcpp::get_logger("judge"), "vulnerability_times: %d", vulnerability_times.data.radar_info);
                         vulnerability_times_lock.unlock();
-                        std::cout << "vulnerability_times: " << std::to_string(vulnerability_times.data.radar_info) << std::endl;
                     }break;
                     case DART_INFO_DATA_ID:
                     {
@@ -502,26 +502,26 @@ void Port::makeSentryData(){
     this->radarSentryDataT.data.data_cmd_id = 0x02FE;
     this->radarSentryDataT.data.sender_id   = this->sender_id;
     this->radarSentryDataT.data.receiver_id = this->sentry_id;
-    this->radarSentryDataT.data.char_data[0] = uint16_t(this->sentry_out[color_index+0].Locate3D.x*100);
-    this->radarSentryDataT.data.char_data[1] = uint16_t(this->sentry_out[color_index+0].Locate3D.y*100);
-    this->radarSentryDataT.data.char_data[2] = uint16_t(this->sentry_out[color_index+1].Locate3D.x*100);
-    this->radarSentryDataT.data.char_data[3] = uint16_t(this->sentry_out[color_index+1].Locate3D.y*100);
-    this->radarSentryDataT.data.char_data[4] = uint16_t(this->sentry_out[color_index+2].Locate3D.x*100);
-    this->radarSentryDataT.data.char_data[5] = uint16_t(this->sentry_out[color_index+2].Locate3D.y*100);
-    this->radarSentryDataT.data.char_data[6] = uint16_t(this->sentry_out[color_index+3].Locate3D.x*100);
-    this->radarSentryDataT.data.char_data[7] = uint16_t(this->sentry_out[color_index+3].Locate3D.y*100);
-    this->radarSentryDataT.data.char_data[8] = uint16_t(this->sentry_out[color_index+4].Locate3D.x*100);
-    this->radarSentryDataT.data.char_data[9] = uint16_t(this->sentry_out[color_index+4].Locate3D.y*100);
-    this->radarSentryDataT.data.char_data[10] = uint16_t(this->sentry_out[color_index+0].vx_3d*100);
-    this->radarSentryDataT.data.char_data[11] = uint16_t(this->sentry_out[color_index+0].vy_3d*100);
-    this->radarSentryDataT.data.char_data[12] = uint16_t(this->sentry_out[color_index+1].vx_3d*100);
-    this->radarSentryDataT.data.char_data[13] = uint16_t(this->sentry_out[color_index+1].vy_3d*100);
-    this->radarSentryDataT.data.char_data[14] = uint16_t(this->sentry_out[color_index+2].vx_3d*100);
-    this->radarSentryDataT.data.char_data[15] = uint16_t(this->sentry_out[color_index+2].vy_3d*100);
-    this->radarSentryDataT.data.char_data[16] = uint16_t(this->sentry_out[color_index+3].vx_3d*100);
-    this->radarSentryDataT.data.char_data[17] = uint16_t(this->sentry_out[color_index+3].vy_3d*100);
-    this->radarSentryDataT.data.char_data[18] = uint16_t(this->sentry_out[color_index+4].vx_3d*100);
-    this->radarSentryDataT.data.char_data[19] = uint16_t(this->sentry_out[color_index+4].vy_3d*100);
+    this->radarSentryDataT.data.position[0] = uint16_t(this->sentry_out[color_index+0].Locate3D.x*100);
+    this->radarSentryDataT.data.position[1] = uint16_t(this->sentry_out[color_index+0].Locate3D.y*100);
+    this->radarSentryDataT.data.position[2] = uint16_t(this->sentry_out[color_index+1].Locate3D.x*100);
+    this->radarSentryDataT.data.position[3] = uint16_t(this->sentry_out[color_index+1].Locate3D.y*100);
+    this->radarSentryDataT.data.position[4] = uint16_t(this->sentry_out[color_index+2].Locate3D.x*100);
+    this->radarSentryDataT.data.position[5] = uint16_t(this->sentry_out[color_index+2].Locate3D.y*100);
+    this->radarSentryDataT.data.position[6] = uint16_t(this->sentry_out[color_index+3].Locate3D.x*100);
+    this->radarSentryDataT.data.position[7] = uint16_t(this->sentry_out[color_index+3].Locate3D.y*100);
+    this->radarSentryDataT.data.position[8] = uint16_t(this->sentry_out[color_index+4].Locate3D.x*100);
+    this->radarSentryDataT.data.position[9] = uint16_t(this->sentry_out[color_index+4].Locate3D.y*100);
+    this->radarSentryDataT.data.speed[0] = int16_t(this->sentry_out[color_index+0].vx_3d*100);
+    this->radarSentryDataT.data.speed[1] = int16_t(this->sentry_out[color_index+0].vy_3d*100);
+    this->radarSentryDataT.data.speed[2] = int16_t(this->sentry_out[color_index+1].vx_3d*100);
+    this->radarSentryDataT.data.speed[3] = int16_t(this->sentry_out[color_index+1].vy_3d*100);
+    this->radarSentryDataT.data.speed[4] = int16_t(this->sentry_out[color_index+2].vx_3d*100);
+    this->radarSentryDataT.data.speed[5] = int16_t(this->sentry_out[color_index+2].vy_3d*100);
+    this->radarSentryDataT.data.speed[6] = int16_t(this->sentry_out[color_index+3].vx_3d*100);
+    this->radarSentryDataT.data.speed[7] = int16_t(this->sentry_out[color_index+3].vy_3d*100);
+    this->radarSentryDataT.data.speed[8] = int16_t(this->sentry_out[color_index+4].vx_3d*100);
+    this->radarSentryDataT.data.speed[9] = int16_t(this->sentry_out[color_index+4].vy_3d*100);
 }
 
 void Port::sendSentryData(){

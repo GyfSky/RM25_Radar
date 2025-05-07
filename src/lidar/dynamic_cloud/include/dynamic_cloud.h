@@ -52,19 +52,25 @@ namespace upc_radar{
         for (size_t i = 0; i < origin_cloud.size(); i++){
             auto &point = origin_cloud.points[i];
             //point.x < 3大致为己方停机坪   point.z > 1.4
-            if (point.x < 3 || point.x > 28 || point.y < 0 || point.y > 15 || point.z < 0 || point.z > 1.35 ||
+            if (point.x < 2.7 || point.x > 28 || point.y < 0 || point.y > 15 || point.z < 0 || point.z > 1.35 ||
+                //己方停机坪和飞镖
+                (point.y>9.9&&point.x<=3.1)||
+                //己方补给区
+                (point.y<4.15&&point.x<=3.9)||
+                //己方基地
+                (point.y>=15-8.45&&point.y<=15-6.55&&point.x<=28-24.93&&point.x>=28-26.55)||
                 //或者y(0,5),x(25,28)不要 敌方停机坪和飞镖
                 (point.y > 0 && point.y < 5 && point.x > 25) ||
                 //敌方基地
-                (point.y<=8.45&&point.y>=6.55&&point.x>=24.93&&point.x<=26.5)||
+                (point.y<=8.45&&point.y>=6.55&&point.x>=24.93&&point.x<=26.55)||
                 //或者y(11,12),x(23,24)不要
                 // (point.y > 11 && point.y < 12 && point.x > 23 && point.x < 24)
                 //画四个直线切割大资源岛
                 ((21.5-2.9/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.9/sqrt(2))&&
                 (-6.5-0.9/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.9/sqrt(2)))||
                 //前哨站17<point.x&&point.x<18
-                ((3.1<point.y&&point.y<4.1)&&(10.5<point.x&&point.x<11.25))||
-                ((10.9<point.y&&point.y<11.9)&&(16.75<point.x&&point.x<17.5))
+                ((3.1<point.y&&point.y<4.1)&&(10.5<point.x&&point.x<11.3))||
+                ((10.9<point.y&&point.y<11.9)&&(16.7<point.x&&point.x<17.5))
                 //猜是为了减少r4散射点
                 // ((11<point.y&&point.y<12.25)&&(23<point.x&&point.x<24.1)&&(point.z<0.535))||
                 //兑换区
@@ -82,7 +88,7 @@ namespace upc_radar{
         for (size_t i = 0; i < origin_cloud.size(); i++){
             auto &point = origin_cloud.points[i];
             //point.x < 3大致为己方停机坪   point.z > 1.4
-            if (point.x < 3 || point.x > 28 || point.y < 0 || point.y > 15 || point.z < 0 || point.z > 1.6 ||
+            if (point.x < 3 || point.x > 28 || point.y < 0 || point.y > 15 || point.z < 0 || point.z > 1.35 ||
                 //或者y(0,5),x(25,28)不要 敌方停机坪和飞镖
                 (point.y > 0 && point.y < 5 && point.x > 25) ||
                 //己方飞机飞行区
@@ -99,10 +105,10 @@ namespace upc_radar{
                 //前哨站17<point.x&&point.x<18
                 ((12<point.y&&point.y<13.5)&&(16.55<point.x&&point.x<17.55))||
                 //猜是为了减少r4散射点
-                ((11<point.y&&point.y<12.25)&&(23<point.x&&point.x<24.1)&&(point.z<0.535))||
+                // ((11<point.y&&point.y<12.25)&&(23<point.x&&point.x<24.1)&&(point.z<0.535))||
                 //兑换区
-                (point.x>28-2.0234&&point.x<28-1.0234)&&(point.y > 10.955+0.1 && point.y < 10.955 + 1.6 - 0.1)&&(point.z>0.4&&point.z<1.5)||
-                little_engine_filter(point)
+                (point.x>28-2.0234&&point.x<28-1.0234)&&(point.y > 10.955+0.1 && point.y < 10.955 + 1.6 - 0.1)&&(point.z>0.4&&point.z<1.5)
+                // little_engine_filter(point)
             ///TODO: 此处代码混乱，需要重构，全部替换成Lambda表达式的过滤器形式
             ){
                 continue;
@@ -111,11 +117,45 @@ namespace upc_radar{
         }
     }
 
+    int initornot(const std::vector<pcl::PointXY> polygon,pcl::PointXYZ point,int polygonSize) {
+        int counter = 0;
+        double xinters;
+        pcl::PointXY p1, p2;
+
+        p1 = polygon[0];
+        for (size_t i = 1; i <= polygonSize; i++) {
+            p2 = polygon[i];
+            if (point.y > std::min(p1.y, p2.y)) {
+                if (point.y <= std::max(p1.y, p2.y)) {
+                    if (point.x <= std::max(p1.x, p2.x)) {
+                        if (p1.y != p2.y) {
+                            xinters = (point.y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x;
+                            if (p1.x == p2.x || point.x <= xinters)
+                                counter++;
+                        }
+                    }
+                }
+            }
+            p1 = p2;
+        }
+
+        if ( counter % 2 == 1) return 1;
+        else return -1;
+    }
+
     void get_filtered_cloudlab(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud) {
+        std::vector<pcl::PointXY> test;
+        test.push_back(pcl::PointXY(5.516865,4.561527));
+        test.push_back(pcl::PointXY(6.028124,5.218801));
+        test.push_back(pcl::PointXY(4.776117,6.045959));
+        test.push_back(pcl::PointXY(4.264859,5.388684));
+        test.push_back(pcl::PointXY(5.516865,4.561527));
         for (size_t i = 0; i < origin_cloud.size(); i++){
             auto &point = origin_cloud.points[i];
-            if(point.x<=7.07&&point.y<=10&&point.x>=-3&&point.y>=-3&&point.z<1.2)
+            if(point.x<=7.07&&point.y<=12&&point.x>=-3&&point.y>=-3&&point.z<1.2&&initornot(test,point,5)==-1)
                 filtered_cloud.push_back(point);
+            // if(point.x<=7.07&&point.y<=12&&point.x>=-3&&point.y>=-3&&point.z<1.2)
+            //     filtered_cloud.push_back(point);
         }
     }
 

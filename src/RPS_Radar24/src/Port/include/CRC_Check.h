@@ -201,7 +201,8 @@ typedef union {
         uint16_t sender_id;
         uint16_t receiver_id;
         //        uint8_t user_data[45];
-        uint16_t char_data[20];
+        uint16_t position[10];
+        int16_t speed[10];
     } data;
     unsigned char  u_char8[sizeof(data)];
 }RADAR_SEND_TO_SENTRY_DATA_T;

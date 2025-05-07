@@ -58,8 +58,8 @@
     kalman.dt_: 0.1
     kalman.sigma_q_x: 40.0
     kalman.sigma_q_y: 40.0
-    kalman.sigma_r_x: 1.0
-    kalman.sigma_r_y: 1.0
+    kalman.sigma_r_x: 10.0
+    kalman.sigma_r_y: 10.0
 
     cost.distance_weight: 1.0
     cost.distance_thres: 6.0
@@ -71,11 +71,19 @@
     #大了导致两个kal与两个clus匹配交换，小了导致kal在拐弯时跟不上clus(跟踪器问题)
     clu.dis_thres: 1.8
     #需要新增卡尔曼的两聚类最小距离阈值
-    clu.min_dis_thres: 0.1
+    clu.min_dis_thres: 0.8
 
-    #----相机识别和点云聚类匹配----
+    #----相机识别和点云聚类匹配----3d
     cam.match_thres: 0.8
-    cam.dis_thres: 1.2
-    cam.dis_wight: 0.95
-    cam.his_weight: 0.05
+    cam.dis_thres: 1.6
+    cam.dis_weight: 0.77
+    cam.his_weight: 0.23
     cam.time_offset: 0.7
+
+    #----相机识别和点云聚类匹配----2d
+    rect.iou_weight: 0.25
+    rect.dis_weight: 0.75
+    rect.iou_thres: 0.1
+    rect.dis_thres: 2.3
+    rect.match_thres: 0.0
+    rect.use_rect2d: true

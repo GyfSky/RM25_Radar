@@ -120,6 +120,8 @@ public:
     double p_focus = 0.98;
 
 	bool is_det=false;
+	int camid=0;
+	vector<float> sec_rect;
 private:
 	byte_kalman::KalmanFilter kalman_filter;
 };

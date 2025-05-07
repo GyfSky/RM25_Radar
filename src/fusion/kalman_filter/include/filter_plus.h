@@ -15,6 +15,10 @@ float Distance(pcl::PointXYZI &a, pcl::PointXYZI &b) {
     return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
 
+float Distance(Eigen::Vector3d &a, Eigen::Vector3d &b) {
+    return sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2));
+}
+
 class Kalman_filter_plus {
 
     public:
@@ -25,9 +29,9 @@ class Kalman_filter_plus {
     float last_time = 0;//丢失的总时间，即没有观测到目标，只进行预测
     std::chrono::steady_clock::time_point timer;//最后更新时间
     std::vector<std::pair<double, pcl::PointXYZI>> history;//放最佳估计点，时间，坐标
-    std::vector<cv::Rect> rect_2d;
+    std::vector<cv::Rect> rect_2d1,rect_2d2;
     std::vector<std::pair<int ,int>> detect_history;//放相机匹配结果，第一个是颜色，第二个是编号
-    std::vector<double> detect_time;
+    std::vector<double> detect_time;//相机匹配的时间戳
     int max_history = 40;
     int max_detect_history = 15;
 
@@ -53,7 +57,7 @@ class Kalman_filter_plus {
         return duration.count() / 1000.0;
     }
 
-    Kalman_filter_plus(pcl::PointXYZI &input,rclcpp::Time time,rclcpp::Node* node,cv::Rect rect) {
+    Kalman_filter_plus(pcl::PointXYZI input,rclcpp::Time time,rclcpp::Node* node,cv::Rect rect) {
 
         this->node=node;
         dt_=node->get_parameter("kalman.dt_").as_double();
@@ -65,7 +69,7 @@ class Kalman_filter_plus {
         predict_point = pcl::PointXY(input.x, input.y);
         point_size = input.intensity;
         history.push_back(std::make_pair(GetTimeByRosTime(time), input));
-        rect_2d.push_back(rect);
+        rect_2d1.push_back(rect);
         timer = std::chrono::steady_clock::now();
         int stateSize = 4;//状态的维数
         int measSize = 2;//测量的维数
@@ -88,6 +92,18 @@ class Kalman_filter_plus {
         0, 1, 0, 0,
         0, 0, 1, dt_,
         0, 0, 0, 1);//F矩阵//状态转移矩阵
+//         KF.transitionMatrix = (cv::Mat_<float>(6, 6) <<
+// 1, dt_, 0, 0, dt_*dt_/2, 0,
+// 0, 1, 0, 0, dt_, 0,
+// 0, 0, 1, dt_, 0, dt_*dt_/2,
+// 0, 0, 0, 1, 0, dt_,
+// 0, 0, 0, 0, 1, 0,
+// 0, 0, 0, 0, 0, 1
+// );//F矩阵//状态转移矩阵
+
+//         KF.measurementMatrix = (cv::Mat_<float>(2, 6) <<
+// 1, 0, 0, 0, 0, 0,
+// 0, 0, 1, 0, 0, 0);
 
         KF.measurementMatrix = (cv::Mat_<float>(2, 4) <<
         1, 0, 0, 0,
@@ -99,6 +115,31 @@ class Kalman_filter_plus {
         sigma_q_x*pow(dt_, 2) / 2, sigma_q_x*pow(dt_, 1), 0,0,
         0, 0, sigma_q_y*pow(dt_, 3) / 3, sigma_q_y*pow(dt_, 2) / 2,
         0, 0, sigma_q_y*pow(dt_, 2) / 2, sigma_q_y*pow(dt_, 1));
+        // KF.processNoiseCov = cv::Mat::zeros(6, 6, CV_32F);
+        // KF.processNoiseCov.at<float>(0, 0) = sigma_q_x * pow(dt_, 5)/20;
+        // KF.processNoiseCov.at<float>(0, 1) = sigma_q_x * pow(dt_, 4)/8;
+        // KF.processNoiseCov.at<float>(0, 4) = sigma_q_x * pow(dt_, 3)/6;
+        //
+        // KF.processNoiseCov.at<float>(1, 0) = KF.processNoiseCov.at<float>(0, 1);
+        // KF.processNoiseCov.at<float>(1, 1) = sigma_q_x * pow(dt_, 3)/3;
+        // KF.processNoiseCov.at<float>(1, 4) = sigma_q_x * pow(dt_, 2)/2;
+        //
+        // KF.processNoiseCov.at<float>(4, 0) = KF.processNoiseCov.at<float>(0, 4);
+        // KF.processNoiseCov.at<float>(4, 1) = KF.processNoiseCov.at<float>(1, 4);
+        // KF.processNoiseCov.at<float>(4, 4) = sigma_q_x * dt_;
+        //
+        // // y 轴部分
+        // KF.processNoiseCov.at<float>(2, 2) = sigma_q_y * pow(dt_, 5)/20;
+        // KF.processNoiseCov.at<float>(2, 3) = sigma_q_y * pow(dt_, 4)/8;
+        // KF.processNoiseCov.at<float>(2, 5) = sigma_q_y * pow(dt_, 3)/6;
+        //
+        // KF.processNoiseCov.at<float>(3, 2) = KF.processNoiseCov.at<float>(2, 3);
+        // KF.processNoiseCov.at<float>(3, 3) = sigma_q_y * pow(dt_, 3)/3;
+        // KF.processNoiseCov.at<float>(3, 5) = sigma_q_y * pow(dt_, 2)/2;
+        //
+        // KF.processNoiseCov.at<float>(5, 2) = KF.processNoiseCov.at<float>(2, 5);
+        // KF.processNoiseCov.at<float>(5, 3) = KF.processNoiseCov.at<float>(3, 5);
+        // KF.processNoiseCov.at<float>(5, 5) = sigma_q_y * dt_;
 
         //越大越相信卡尔曼的预测值，收敛速度越快
         //过程噪声Q
@@ -173,7 +214,7 @@ class Kalman_filter_plus {
         return std::pair(count,max_time);
     }
 
-    void update(pcl::PointXYZI &input, rclcpp::Time time,cv::Rect rect) {
+    void update(pcl::PointXYZI input, rclcpp::Time time,cv::Rect rect) {
         timer = std::chrono::steady_clock::now();
         point_size = input.intensity;
         cv::Mat meas = cv::Mat::zeros(2, 1, CV_32F);
@@ -186,18 +227,26 @@ class Kalman_filter_plus {
         last_time = 0;
         auto temp_point = input;
         history.push_back(std::make_pair(GetTimeByRosTime(time), temp_point));
-        rect_2d.push_back(rect);
+        rect_2d1.push_back(rect);
         if(history.size() > max_history){
             history.erase(history.begin());
-            rect_2d.erase(rect_2d.begin());
+            rect_2d1.erase(rect_2d1.begin());
         }
     }
 
     void update_predict_point() {//基于最后的点和速度方向和车的速度，以及预测下一个点
         dt_ = get_time();
         timer = std::chrono::steady_clock::now();
-        auto result = KF.predict();//计算预测的状态值 
         last_time += dt_;
+        // KF.transitionMatrix.at<float>(0,1)=dt_;
+        // KF.transitionMatrix.at<float>(2,3)=dt_;
+        auto result = KF.predict();//计算预测的状态值
+        predict_point.x = result.at<float>(0);
+        predict_point.y = result.at<float>(2);
+    }
+
+    void forword_predict() {
+        auto result = KF.predict();//计算预测的状态值
         predict_point.x = result.at<float>(0);
         predict_point.y = result.at<float>(2);
     }

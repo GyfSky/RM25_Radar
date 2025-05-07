@@ -3,6 +3,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
+#include <open3d/Open3D.h>
 
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -24,10 +25,19 @@ void eigenMat2VecVec(Eigen::MatrixXd &eigen,std::vector<std::vector<T>> &vecVec)
     }
 }
 
+double f(double x) {
+    return 0.0067*x*x*x-0.1368*x*x+1.3636*x+2.7665;
+}
+double GetTimeByRosTime(rclcpp::Time ros_time){
+    double ros_time_value =ros_time.nanoseconds()/1e9;
+    // std::cout<<"ros_time_value"<<ros_time_value<<std::endl;
+    return ros_time_value;
+}
+
 struct One_{
-    int mutli_in=0;
-    std::vector<int> I_utrack;
-    pcl::PointCloud<pcl::PointXYZI> kmeans_pc;
+    int mutli_in=0;//在范围内的未匹配kalman数量
+    std::vector<int> I_utrack;//未匹配上的kalman索引
+    pcl::PointCloud<pcl::PointXYZI> kmeans_pc;//经过kmeans后的聚类中心点
 };
 
 struct Clus_pc{
@@ -90,6 +100,75 @@ Eigen::MatrixXd getCost_confMatrix(std::vector<Kalman_filter_plus> &KFs,int &num
                 cost_matrix(index, cls)=double(color_number[1][cls-5])/double(KFs[index].max_detect_history);
             }
             cost_matrix(index, cls)=1-cost_matrix(index, cls);
+        }
+    }
+    return cost_matrix;
+}
+
+Eigen::MatrixXd getCloudCost(std::vector<Clus_pc> atracks, std::vector<Kalman_filter_plus>btracks,
+    int &atracks_size, int &btracks_size,double distance_thres){
+    atracks_size=atracks.size();btracks_size=btracks.size();
+    if (atracks_size*btracks_size==0){
+        Eigen::MatrixXd cost_matrix;
+        return cost_matrix;
+    }
+    double distance_cost;
+    double mah_cost;
+    double history_cost;
+    std::vector<Eigen::Matrix2d> conv(btracks_size);
+    std::vector<Eigen::Vector2d> mean(btracks_size);
+    std::vector<std::array<std::array<int,6>,2>> color_numbers (btracks.size(),{{
+        {{0, 0, 0, 0, 0, 0}},  // 第一个子数组 蓝
+        {{0, 0, 0, 0, 0, 0}}  // 第二个子数组 红
+    }});
+
+    for (int b=0;b<btracks_size;b++) {
+        int his_size=btracks[b].history.size();
+        double meanX = 0.0, meanY = 0.0,cov00=0,cov01=0,cov11=0;
+        for (auto pair: btracks[b].history) {
+            meanX += pair.second.x;
+            meanY += pair.second.y;
+        }
+        meanX /= his_size;
+        meanY /= his_size;
+        mean[b]<<meanX,meanY;
+
+        for (auto pair: btracks[b].history) {
+            cov00 += (pair.second.x - meanX) * (pair.second.x - meanX);
+            cov01 += (pair.second.x - meanX) * (pair.second.y - meanY);
+            cov11 += (pair.second.y - meanY) * (pair.second.y - meanY);
+        }
+        for (auto pair: btracks[b].detect_history) {
+            color_numbers[b][pair.first][pair.second]++;
+        }
+
+        cov00 /= (his_size - 1);
+        cov01 /= (his_size - 1);
+        cov11 /= (his_size - 1);
+        conv[b]<<cov00,cov01,cov01,cov11;
+    }
+    Eigen::MatrixXd cost_matrix = Eigen::MatrixXd::Zero(atracks_size,btracks_size);
+    for(int a = 0; a<atracks_size; a++){
+        for(int b=0;b<btracks_size;b++){
+            double distance=sqrt(pow(atracks[a].center[0]-btracks[b].predict_point.x,2)+pow(atracks[a].center[1]-btracks[b].predict_point.y,2));
+            distance_cost=distance<distance_thres?distance/distance_thres:1;
+            Eigen::Matrix2d cov_eigen;
+            cov_eigen<<btracks[b].KF.errorCovPost.at<float>(0,0),btracks[b].KF.errorCovPost.at<float>(0,2),
+                                        btracks[b].KF.errorCovPost.at<float>(2,0),btracks[b].KF.errorCovPost.at<float>(2,2);
+
+            // std::cout<<"cov: "<<cov_eigen<<std::endl;
+            Eigen::Vector2d kal_pos,pc_pos;
+            kal_pos<<btracks[b].predict_point.x,btracks[b].predict_point.y;
+            pc_pos<<atracks[a].center[0],atracks[a].center[1];
+            Eigen::Vector2d d = pc_pos - mean[b];
+            mah_cost=sqrt(d.transpose() * conv[b].inverse() * d);
+            mah_cost=mah_cost<distance_thres?mah_cost/distance_thres:1;
+            if (btracks[b].detect_history.size()==0||atracks[a].color==2) history_cost=0;
+            else history_cost=double(color_numbers[b][atracks[a].color][atracks[a].num])/f(double(btracks[b].detect_history.size()))*1.3>1?0:1-double(color_numbers[b][atracks[a].color][atracks[a].num])/f(double(btracks[b].detect_history.size()))*1.3;
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"%f",history_cost);
+            // std::cout<<"mah dis: "<<mah_cost<<"  dis_cost: "<<distance<<std::endl;
+            cost_matrix(a,b)=distance_cost*0.7+history_cost*0.3;
+            // cost_matrix(a,b)=distance_cost;
         }
     }
     return cost_matrix;
@@ -204,7 +283,7 @@ Eigen::MatrixXd getFusionCost(std::vector<Kalman_filter_plus> atracks,std::vecto
             double distance=sqrt(pow(x-btracks[b][0],2)+pow(y-btracks[b][1],2));
             distance_cost=distance<distance_thres?1-distance/distance_thres:0;
             if (atracks[a].detect_history.size()==0) history_cost=0;
-            else history_cost=color_number[btracks[b][2]][btracks[b][3]]/atracks[a].detect_history.size();
+            else history_cost=double(color_number[btracks[b][2]][btracks[b][3]])/double(atracks[a].detect_history.size());
             cost_matrix(a,b)=dis_wight*distance_cost+his_wight*history_cost;
             cost_matrix(a,b)=1-cost_matrix(a,b);
         }
@@ -212,36 +291,64 @@ Eigen::MatrixXd getFusionCost(std::vector<Kalman_filter_plus> atracks,std::vecto
     return cost_matrix;
 }
 
-Eigen::MatrixXd getFusionCost(std::vector<Kalman_filter_plus> atracks,std::vector<std::array<int, 4>> btracks, 
-    int &atracks_size, int &btracks_size,double distance_weight,double distance_thres,double color_weight){
+Eigen::MatrixXd getFusionCost(std::vector<open3d::geometry::PointCloud> atracks,std::vector<std::array<double, 8>> btracks,std::vector<cv::Rect> rects,
+    int &atracks_size, int &btracks_size,double distance_thres,std::vector<bool> is_det,double dis_wight,double his_wight){
     atracks_size=atracks.size();btracks_size=btracks.size();
     if (atracks_size*btracks_size==0){
         Eigen::MatrixXd cost_matrix;
         return cost_matrix;
     }
-    double last_time_cost,distance_cost,history_cost;
     Eigen::MatrixXd  cost_matrix = Eigen::MatrixXd::Zero(atracks_size,btracks_size);
     for(int a = 0; a<atracks_size; a++){
-        //last_time_cost= 1-atracks[a].last_time/1.5;//根据丢失时间设置权值
-        std::array<std::array<int,6>,2> color_number={{
-            {{0, 0, 0, 0, 0, 0}},  // 第一个子数组 蓝
-            {{0, 0, 0, 0, 0, 0}}  // 第二个子数组 红
-        }};
-        for(int i=0;i<atracks[a].detect_history.size();i++){
-            color_number[atracks[a].detect_history[i].first][atracks[a].detect_history[i].second]++;
+        if (is_det[a]) {
+            for(int b=0;b<btracks_size;b++) {
+                cost_matrix(a,b)=1;
+            }
+            continue;
         }
         for(int b=0;b<btracks_size;b++){
-            double distance=sqrt(pow(atracks[a].predict_point.x-btracks[b][0],2)+pow(atracks[a].predict_point.y-btracks[b][1],2));
-            distance_cost=distance<distance_thres?1-distance/distance_thres:0;
-            // history_cost=color_number[btracks[b][2]][btracks[b][3]]/20;
-            history_cost=color_number[btracks[b][2]][btracks[b][3]]/atracks[a].detect_history.size();//改进一下，未测试
-            
-            cost_matrix(a,b)=distance_cost*distance_weight+history_cost*color_weight;
-            cost_matrix(a,b)=1-cost_matrix(a,b);
+            double distance_3D=sqrt(pow(atracks[a].GetCenter()[0]-btracks[b][0],2)+pow(atracks[a].GetCenter()[1]-btracks[b][1],2));
+            cv::Rect b_rect(cv::Point(btracks[b][4],btracks[b][5]),cv::Point(btracks[b][6],btracks[b][7]));
+            cv::Rect Intersection = rects[a] & b_rect;
+            cv::Rect Union = rects[a]|b_rect;
+            double iou=1-double(Intersection.area())/double(Union.area());
+            double dis=distance_3D<distance_thres?distance_3D/distance_thres:1;
+            cost_matrix(a,b)=dis;
         }
     }
     return cost_matrix;
 }
+
+// Eigen::MatrixXd getFusionCost(std::vector<Kalman_filter_plus> atracks,std::vector<std::array<int, 4>> btracks,
+//     int &atracks_size, int &btracks_size,double distance_weight,double distance_thres,double color_weight){
+//     atracks_size=atracks.size();btracks_size=btracks.size();
+//     if (atracks_size*btracks_size==0){
+//         Eigen::MatrixXd cost_matrix;
+//         return cost_matrix;
+//     }
+//     double last_time_cost,distance_cost,history_cost;
+//     Eigen::MatrixXd  cost_matrix = Eigen::MatrixXd::Zero(atracks_size,btracks_size);
+//     for(int a = 0; a<atracks_size; a++){
+//         //last_time_cost= 1-atracks[a].last_time/1.5;//根据丢失时间设置权值
+//         std::array<std::array<int,6>,2> color_number={{
+//             {{0, 0, 0, 0, 0, 0}},  // 第一个子数组 蓝
+//             {{0, 0, 0, 0, 0, 0}}  // 第二个子数组 红
+//         }};
+//         for(int i=0;i<atracks[a].detect_history.size();i++){
+//             color_number[atracks[a].detect_history[i].first][atracks[a].detect_history[i].second]++;
+//         }
+//         for(int b=0;b<btracks_size;b++){
+//             double distance=sqrt(pow(atracks[a].predict_point.x-btracks[b][0],2)+pow(atracks[a].predict_point.y-btracks[b][1],2));
+//             distance_cost=distance<distance_thres?1-distance/distance_thres:0;
+//             // history_cost=color_number[btracks[b][2]][btracks[b][3]]/20;
+//             history_cost=color_number[btracks[b][2]][btracks[b][3]]/atracks[a].detect_history.size();//改进一下，未测试
+//
+//             cost_matrix(a,b)=distance_cost*distance_weight+history_cost*color_weight;
+//             cost_matrix(a,b)=1-cost_matrix(a,b);
+//         }
+//     }
+//     return cost_matrix;
+// }
 
 double lapjv(const std::vector<std::vector<float>> &cost,std::vector<int> &rowsol,std::vector<int> &colsol,
                           bool extend_cost,double match_thresh,bool return_cost){

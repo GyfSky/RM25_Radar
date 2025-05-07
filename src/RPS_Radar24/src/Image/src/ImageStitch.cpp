@@ -9,7 +9,7 @@ void ImageStitch::change_F_of_image(cv::Mat org_K, cv::Mat goal_K, cv::Mat &org_
     cv::invert(org_K, inv_org_K);
     perspective_K = goal_K * inv_org_K;
     std::cout <<  "perspective_K: " << perspective_K << std::endl;
-    warpPerspective(org_image, goal_image, perspective_K, cv::Size(1920, 1440));
+    warpPerspective(org_image, goal_image, perspective_K, cv::Size(960*2, 720*2));
 }
 
 
@@ -35,8 +35,8 @@ bool ImageStitch::getKeypoints(cv::Mat &img1, cv::Mat &img2,
     sift->detectAndCompute(g2, cv::Mat(), keypoints_img, descriptor_img);         /* get keypoints of the image */
     matcher.match(descriptor_roi, descriptor_img, matches);  //实现描述符之间的匹配
 
-    double max_dist = 120;
-    double min_dist = 60;
+    double max_dist = 80;
+    double min_dist = 30;
     //-- Quick calculation of max and min distances between keypoints
 //    for (int i = 0; i < descriptor_roi.rows; i++)
 //    {
@@ -142,6 +142,11 @@ bool ImageStitch::Stitching(cv::Mat &img1, cv::Mat &img2,
         int h_img2 = std::max(corners2[2].y,std::max(corners2[3].y, corners2[1].y));
         int w = std::max(tx + img1.cols, w_img2);
         int h = std::max(ty + img1.rows, h_img2);
+
+        translation = (cv::Mat_<double>(3,3) << 1.0,0.0,img1.cols,
+                                                                  0.0,1.0,img1.rows,
+                                                                  0.0, 0.0, 1.0 );
+
         warpPerspective(img2, stitchedImage, translation*H,cv::Size(w ,h));
 //        warpPerspective(img2, stitchedImage, H,cv::Size(w ,h));
 
@@ -151,12 +156,12 @@ bool ImageStitch::Stitching(cv::Mat &img1, cv::Mat &img2,
 //        cvtColor(stitchedImage, stitchedImage, cv::COLOR_BGR2BGRA);
 //        cvtColor(img1, img1, cv::COLOR_BGR2BGRA);
 
-        cv::Mat half(stitchedImage, cv::Rect(tx, ty, img1.cols, img1.rows));
-        img1.copyTo(half);
-
-        cv::namedWindow("result", cv::WINDOW_NORMAL);
-        imshow("result", stitchedImage);
-        cv::waitKey(0);
+        // cv::Mat half(stitchedImage, cv::Rect(tx, ty, img1.cols, img1.rows));
+        // img1.copyTo(half);
+        //
+        // cv::namedWindow("result", cv::WINDOW_NORMAL);
+        // imshow("result", stitchedImage);
+        // cv::waitKey(0);
     }
     else  //待拼接图像img2在左边
     {
@@ -169,6 +174,8 @@ bool ImageStitch::Stitching(cv::Mat &img1, cv::Mat &img2,
         //计算仿射变换后的四个端点
         std::vector<cv::Point2f>corners(4);
         std::vector<cv::Point2f>corners2(4);
+        std::vector<cv::Point2f>corners3(4);
+
         corners[0] = cv::Point(0, 0);
         corners[1] = cv::Point(0, img1.rows);
         corners[2] = cv::Point(img1.cols, img1.rows);
@@ -182,10 +189,32 @@ bool ImageStitch::Stitching(cv::Mat &img1, cv::Mat &img2,
         circle(stitchedImage, corners2[3], 5, Scalar(0, 255, 0), 2, 8); */
         std::cout << corners2[0].x << ", " << corners2[0].y << std::endl;
         std::cout << corners2[1].x << ", " << corners2[1].y << std::endl;
+        std::cout << corners2[2].x << ", " << corners2[2].y << std::endl;
 
+        int tx = int(-std::min(corners2[0].x,std::min(corners2[3].x, std::min(corners2[2].x, corners2[1].x))));
+        int ty = int(-std::min(corners2[0].y,std::min(corners2[3].y, std::min(corners2[2].y, corners2[1].y))));
+
+
+        cv::Mat translation = (cv::Mat_<double>(3,3) << 1.0,0.0,tx,
+                                                                  0.0,1.0,ty,
+                                                                  0.0, 0.0, 1.0 );
+        std::cout << "translation:" << translation << std::endl;
+        perspectiveTransform(corners, corners3, translation*H2);
+        std::cout << corners3[0].x << ", " << corners3[0].y << std::endl;
+        std::cout << corners3[1].x << ", " << corners3[1].y << std::endl;
+        std::cout << corners3[2].x << ", " << corners3[2].y << std::endl;
+        std::cout << corners3[3].x << ", " << corners3[3].y << std::endl;
+        
+        int w_img2 = std::max(corners2[2].x,std::max(corners2[3].x, std::max(corners2[0].x, corners2[1].x)));
+        int h_img2 = std::max(corners2[2].y,std::max(corners2[3].y, std::max(corners2[0].y, corners2[1].y)));
+        int w = std::max(tx + img2.cols, w_img2);
+        int h = std::max(ty + img2.rows, h_img2);
+        warpPerspective(img1, stitchedImage, H2,cv::Size(w ,h));
+        
         cv::Mat half(stitchedImage, cv::Rect(0, 0, img2.cols, img2.rows));
         img2.copyTo(half);
         cv::namedWindow("result", cv::WINDOW_NORMAL);
+        cv::imwrite("test.png",  stitchedImage);
         cv::imshow("result", stitchedImage);
 
     }

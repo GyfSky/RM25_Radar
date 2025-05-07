@@ -2,7 +2,7 @@
   ros__parameters:
     situation: "lab"
     cost_thres: 2.5
-    map_path: "resource/final2.pcd"
+    map_path: "resource/final5.pcd"
     pub_map_grid_size: 0.01
     #RM2025
     al_map_grid_size: 0.27
@@ -23,11 +23,11 @@
       dynamic.frame_id: "lidar_avia_frame"
       dynamic.accumulate: 3
       dynamic.filter_mode: "pcd"
-      sor.thres: 0.5
+      sor.thres: 0.25
       sor.MeanK: 5
       sor.remove_outlier: true
 
-      pc.map_path: "resource/final2.pcd"
+      pc.map_path: "resource/final5.pcd"
       pc.dis_thres: 0.04
       pc.thread: 12
       mesh.mesh_ori: "resource/24_bg2align_fix1.stl"
@@ -49,11 +49,11 @@
       dynamic.frame_id: "lidar_mid70_frame"
       dynamic.accumulate: 4
       dynamic.filter_mode: "pcd"
-      sor.thres: 0.5
+      sor.thres: 0.25
       sor.MeanK: 5
       sor.remove_outlier: true
 
-      pc.map_path: "resource/final2.pcd"
+      pc.map_path: "resource/final5.pcd"
       pc.dis_thres: 0.04
       pc.thread: 12
       mesh.mesh_ori: "resource/24_bg2align_fix1.stl"
@@ -76,7 +76,7 @@
     dynamic.filter_mode: "pcd"
     sor.thres: 0.6
     #10
-    sor.MeanK: 8
+    sor.MeanK: 5
     sor.remove_outlier: true
 
     pc.map_path: "resource/final2.pcd"
@@ -117,8 +117,8 @@
     kalman.dt_: 0.1
     kalman.sigma_q_x: 40.0
     kalman.sigma_q_y: 40.0
-    kalman.sigma_r_x: 1.0
-    kalman.sigma_r_y: 1.0
+    kalman.sigma_r_x: 10.0
+    kalman.sigma_r_y: 10.0
 
     cost.distance_weight: 1.0
     cost.distance_thres: 6.0
@@ -130,11 +130,19 @@
     #大了导致两个kal与两个clus匹配交换，小了导致kal在拐弯时跟不上clus(跟踪器问题)
     clu.dis_thres: 1.8
     #需要新增卡尔曼的两聚类最小距离阈值
-    clu.min_dis_thres: 0.1
+    clu.min_dis_thres: 0.8
 
-    #----相机识别和点云聚类匹配----
+    #----相机识别和点云聚类匹配----3d
     cam.match_thres: 0.8
     cam.dis_thres: 1.7
-    cam.dis_wight: 0.95
-    cam.his_weight: 0.05
+    cam.dis_weight: 0.77
+    cam.his_weight: 0.23
     cam.time_offset: 0.0
+
+    #----相机识别和点云聚类匹配----2d
+    rect.iou_weight: 0.25
+    rect.dis_weight: 0.75
+    rect.iou_thres: 0.1
+    rect.dis_thres: 2.3
+    rect.match_thres: 0.0
+    rect.use_rect2d: true

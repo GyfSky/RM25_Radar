@@ -8,7 +8,6 @@
 
 #include "interfaces/msg/detect_res.hpp"
 #include "interfaces/msg/detect_obj.hpp"
-#include <open3d/Open3D.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/ml/kmeans.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -87,6 +86,9 @@ namespace upc_radar{
         bool is_one_lidar = false;
         int min_points=3;
         double eps=0.25;
+        bool use_rect2d=true;
+        std::vector<pcl::PointCloud<pcl::PointXYZ>> acc_clouds;
+        int span=0;
 
         interfaces::msg::DetectFrame detect_msg;
         interfaces::msg::DetectResult dep_msg;
@@ -103,6 +105,7 @@ namespace upc_radar{
         message_filters::Subscriber<sensor_msgs::msg::PointCloud2> mid70_sub;
         message_filters::Subscriber<sensor_msgs::msg::PointCloud2> avia_sub;
         std::shared_ptr<message_filters::Synchronizer<MySyncPolicy>> sync;
+        rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_main_img;
 
         void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
         void PcTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2);
@@ -111,24 +114,27 @@ namespace upc_radar{
         std::vector<int> NormalDBSCAN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,double eps,size_t min_points);
 
         void get_cluster(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,std::vector<open3d::geometry::PointCloud> &out);
-        void get_2drect(std::vector<open3d::geometry::PointCloud> pcs,Eigen::Transform<float, 3, 2> transform,std::vector<cv::Rect> &rects);
+        void get_2drect(std::vector<open3d::geometry::PointCloud> pcs,Eigen::Transform<float, 3, 2> transform,std::vector<cv::Rect> &rects,int camid);
         void get_cluster_id(std::vector<Clus_pc>&clus_pcs,std::vector<open3d::geometry::PointCloud> pcs,std::vector<cv::Rect>rects);
         void detect_callback(const interfaces::msg::DetectFrame::SharedPtr msg);
         void dep_callback(const interfaces::msg::DetectResult::SharedPtr msg);
         void check_KFs(std::vector<Kalman_filter_plus> &KFs_);
         void check(std::vector<Kalman_filter_plus> &KFs_);
+        void getImg1(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr);
 
         rclcpp::Subscription<interfaces::msg::DetectRes>::SharedPtr sub_cam_;
         void cam_callback(const interfaces::msg::DetectRes::SharedPtr msg);
 
         //-------------------------------------------//
-        cv::Mat show_img;
+        cv::Mat show_img1,show_img2;
         bool get_lidar2world=false;
         geometry_msgs::msg::TransformStamped transform_stamped;
         tf2_ros::Buffer tf_buffer_;
         tf2_ros::TransformListener tf_listener_;
         cv::Matx33d camera_matrix1;
+        cv::Matx33d camera_matrix2;
         cv::Matx44d lidar2cam1;
+        cv::Matx44d lidar2cam2;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr net_pub_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ori_pub_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr test_pub_;

@@ -1,5 +1,6 @@
 int8 classid
 float32 confidence
+int8 camid
 float32 x1
 float32 y1
 float32 x2

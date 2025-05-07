@@ -124,6 +124,21 @@ void onMouse(int event, int x, int y, int flags, void *para){
         // }
 
     }
+    if(event==cv::EVENT_RBUTTONDOWN) {   //右键按下
+        if(mouse.flag_num>0){
+            cv::Point2d temp;
+            if(mouse.Name == "Livox"){
+                temp=mouse.point2d_mouse_xy.back();
+                mouse.point2d_mouse_xy.pop_back();
+            }else{
+                temp=mouse.point2d_mouse_xy.back();
+                mouse.point2d_mouse_xy.pop_back();
+            }
+            cv::putText(mouse.image,"------",cv::Point(temp.x + 10, temp.y + 10), cv::FONT_HERSHEY_PLAIN, 0.7, cv::Scalar(0, 0, 255), 2);
+            cv::imshow(mouse.winname, mouse.image);
+            mouse.flag_num = mouse.flag_num - 1;
+        }
+    }
 }
 
 void onMouseRect(int event, int x, int y, int flags, void *para) {

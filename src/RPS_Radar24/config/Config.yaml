@@ -11,6 +11,14 @@
 #                                                                        #  从文件夹中的第n张图片开始 #
 #     video_path: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-04_16_38_22/shangjiao.mp4"  #  视频路径
 
+general:
+  cam_use_saved_T: false
+  lidar_use_saved_T: false
+  lidar_use_prepoints: true
+  situation: "rm25"
+  is_one_lidar: false
+  is_real: true
+
 save:
   # save_bag_path: "/media/plusseven/AC83-EF44/record/Resist_wind_in_sky_2/"
   save_bag_path: "/media/thesky/THESKY/bags/"
@@ -29,6 +37,7 @@ net:
 #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.trt"         #   engine文件路径
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.onnx"       #   onnx文件路径
   trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.trt"         #   engine文件路径
+#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"
   onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.onnx"       #   onnx文件路径
   # 神经网络相关参数
   obj_thres: 0.5        #
@@ -49,7 +58,7 @@ net_60:
   #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.trt"         #   engine文件路径
   #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.onnx"       #   onnx文件路径
   trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.trt"         #   engine文件路径
-#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_high.trt"         #   engine文件路径
+#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"         #   engine文件路径
   onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.onnx"       #   onnx文件路径
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/shuffle.engine"         #   engine文件路径
 #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.trt"         #   engine文件路径
@@ -70,6 +79,7 @@ net_armor:
   isArmor: true
   # 神经网络相关参数
   trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.trt"         #   engine文件路径
+#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e2.trt"         #   engine文件路径
   onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.onnx"       #   onnx文件路径
   obj_thres: 0.2        #
   conf_thres: 0.2       #
