@@ -610,8 +610,6 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                         else if (cls_stracks_pool>5&&lidar_det.red_x[cls_stracks_pool-6]!=0&&lidar_det.red_y[cls_stracks_pool-6]!=0) {
                             always_frame_lost_predict_stracks[x].Locate3D.x=lidar_det.red_x[cls_stracks_pool-6];
                             always_frame_lost_predict_stracks[x].Locate3D.y=lidar_det.red_y[cls_stracks_pool-6];
-                            if (always_frame_lost_predict_stracks[x].lost_frame_ind_num>0) {
-                                always_frame_lost_predict_stracks[x].lost_frame_ind_num--;
                             if (always_frame_lost_predict_stracks[x].lost_frame_ind_num>3) {
                                 always_frame_lost_predict_stracks[x].lost_frame_ind_num-=4;
                             }

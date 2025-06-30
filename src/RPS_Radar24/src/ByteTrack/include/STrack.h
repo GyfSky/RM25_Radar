@@ -7,7 +7,7 @@ using namespace cv;
 using namespace std;
 
 enum TrackState { New = 0, Tracked, Lost, Removed, LostCopy, LostCopy_PredictOver };
-enum PlaceType_special { flySlope, hole, ordinary, four, windmill, is_windmill,holeWarring, startupArea,steps,stepsWarring };//？？
+enum PlaceType_special { flySlope, hole, ordinary, four, windmill, is_windmill,holeWarring, startupArea,steps,stepsWarring };
 
 //class STrack : public Car
 class STrack

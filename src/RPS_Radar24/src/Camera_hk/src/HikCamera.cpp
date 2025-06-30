@@ -27,11 +27,11 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
-                            msg->header.stamp = rclcpp::Clock().now();
-                            target->img_pub->publish(*msg);
                         }
                     }
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                    msg->header.stamp = rclcpp::Clock().now();
+                    target->img_pub->publish(*msg);
                 }else if(target->pixelFormat==BGR8Packed){
                     target->m_time=rclcpp::Clock().now();
                     target->mRawImage = cv::Mat(pFrameInfo->nHeight,pFrameInfo->nWidth,CV_8UC3,data);
@@ -41,11 +41,11 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
-                            msg->header.stamp = rclcpp::Clock().now();
-                            target->img_pub->publish(*msg);
                         }
                     }
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                    msg->header.stamp = rclcpp::Clock().now();
+                    target->img_pub->publish(*msg);
                 } else{
                     std::cerr << "\033[35m" << "Please find the cv::cvtColor by yourself , you can use MVS.sh to test the mode" << "\033[0m" << std::endl;
                     std::cerr << "ERROR[self]: cannot show img" << std::endl;
@@ -111,11 +111,11 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
-                            msg->header.stamp = rclcpp::Clock().now();
-                            target->img_pub->publish(*msg);
                         }
                     }
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                    msg->header.stamp = rclcpp::Clock().now();
+                    target->img_pub->publish(*msg);
                 }
                 else if(target->pixelFormat==BGR8Packed){
                     target->mRawImage = cv::Mat(stImageInfo.nHeight,stImageInfo.nWidth,CV_8UC3,pData);
@@ -125,11 +125,11 @@ namespace Camera_hk
                         target->pic_num++;
                         if(target->pic_num%target->num_frame == 0){
                             cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                            auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
-                            msg->header.stamp = rclcpp::Clock().now();
-                            target->img_pub->publish(*msg);
                         }
                     }
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                    msg->header.stamp = rclcpp::Clock().now();
+                    target->img_pub->publish(*msg);
                 } else{
                     std::cerr << "\033[35m" << "Please find the cv::cvtColor by yourself , you can use MVS.sh to test the mode" << "\033[0m" << std::endl;
                     std::cerr << "ERROR[self]: cannot show img" << std::endl;
@@ -222,7 +222,8 @@ void Camera_hk::HikCamera::open()
 //    MV_CC_StartGrabbing(mHandle);
 
     getDeviceModel();
-
+    // 插值算法
+    MV_CC_SetBayerCvtQuality(mHandle, 2);//0：快速 1：均衡 2：最优 3：最优+(linux可能不支持)
 }
 
 void Camera_hk::HikCamera::open(char g_strSerialNumber[64])
@@ -307,7 +308,8 @@ void Camera_hk::HikCamera::open(char g_strSerialNumber[64])
 //    MV_CC_SetEnumValue(mHandle,"ADCBitDepth",0);
 
     getDeviceModel();
-
+    // 插值算法
+    MV_CC_SetBayerCvtQuality(mHandle, 2);//0：快速 1：均衡 2：最优 3：最优+(linux可能不支持)
 }
 
 void Camera_hk::HikCamera::open_thread(char g_strSerialNumber[64]){
@@ -395,6 +397,8 @@ void Camera_hk::HikCamera::open_thread(char g_strSerialNumber[64]){
 //    MV_CC_SetEnumValue(mHandle,"ADCBitDepth",0);
 
     getDeviceModel();
+    // 插值算法
+    MV_CC_SetBayerCvtQuality(mHandle, 2);//0：快速 1：均衡 2：最优 3：最优+(linux可能不支持)
 }
 
 
