@@ -7,6 +7,8 @@
 #include "serialport.h"
 #include "Timer.h"
 #include "rclcpp/rclcpp.hpp"
+#include "interfaces/msg/robot_hp.hpp"
+#include "interfaces/msg/game_state.hpp"
 #include "../../ByteTrack//include/STrack.h"
 //enum OurPattern    {red,blue};
 //enum UsePort       {USB0 = 0,USB1 = 1, USB2 = 2};
@@ -36,6 +38,9 @@ private:
     int thres=10;
     bool time_init =false;
     rclcpp::Time game_start_time;
+    rclcpp::Time test_time;
+    double game_during_time_=0;
+    std::mutex game_time_lock_;
 
     bool is_time_2_55=false, is_time_1_40=false, is_time_1_00=false, is_self_guard_HP_160= true, is_dart_hit=false,
             is_rival_guard_die= true, is_rival_outpost_die= true;
@@ -48,6 +53,9 @@ public:
 //    uint8_t enemy[6];
 //    uint8_t vulnerability_times[1];
     bool is_openPort;
+    rclcpp::Node* node;
+    rclcpp::Publisher<interfaces::msg::RobotHP>::SharedPtr pub_hp;
+    rclcpp::Publisher<interfaces::msg::GameState>::SharedPtr pub_game_state;
 
     std::mutex STrack_lock;
     std::vector<STrack> port_out;
@@ -96,7 +104,7 @@ public:
 //    RADAR_SENF_TO_PLANE_DATA_T radarFlyDataT;
 //    RADAR_DRAW_CAHR_DATA_T radarVulnerablityDataT;
 
-    Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort);
+    Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,rclcpp::Node* node);
     void clearBuff();
     void start();
     void close();
@@ -105,6 +113,7 @@ public:
     void updataSTrackData(std::vector<STrack> out);
     void updataSentryData(std::vector<STrack> out);
     void updataRadarMarkData(std::vector<STrack> &out);
+    void updateGameTime(double time);
     void sendSTrackData();
     void sendOldSTrackData();
     void makeSentryData();
@@ -114,6 +123,7 @@ public:
     void makeDecisionData();
     void sendDecisionData();
     void sendIVCData();
+    bool checkPosition(cv::Point3d Locate3D);
 
     int getRadarMarkNum();
 //    void sendFly();

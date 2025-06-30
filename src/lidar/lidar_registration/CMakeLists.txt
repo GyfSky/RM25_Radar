@@ -40,7 +40,6 @@ rclcpp_components_register_node(${LIDAR_REGISTRATION}
 )
 
 install(DIRECTORY
-  launch
   DESTINATION share/${PROJECT_NAME}/
 )
 

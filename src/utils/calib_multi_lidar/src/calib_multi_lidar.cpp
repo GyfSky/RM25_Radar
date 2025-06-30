@@ -104,7 +104,7 @@ class CalibLidar : public rclcpp::Node{
                 // if(point.x > 5 && point.x < 30 && point.y > -10 && point.y < 8&&point.z<7)
                 //     target_cloud->push_back(point);
                 //lab
-                if(point.x > -7 && point.x < 14 && point.y > -7 && point.y < 14&&point.z<2.6)
+                if(point.x > -35 && point.x < 35 && point.y > -35 && point.y < 35&&point.z<7.6)
                     target_cloud->push_back(point);
             }
         }
@@ -115,7 +115,7 @@ class CalibLidar : public rclcpp::Node{
                 // if(point.x > 5 && point.x < 30 && point.y > -10 && point.y < 8&&point.z<7)
                 //     source_cloud->push_back(point);
                 //lab
-                if(point.x > -7 && point.x < 14 && point.y > -7 && point.y < 14&&point.z<2.6)
+                if(point.x > -35 && point.x < 35 && point.y > -35 && point.y < 35&&point.z<7.6)
                     source_cloud->push_back(point);
             }
         }

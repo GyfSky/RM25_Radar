@@ -38,12 +38,12 @@
 
 // #include "Mouse.h"
 
-# define CV_MAT_MATRIX_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/CVMAT_matrix.yml"
-# define YAML_CONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/Config.yaml"
-# define YAML_NETCONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/net.yaml"
-# define YAML_PLACE_CONFIC_PATH  "/home/thesky/RM25_Radar/src/RPS_Radar24/config/Place.yaml"
-# define YAML_COSTCONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/cost.yaml"
-# define STITCH_CONFIC_PATH "/home/thesky/RM25_Radar/src/RPS_Radar24/config/imageStitch.yaml"
+# define CV_MAT_MATRIX_PATH "/home/thesky/RM25_Radar/src/radar_bringup/config/CVMAT_matrix.yml"
+# define YAML_CONFIC_PATH "/home/thesky/RM25_Radar/src/radar_bringup/config/Config.yaml"
+# define YAML_NETCONFIC_PATH "/home/thesky/RM25_Radar/src/radar_bringup/config/net.yaml"
+# define YAML_PLACE_CONFIC_PATH  "/home/thesky/RM25_Radar/src/radar_bringup/config/Place.yaml"
+# define YAML_COSTCONFIC_PATH "/home/thesky/RM25_Radar/src/radar_bringup/config/cost.yaml"
+# define STITCH_CONFIC_PATH "/home/thesky/RM25_Radar/src/radar_bringup/config/imageStitch.yaml"
 
 
 enum Application{Radar,Common};

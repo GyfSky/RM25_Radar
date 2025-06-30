@@ -409,6 +409,77 @@ void Image::draw_test(vector<TRTInferV1::DetectionObj> car,vector<vector<TRTInfe
     cv::imshow(Cam_winname,Cam_draw);
 }
 
+void Image::draw_cls(std::vector<STrack> output_stracks,int cam_id) {
+    for (int i = 0; i < output_stracks.size(); i++)
+    {
+        if (cam_id==1) {
+            if (output_stracks[i].camid!=cam_id) continue;
+            int cls = output_stracks[i].cls ;
+            if(cls != -1){
+                std::vector<float> tlwh = output_stracks[i].tlwh;
+                cv::Scalar s = get_color(cls);
+                putText(Cam_draw, format("%d", output_stracks[i].track_id), Point(tlwh[0], tlwh[1] - 5),
+                    0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
+
+                if( -1 < cls && cls < classWithoutCar){
+                    putText(Cam_draw,net_config[cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                    cv::putText(Cam_draw,std::to_string(output_stracks[i].conf_armor),cv::Point(output_stracks[i].tlbr[2]+10,output_stracks[i].tlbr[1]-30),cv::FONT_HERSHEY_SIMPLEX, 2, {100, 225, 100},2);
+                } else{
+                    putText(Cam_draw,"car",Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                }
+
+                rectangle(Cam_draw, Rect(tlwh[0], tlwh[1], tlwh[2], tlwh[3]), s, 2);
+                cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 5);
+            }else if(application==Radar){
+                cv::Scalar s = get_color(cls);
+                rectangle(Cam_draw, Rect(output_stracks[i].tlwh[0], output_stracks[i].tlwh[1], output_stracks[i].tlwh[2], output_stracks[i].tlwh[3]), s, 2);
+                cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 5);
+                putText(Cam_draw,"car",Point(output_stracks[i].tlwh[0]-5, output_stracks[i].tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+            }
+
+            cv::imshow(Cam_winname,Cam_draw);
+        }else {
+            if (output_stracks[i].camid!=cam_id) continue;
+            int cls = output_stracks[i].cls ;
+            if(cls != -1){
+                std::vector<float> tlwh = output_stracks[i].tlwh;
+                tlwh[0]=output_stracks[i].sec_rect[0];
+                tlwh[1]=output_stracks[i].sec_rect[1];
+                tlwh[2]=output_stracks[i].sec_rect[2]-output_stracks[i].sec_rect[0];
+                tlwh[3]=output_stracks[i].sec_rect[3]-output_stracks[i].sec_rect[1];
+                cv::Scalar s = get_color(cls);
+                putText(Cam_draw, format("%d", output_stracks[i].track_id), Point(tlwh[0], tlwh[1] - 5),
+                    0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
+
+                if( -1 < cls && cls < classWithoutCar){
+                    putText(Cam_draw,net_config[cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                    cv::putText(Cam_draw,std::to_string(output_stracks[i].conf_armor),cv::Point(output_stracks[i].tlbr[2]+10,output_stracks[i].tlbr[1]-30),cv::FONT_HERSHEY_SIMPLEX, 2, {100, 225, 100},2);
+                } else{
+                    putText(Cam_draw,"car",Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                }
+
+                rectangle(Cam_draw, Rect(tlwh[0], tlwh[1], tlwh[2], tlwh[3]), s, 2);
+                cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 5);
+            }else if(application==Radar){
+                cv::Scalar s = get_color(cls);
+                rectangle(Cam_draw, Rect(output_stracks[i].tlwh[0], output_stracks[i].tlwh[1], output_stracks[i].tlwh[2], output_stracks[i].tlwh[3]), s, 2);
+                cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 5);
+                putText(Cam_draw,"car",Point(output_stracks[i].tlwh[0]-5, output_stracks[i].tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+            }
+
+            cv::imshow(Cam_winname,Cam_draw);
+        }
+
+    }
+}
+
+void Image::draw_lidar(interfaces::msg::DetectResult lidar) {
+    for (int i=0;i<5;i++) {
+        circle(map_draw,cv::Point(lidar.red_x[i]/28*map_w,map_h-lidar.red_y[i]/15*map_h),0,cv::Scalar(255,255,255),15 );
+        circle(map_draw,cv::Point(lidar.blue_x[i]/28*map_w,map_h-lidar.blue_y[i]/15*map_h),0,cv::Scalar(255,255,255),15 );
+    }
+}
+
 void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
 
     if(is_cls){
@@ -418,8 +489,8 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
             if(cls != -1){
                 std::vector<float> tlwh = output_stracks[i].tlwh;
                 bool vertical = tlwh[2] / tlwh[3] > 1.6;
-                if (tlwh[2] * tlwh[3] > 20)
-                {
+                // if (tlwh[2] * tlwh[3] > 20)
+                // {
                     cv::Scalar s = get_color(cls);
                     putText(Cam_draw, format("%d", output_stracks[i].track_id), Point(tlwh[0], tlwh[1] - 5),
                             0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
@@ -443,18 +514,17 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
                             putText(map_draw,"car",cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
                         }
                     }
-                }
+                // }
 
             }else if(application==Radar){
                 cv::Scalar s = get_color(cls);
                 circle(map_draw,cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),0,s,15 );
 //                int track_id = output_stracks[i].track_id;
 //                int cls = track_id%7 + track_id/7*classWithoutCar/2;
-                if( -1 < cls && cls < classWithoutCar){
-                    putText(map_draw,net_config[cls].as<std::string>(),cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
-                } else{
-                    putText(map_draw,"car",cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
-                }
+                rectangle(Cam_draw, Rect(output_stracks[i].tlwh[0], output_stracks[i].tlwh[1], output_stracks[i].tlwh[2], output_stracks[i].tlwh[3]), s, 2);
+                cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 5);
+                putText(Cam_draw,"car",Point(output_stracks[i].tlwh[0]-5, output_stracks[i].tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                putText(map_draw,"car",cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
             }
 
             cv::imshow(Cam_winname,Cam_draw);

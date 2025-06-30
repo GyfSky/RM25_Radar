@@ -11,6 +11,8 @@
 #include <rclcpp/rclcpp.hpp>
 #pragma once
 
+enum PlaceType {ordinary,supply,highway,tunnel};
+
 float Distance(pcl::PointXYZI &a, pcl::PointXYZI &b) {
     return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
@@ -24,18 +26,24 @@ class Kalman_filter_plus {
     public:
     cv::KalmanFilter KF;
     int point_size=0;
+    bool death=false;
+    std::pair<int ,int> death_cls;//第一个是颜色，第二个是编号 1是蓝 0是红
+    PlaceType last_place=ordinary,now_place=ordinary;
 
     rclcpp::Node* node;
     float last_time = 0;//丢失的总时间，即没有观测到目标，只进行预测
     std::chrono::steady_clock::time_point timer;//最后更新时间
     std::vector<std::pair<double, pcl::PointXYZI>> history;//放最佳估计点，时间，坐标
     std::vector<cv::Rect> rect_2d1,rect_2d2;
-    std::vector<std::pair<int ,int>> detect_history;//放相机匹配结果，第一个是颜色，第二个是编号
+    std::vector<std::pair<int ,int>> detect_history;//放相机匹配结果，第一个是颜色，第二个是编号 1是蓝 0是红
     std::vector<double> detect_time;//相机匹配的时间戳
     int max_history = 40;
-    int max_detect_history = 15;
+    int max_detect_history = 20;
+    int max_death_history = 35;
+    Eigen::MatrixXd  ws_armorConfMatrix = Eigen::MatrixXd::Zero(1,10);
 
     pcl::PointXY predict_point;//预测和纠正都会更新
+    pcl::PointXY output_point;//输出经过多次前向预测的点
     float detect_r = 2;//1.7
     float car_speed = 2;//2
     float car_max_speed = 2;//1.5
@@ -48,7 +56,7 @@ class Kalman_filter_plus {
     float sigma_q_y=50.0f;
     float sigma_r_x=0.1f;//越小相信观测
     float sigma_r_y=0.1f;
-    float Distance(pcl::PointXY &a, pcl::PointXY &b) {
+    float Distance(pcl::PointXY &a, pcl::PointXY b) {
         return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
     }
     float get_time() {
@@ -218,8 +226,8 @@ class Kalman_filter_plus {
         timer = std::chrono::steady_clock::now();
         point_size = input.intensity;
         cv::Mat meas = cv::Mat::zeros(2, 1, CV_32F);
-        meas.at<float>(0) = input.x;
-        meas.at<float>(1) = input.y;
+        meas.at<float>(0) = (input.x+history.back().second.x)*0.5;
+        meas.at<float>(1) = (input.y+history.back().second.y)*0.5;
         KF.correct(meas);//根据测量值更新状态值
         predict_point.x = KF.statePost.at<float>(0);//得到最终的状态值
         predict_point.y = KF.statePost.at<float>(2);
@@ -247,8 +255,8 @@ class Kalman_filter_plus {
 
     void forword_predict() {
         auto result = KF.predict();//计算预测的状态值
-        predict_point.x = result.at<float>(0);
-        predict_point.y = result.at<float>(2);
+        output_point.x = result.at<float>(0);
+        output_point.y = result.at<float>(2);
     }
 
     bool match(pcl::PointXY &input) {
@@ -278,21 +286,13 @@ class Kalman_filter_plus {
         double return_time =0;
         for(auto &point : history) {
             //update更新history
-            // std::cout<<"compare"<<std::to_string(point.first)<<"and"<<std::to_string(input_time)<<std::endl;
             auto differ = fabs(point.first - input_time+offset);
-            // std::cout<<"differ"<<differ<<std::endl;
             if(differ < differ_time) {
                 differ_time = differ;
                 return_time=point.first;
             }
         }
-        // std::cout<<"------------"<<std::endl;
-        // std::cout<<std::to_string(return_time)<<std::endl;
-        // std::cout<<"differ"<<differ_time<<std::endl;
-        // std::cout<<"last time"<<history.back().first-input_time<<std::endl;
-
         if(differ_time>TIME_THRESHOLD) {
-            // RCLCPP_ERROR(node->get_logger(),"differ_time is too large");
             return 0;
         }//首先找到离相机取帧时间戳最近的点
         return return_time;

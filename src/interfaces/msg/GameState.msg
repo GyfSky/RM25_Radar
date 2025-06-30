@@ -1,0 +1,3 @@
+std_msgs/Header header
+int8 game_progress
+float32 stage_remain_time

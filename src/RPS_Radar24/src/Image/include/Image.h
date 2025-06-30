@@ -10,7 +10,7 @@
 #include "../../Camera_hk/include/Camera_mlt.h"
 #include  "../../ByteTrack/include/BYTETracker.h"
 #include "rclcpp/rclcpp.hpp"
-#include "interfaces/msg/image_byte.hpp"
+#include "interfaces/msg/detect_result.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
 // #include <cv_bridge/cv_bridge.h>
 
@@ -78,6 +78,8 @@ public:
     void draw_rusult(std::vector<STrack> output_stracks, bool is_cls = false);
     void draw_rusult(cv::Rect rect, cv::Point3d xyz, cv::Mat img_draw);
     void draw_test(vector<TRTInferV1::DetectionObj> car,vector<vector<TRTInferV1::DetectionObj>> Armors);
+    void draw_cls(std::vector<STrack> output_stracks,int cam_id);
+    void draw_lidar(interfaces::msg::DetectResult lidar);
 //    void draw_line(Place &place);
     void draw_line(std::vector<MapVertex> &vexs);
     cv::Scalar get_color(int idx);

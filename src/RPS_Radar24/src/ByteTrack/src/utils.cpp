@@ -17,11 +17,11 @@ void BYTETracker::multi_predict(vector<STrack*> &stracks, byte_kalman::KalmanFil
                 stracks[i]->mean3D[9] = 0;
             }
             int distance = get2Ddistance(stracks[i]->Locate3D.x,stracks[i]->Locate3D.y,stracks[i]->_Locate3D.x,stracks[i]->_Locate3D.y);
-            if(distance < max_predict_3Ddistance){
+            // if(distance < max_predict_3Ddistance){
             if(stracks[i]->state != TrackState::Lost && stracks[i]->state != TrackState::LostCopy_PredictOver ){
                 kalman_filter.predict(stracks[i]->mean3D, stracks[i]->cova3D);
             }
-            }
+            // }
 
         } else{
             if (stracks[i]->state != TrackState::Tracked)
@@ -58,11 +58,11 @@ void BYTETracker::multi_predict(vector<STrack> &stracks, byte_kalman::KalmanFilt
                 stracks[i].mean3D[9] = 0;
             }
             int distance = get2Ddistance(stracks[i].Locate3D.x,stracks[i].Locate3D.y,stracks[i]._Locate3D.x,stracks[i]._Locate3D.y);
-            if(distance < max_predict_3Ddistance){
+            // if(distance < max_predict_3Ddistance){
                 if(stracks[i].state != TrackState::Lost && stracks[i].state != TrackState::LostCopy_PredictOver ){
                     kalman_filter.predict(stracks[i].mean3D, stracks[i].cova3D);
                 }
-            }
+            // }
         } else{
             if (stracks[i].state != TrackState::Tracked)
             {

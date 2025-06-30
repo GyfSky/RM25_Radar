@@ -50,7 +50,7 @@ Net::Net(std::string Name) {
  */
 std::vector<std::vector<TRTInferV1::DetectionObj>> Net::NetWork_mlt(std::vector<cv::Mat> &frames){
 
-        return (this->myInfer.doInference(ref(frames), this->obj_thres, this->conf_thres, this->nms_thres,0));
+        return (this->myInfer.doInference(ref(frames), this->obj_thres, this->conf_thres, this->nms_thres,1));
 
 }
 

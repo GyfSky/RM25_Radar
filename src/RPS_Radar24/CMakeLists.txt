@@ -194,7 +194,6 @@ cuda_add_library(Net
         src/Net/CUDA/preprocess.cu
         )
 
-add_library(TestRect src/TestRect/src/UnityRect.cpp)
 
 # add_executable(MouseTest  General/test/Mouse.cpp)
 # target_link_libraries(MouseTest PUBLIC Mouse)
@@ -245,11 +244,11 @@ ament_target_dependencies(RadarMain rclcpp interfaces std_msgs cv_bridge sensor_
 
 
 target_link_libraries(RadarMain  
-SensorParam Image Locate Net Mouse ByteTrack TestRect Port cudart)
+SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 target_link_libraries(test_net_img  
-SensorParam Image Locate Net Mouse ByteTrack TestRect Port cudart)
+SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 target_link_libraries(test_contract_img  
-SensorParam Image Locate Net Mouse ByteTrack TestRect Port cudart)
+SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 
 install(TARGETS
 		RadarMain
@@ -257,7 +256,6 @@ install(TARGETS
 )
 
  install(DIRECTORY
-		 config
 		 DESTINATION share/${PROJECT_NAME}/
  )
 

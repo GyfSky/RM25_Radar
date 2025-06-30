@@ -4,9 +4,29 @@
 
 #include "../include/Port.h"
 
-Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort) {
+Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,rclcpp::Node* node) {
     this->ourPattern = ourPattern;
     this->mode_num = mode_num;
+    test_time=rclcpp::Clock().now();
+    sentryRadarDataT_lock.lock();
+    for (int i=0;i<10;i++) {
+        sentryRadarDataT.data.char_data[i]=0.0;
+    }
+    sentryRadarDataT_lock.unlock();
+    enemys_lock.lock();
+    enemys.data.mark_engineer_progress=0;
+    enemys.data.mark_hero_progress=0;
+    enemys.data.mark_sentry_progress=0;
+    enemys.data.mark_standard_3_progress=0;
+    enemys.data.mark_standard_4_progress=0;
+    enemys_lock.unlock();
+    gameStatusT_times_lock.lock();
+    gameStatusT.data.game_progress=0;
+    gameStatusT_times_lock.unlock();
+
+    this->node=node;
+    this->pub_hp=this->node->create_publisher<interfaces::msg::RobotHP>("/robot_hp",10);
+    this->pub_game_state=this->node->create_publisher<interfaces::msg::GameState>("/game_state",10);
     if(ourPattern == red){
         this->sender_id = 9;
         this->plane_id  = 6;
@@ -54,7 +74,7 @@ void Port::start() { //TODO:
     std::function<void()> sendIVCData_ = std::bind(&Port::sendIVCData, this);  // IVC 定义: 车辆间通信 - Inter-Vehicle Communications
     std::function<void()> sendSTrackData_ = std::bind(&Port::sendSTrackData, this);
 //    std::function<void()> sendSTrackData_ = std::bind(&Port::sendOldSTrackData, this);
-    this->timer.addTimer(getData_, 1000./10); // 每隔10hz触发一次回调函数
+    this->timer.addTimer(getData_, 1000./20); // 每隔20hz触发一次回调函数
     this->timer.addTimer(sendSTrackData_, 1000./5); // 每隔5hz触发一次回调函数
     this->timer.addTimer(sendIVCData_, 1000./30); // 每隔30hz触发一次回调函数
     timerThread = thread(&Timer::start, &(this->timer));
@@ -82,6 +102,12 @@ void Port::updataSentryData(std::vector<STrack> out) {
     radarSentryDataT_lock.lock();
     this->sentry_out.assign(out.begin(),out.end());
     radarSentryDataT_lock.unlock();
+}
+
+void Port::updateGameTime(double time) {
+    game_time_lock_.lock();
+    time=game_during_time_;
+    game_time_lock_.unlock();
 }
 
 int Port::getRadarMarkNum() {
@@ -126,6 +152,8 @@ void Port::sendSTrackData() {
     STrack_lock.lock();
     sentryRadarDataT_lock.lock();
     for (int i=0;i<5;i++) {
+        if (fabs(sentryRadarDataT.data.char_data[2*i]-0)>0.01&&fabs(sentryRadarDataT.data.char_data[2*i+1]-0)>0.01)
+            RCLCPP_ERROR(rclcpp::get_logger("judge"), "sentry: index: %d,x: %f,y: %f",i,sentryRadarDataT.data.char_data[2*i],sentryRadarDataT.data.char_data[2*i+1]);
         if (!port_out[color_index+i].is_det&&fabs(sentryRadarDataT.data.char_data[2*i]-0)>0.01&&fabs(sentryRadarDataT.data.char_data[2*i+1]-0)>0.01) {
             port_out[color_index+i].Locate3D.x=sentryRadarDataT.data.char_data[2*i];
             port_out[color_index+i].Locate3D.y=sentryRadarDataT.data.char_data[2*i+1];
@@ -167,6 +195,9 @@ void Port::autoDecisionMaking(){
 
     if(int(gameStatusT.data.game_progress) == 4) {
         game_during_time=420-(now_time.seconds()-game_start_time.seconds());
+        game_time_lock_.lock();
+        game_during_time_=now_time.seconds()-game_start_time.seconds();
+        game_time_lock_.unlock();
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "stage_remain_time: %f",game_during_time);
     }
 
@@ -309,7 +340,7 @@ void Port::getData() {
             FRAME_HEADER temp_frameHeader;
             memcpy(temp_frameHeader.u_char8,buff+ptr,FRAME_HEADER_LEN);
             int size = FRAME_HEADER_LEN + CMD_LEN + temp_frameHeader.data.data_length + CRC16_LEN;
-            if(Verify_CRC8_Check_Sum(temp_frameHeader.u_char8, FRAME_HEADER_LEN))  // && Verify_CRC16_Check_Sum(&buff[ptr], size)
+            if(Verify_CRC8_Check_Sum(temp_frameHeader.u_char8, FRAME_HEADER_LEN)&&Verify_CRC16_Check_Sum(&buff[ptr], size))  // && Verify_CRC16_Check_Sum(&buff[ptr], size)
             {
                 ptr += FRAME_HEADER_LEN;
                 uint16_t_uchar temp_cmd_id;
@@ -335,12 +366,16 @@ void Port::getData() {
                         gameStatusT_times_lock.lock();
                         memcpy(this->gameStatusT.u_char8, buff + ptr, temp_frameHeader.data.data_length);
 
-                        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "game_progress: %d", gameStatusT.data.game_progress);
+                        RCLCPP_ERROR(rclcpp::get_logger("judge"), "game_progress: %d", gameStatusT.data.game_progress);
                         std::cout << "game_progress: " << std::to_string(gameStatusT.data.game_progress) << std::endl;
                         if (int(gameStatusT.data.game_progress)==4&&!time_init) {
                             time_init=true;
                             game_start_time=rclcpp::Clock().now();
                         }
+                        interfaces::msg::GameState game_state;
+                        game_state.game_progress=gameStatusT.data.game_progress;
+                        game_state.header.stamp = rclcpp::Clock().now();
+                        pub_game_state->publish(game_state);
 //                        std::cout << "stage_remain_time: " << std::to_string(gameStatusT.data.stage_remain_time) << std::endl;
                         gameStatusT_times_lock.unlock();
                     }break;
@@ -348,7 +383,19 @@ void Port::getData() {
                     {
                         gameRobotHpT_lock.lock();
                         memcpy(this->gameRobotHpT.u_char8, buff + ptr, temp_frameHeader.data.data_length);
+                        interfaces::msg::RobotHP robotHP;
+                        robotHP.blue_robot_hp[0] = gameRobotHpT.data.blue_1_robot_HP;
+                        robotHP.blue_robot_hp[1] = gameRobotHpT.data.blue_2_robot_HP;
+                        robotHP.blue_robot_hp[2] = gameRobotHpT.data.blue_3_robot_HP;
+                        robotHP.blue_robot_hp[3] = gameRobotHpT.data.blue_4_robot_HP;
+                        robotHP.blue_robot_hp[4] = gameRobotHpT.data.blue_7_robot_HP;
+                        robotHP.red_robot_hp[0] = gameRobotHpT.data.red_1_robot_HP;
+                        robotHP.red_robot_hp[1] = gameRobotHpT.data.red_2_robot_HP;
+                        robotHP.red_robot_hp[2] = gameRobotHpT.data.red_3_robot_HP;
+                        robotHP.red_robot_hp[3] = gameRobotHpT.data.red_4_robot_HP;
+                        robotHP.red_robot_hp[4] = gameRobotHpT.data.red_7_robot_HP;
                         gameRobotHpT_lock.unlock();
+                        pub_hp->publish(robotHP);
                     }break;
                     case EVENT_DADA_ID:
                     {
@@ -360,8 +407,14 @@ void Port::getData() {
                     }break;
                     case CMD_RADAR_MARK_DATA_T:
                     {
+                        // auto tim=rclcpp::Clock().now();
+                        // int gap=tim.seconds()-test_time.seconds();
+                        // test_time=tim;
+                        // RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "！！！！！！！！！！！！！！！！！！！！！！！！！！！,%d",gap);
                         enemys_lock.lock();
                         memcpy(enemys.u_char8, buff + ptr, temp_frameHeader.data.data_length);
+                        RCLCPP_ERROR(rclcpp::get_logger("judge"),"1: %d,2: %d,3: %d,4: %d,7: %d",enemys.data.mark_hero_progress,
+                            enemys.data.mark_engineer_progress,enemys.data.mark_standard_3_progress,enemys.data.mark_standard_4_progress,enemys.data.mark_sentry_progress);
                         enemys_lock.unlock();
                         // std::cout << "enemys: " << std::to_string(enemys.u_char8[2]) << std::endl;
                     }break;
@@ -370,6 +423,7 @@ void Port::getData() {
                         vulnerability_times_lock.lock();
                         memcpy(vulnerability_times.u_char8, buff + ptr, temp_frameHeader.data.data_length );
                         RCLCPP_ERROR(rclcpp::get_logger("judge"), "vulnerability_times: %d", vulnerability_times.data.radar_info);
+                        RCLCPP_ERROR(rclcpp::get_logger("judge"), "dacideing: %d", vulnerability_times.data.dacideing);
                         vulnerability_times_lock.unlock();
                     }break;
                     case DART_INFO_DATA_ID:
@@ -416,12 +470,26 @@ void Port::makePlaneData() {
     uint8_t  hole_orange = 0;
     uint8_t  windwill = 0;
     uint8_t  dartWarning = 0;
-    if(this->fly_num>0)          fly         = 1;
-    if(this->hole_red_num>0)     hole_red    = 1;
-    if(this->hole_orange_num>0)  hole_orange = 1;
-    if(this->windmill_num>0)     windwill    = 1;
-    if(this->dart_num>0)     dartWarning    = 1;
-
+    if(this->fly_num>0) {
+        fly         = 1;
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect fly");
+    }
+    if(this->hole_red_num>0) {
+        hole_red    = 1;
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect hole_red");
+    }
+    if(this->hole_orange_num>0) {
+        hole_orange = 1;
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect hole_orange");
+    }
+    if(this->windmill_num>0) {
+        windwill    = 1;
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect windwill");
+    }
+    if(this->dart_num>0) {
+        dartWarning    = 1;
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect dartWarning");
+    }
     vulnerability_times_lock.lock();
     this->radarPlaneDataT.data.char_data[0] = fly;//飞坡
     this->radarPlaneDataT.data.char_data[1] = this->vulnerability_times.data.radar_info;//可易伤次数
@@ -498,30 +566,100 @@ void Port::sendDecisionData(){
     std::this_thread::sleep_for(std::chrono::milliseconds (3));
 }
 
+bool Port::checkPosition(cv::Point3d Locate3D) {
+    return Locate3D.x<=29.0 && Locate3D.x>0.0 && Locate3D.y<=16.0 && Locate3D.y>0.0;
+}
+
 void Port::makeSentryData(){
     this->radarSentryDataT.data.data_cmd_id = 0x02FE;
     this->radarSentryDataT.data.sender_id   = this->sender_id;
     this->radarSentryDataT.data.receiver_id = this->sentry_id;
-    this->radarSentryDataT.data.position[0] = uint16_t(this->sentry_out[color_index+0].Locate3D.x*100);
-    this->radarSentryDataT.data.position[1] = uint16_t(this->sentry_out[color_index+0].Locate3D.y*100);
-    this->radarSentryDataT.data.position[2] = uint16_t(this->sentry_out[color_index+1].Locate3D.x*100);
-    this->radarSentryDataT.data.position[3] = uint16_t(this->sentry_out[color_index+1].Locate3D.y*100);
-    this->radarSentryDataT.data.position[4] = uint16_t(this->sentry_out[color_index+2].Locate3D.x*100);
-    this->radarSentryDataT.data.position[5] = uint16_t(this->sentry_out[color_index+2].Locate3D.y*100);
-    this->radarSentryDataT.data.position[6] = uint16_t(this->sentry_out[color_index+3].Locate3D.x*100);
-    this->radarSentryDataT.data.position[7] = uint16_t(this->sentry_out[color_index+3].Locate3D.y*100);
-    this->radarSentryDataT.data.position[8] = uint16_t(this->sentry_out[color_index+4].Locate3D.x*100);
-    this->radarSentryDataT.data.position[9] = uint16_t(this->sentry_out[color_index+4].Locate3D.y*100);
-    this->radarSentryDataT.data.speed[0] = int16_t(this->sentry_out[color_index+0].vx_3d*100);
-    this->radarSentryDataT.data.speed[1] = int16_t(this->sentry_out[color_index+0].vy_3d*100);
-    this->radarSentryDataT.data.speed[2] = int16_t(this->sentry_out[color_index+1].vx_3d*100);
-    this->radarSentryDataT.data.speed[3] = int16_t(this->sentry_out[color_index+1].vy_3d*100);
-    this->radarSentryDataT.data.speed[4] = int16_t(this->sentry_out[color_index+2].vx_3d*100);
-    this->radarSentryDataT.data.speed[5] = int16_t(this->sentry_out[color_index+2].vy_3d*100);
-    this->radarSentryDataT.data.speed[6] = int16_t(this->sentry_out[color_index+3].vx_3d*100);
-    this->radarSentryDataT.data.speed[7] = int16_t(this->sentry_out[color_index+3].vy_3d*100);
-    this->radarSentryDataT.data.speed[8] = int16_t(this->sentry_out[color_index+4].vx_3d*100);
-    this->radarSentryDataT.data.speed[9] = int16_t(this->sentry_out[color_index+4].vy_3d*100);
+    if (checkPosition(this->sentry_out[color_index+0].Locate3D)) {
+        this->radarSentryDataT.data.position[0] = uint16_t(this->sentry_out[color_index+0].Locate3D.x*100);
+        this->radarSentryDataT.data.position[1] = uint16_t(this->sentry_out[color_index+0].Locate3D.y*100);
+        this->radarSentryDataT.data.speed[0] = int16_t(this->sentry_out[color_index+0].vx_3d*100);
+        this->radarSentryDataT.data.speed[1] = int16_t(this->sentry_out[color_index+0].vy_3d*100);
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"1 x: %d",uint16_t(this->sentry_out[color_index+0].Locate3D.x*100));
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"1 y: %d",uint16_t(this->sentry_out[color_index+0].Locate3D.y*100));
+    }else {
+        this->radarSentryDataT.data.position[0] =0;
+        this->radarSentryDataT.data.position[1] = 0;
+        this->radarSentryDataT.data.speed[0] = 0;
+        this->radarSentryDataT.data.speed[1] = 0;
+    }
+    if (checkPosition(this->sentry_out[color_index+1].Locate3D)) {
+        this->radarSentryDataT.data.position[2] = uint16_t(this->sentry_out[color_index+1].Locate3D.x*100);
+        this->radarSentryDataT.data.position[3] = uint16_t(this->sentry_out[color_index+1].Locate3D.y*100);
+        this->radarSentryDataT.data.speed[2] = int16_t(this->sentry_out[color_index+1].vx_3d*100);
+        this->radarSentryDataT.data.speed[3] = int16_t(this->sentry_out[color_index+1].vy_3d*100);
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"2 x: %d",uint16_t(this->sentry_out[color_index+1].Locate3D.x*100));
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"2 y: %d",uint16_t(this->sentry_out[color_index+1].Locate3D.y*100));
+    }else {
+        this->radarSentryDataT.data.position[2] =0;
+        this->radarSentryDataT.data.position[3] = 0;
+        this->radarSentryDataT.data.speed[2] = 0;
+        this->radarSentryDataT.data.speed[3] = 0;
+    }
+    if (checkPosition(this->sentry_out[color_index+2].Locate3D)) {
+        this->radarSentryDataT.data.position[4] = uint16_t(this->sentry_out[color_index+2].Locate3D.x*100);
+        this->radarSentryDataT.data.position[5] = uint16_t(this->sentry_out[color_index+2].Locate3D.y*100);
+        this->radarSentryDataT.data.speed[4] = int16_t(this->sentry_out[color_index+2].vx_3d*100);
+        this->radarSentryDataT.data.speed[5] = int16_t(this->sentry_out[color_index+2].vy_3d*100);
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"3 x: %d",uint16_t(this->sentry_out[color_index+2].Locate3D.x*100));
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"3 y: %d",uint16_t(this->sentry_out[color_index+2].Locate3D.y*100));
+    }else {
+        this->radarSentryDataT.data.position[4] =0;
+        this->radarSentryDataT.data.position[5] = 0;
+        this->radarSentryDataT.data.speed[4] = 0;
+        this->radarSentryDataT.data.speed[5] = 0;
+    }
+    if (checkPosition(this->sentry_out[color_index+3].Locate3D)) {
+        this->radarSentryDataT.data.position[6] = uint16_t(this->sentry_out[color_index+3].Locate3D.x*100);
+        this->radarSentryDataT.data.position[7] = uint16_t(this->sentry_out[color_index+3].Locate3D.y*100);
+        this->radarSentryDataT.data.speed[6] = int16_t(this->sentry_out[color_index+3].vx_3d*100);
+        this->radarSentryDataT.data.speed[7] = int16_t(this->sentry_out[color_index+3].vy_3d*100);
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"4 x: %d",uint16_t(this->sentry_out[color_index+3].Locate3D.x*100));
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"4 y: %d",uint16_t(this->sentry_out[color_index+3].Locate3D.y*100));
+    }else {
+        this->radarSentryDataT.data.position[6] =0;
+        this->radarSentryDataT.data.position[7] = 0;
+        this->radarSentryDataT.data.speed[6] = 0;
+        this->radarSentryDataT.data.speed[7] = 0;
+    }
+    if (checkPosition(this->sentry_out[color_index+4].Locate3D)) {
+        this->radarSentryDataT.data.position[8] = uint16_t(this->sentry_out[color_index+4].Locate3D.x*100);
+        this->radarSentryDataT.data.position[9] = uint16_t(this->sentry_out[color_index+4].Locate3D.y*100);
+        this->radarSentryDataT.data.speed[8] = int16_t(this->sentry_out[color_index+4].vx_3d*100);
+        this->radarSentryDataT.data.speed[9] = int16_t(this->sentry_out[color_index+4].vy_3d*100);
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"7 x: %d",uint16_t(this->sentry_out[color_index+4].Locate3D.x*100));
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"7 y: %d",uint16_t(this->sentry_out[color_index+4].Locate3D.y*100));
+    }else {
+        this->radarSentryDataT.data.position[8] =0;
+        this->radarSentryDataT.data.position[9] = 0;
+        this->radarSentryDataT.data.speed[8] = 0;
+        this->radarSentryDataT.data.speed[9] = 0;
+    }
+    // this->radarSentryDataT.data.position[0] = uint16_t(this->sentry_out[color_index+0].Locate3D.x*100);
+    // this->radarSentryDataT.data.position[1] = uint16_t(this->sentry_out[color_index+0].Locate3D.y*100);
+    // this->radarSentryDataT.data.position[2] = uint16_t(this->sentry_out[color_index+1].Locate3D.x*100);
+    // this->radarSentryDataT.data.position[3] = uint16_t(this->sentry_out[color_index+1].Locate3D.y*100);
+    // this->radarSentryDataT.data.position[4] = uint16_t(this->sentry_out[color_index+2].Locate3D.x*100);
+    // this->radarSentryDataT.data.position[5] = uint16_t(this->sentry_out[color_index+2].Locate3D.y*100);
+    // this->radarSentryDataT.data.position[6] = uint16_t(this->sentry_out[color_index+3].Locate3D.x*100);
+    // this->radarSentryDataT.data.position[7] = uint16_t(this->sentry_out[color_index+3].Locate3D.y*100);
+    // this->radarSentryDataT.data.position[8] = uint16_t(this->sentry_out[color_index+4].Locate3D.x*100);
+    // this->radarSentryDataT.data.position[9] = uint16_t(this->sentry_out[color_index+4].Locate3D.y*100);
+
+    // this->radarSentryDataT.data.speed[0] = int16_t(this->sentry_out[color_index+0].vx_3d*100);
+    // this->radarSentryDataT.data.speed[1] = int16_t(this->sentry_out[color_index+0].vy_3d*100);
+    // this->radarSentryDataT.data.speed[2] = int16_t(this->sentry_out[color_index+1].vx_3d*100);
+    // this->radarSentryDataT.data.speed[3] = int16_t(this->sentry_out[color_index+1].vy_3d*100);
+    // this->radarSentryDataT.data.speed[4] = int16_t(this->sentry_out[color_index+2].vx_3d*100);
+    // this->radarSentryDataT.data.speed[5] = int16_t(this->sentry_out[color_index+2].vy_3d*100);
+    // this->radarSentryDataT.data.speed[6] = int16_t(this->sentry_out[color_index+3].vx_3d*100);
+    // this->radarSentryDataT.data.speed[7] = int16_t(this->sentry_out[color_index+3].vy_3d*100);
+    // this->radarSentryDataT.data.speed[8] = int16_t(this->sentry_out[color_index+4].vx_3d*100);
+    // this->radarSentryDataT.data.speed[9] = int16_t(this->sentry_out[color_index+4].vy_3d*100);
 }
 
 void Port::sendSentryData(){
@@ -559,11 +697,11 @@ void Port::sendIVCData(){
 
 void Port::setWarring(std::vector<bool> isWarring) {
     radarPlaneDataT_times_lock.lock();
-    if(isWarring[0])  fly_num = 7;
-    if(isWarring[1])  hole_red_num = 7;
-    if(isWarring[2])  hole_orange_num = 7;
-    if(isWarring[3])  windmill_num = 7;
-    if(isWarring[4])  dart_num = 3;
+    if(isWarring[0])  fly_num = 21;
+    if(isWarring[1])  hole_red_num = 21;
+    if(isWarring[2])  hole_orange_num = 21;
+    if(isWarring[3])  windmill_num = 21;
+    if(isWarring[4])  dart_num = 9;
     radarPlaneDataT_times_lock.unlock();
 }
 

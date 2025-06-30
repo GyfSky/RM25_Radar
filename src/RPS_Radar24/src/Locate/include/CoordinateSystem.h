@@ -27,7 +27,8 @@ public:
     cv::Point3d solve_reality_3d(const cv::Mat T_, const double fx, const double fy, const double cx, const double cy,
                           std::vector<MapVertex> &vexs ,std::vector<std::vector<MapEdge>> arcs,cv::Rect &rect , OurPattern ourPattern);
     void set_warring_and_place_by_locate3D(const MapVertex& vex, OurPattern ourPattern, std::vector<bool> &isWarring, STrack &track);
-    void coordinateCorrection(cv::Point3d &Locate3D, OurPattern ourPattern);
+    bool coordinateCorrection(cv::Point3d &Locate3D, OurPattern ourPattern);
+    bool Correction(cv::Point3d &Locate3D, OurPattern ourPattern);
     double getH(MapVertex vex, cv::Point2d Locate2D);
 
     //    void solve_reality_3d(const cv::Mat T, const double fx, const double fy, const double cx, const double cy, Place &place, Car &car);

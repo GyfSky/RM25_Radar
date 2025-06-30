@@ -12,12 +12,12 @@
 #include "../../Image/include/Image.h"
 #include "../../Hero/include/CoordSolver.h"
 
-#include "../../TestRect/include/UnityRect.h"
 #include <interfaces/msg/detect_frame.hpp>
 #include <interfaces/msg/net_detect.hpp>
 #include <interfaces/msg/detect_result.hpp>
 #include <interfaces/msg/detect_obj.hpp>
 #include <interfaces/msg/detect_res.hpp>
+#include <interfaces/msg/lidar_enhance.hpp>
 
 // class MyRadar : public Livox
 class MyRadar 
@@ -56,7 +56,6 @@ private:
     std::shared_ptr<Net> MainCam_Net_ptr = nullptr;
     std::shared_ptr<Net> SecCam_Net_ptr = nullptr;
     std::shared_ptr<Net> Armor_Net_ptr = nullptr;
-    std::shared_ptr<UnityRect> UnityRect_ptr = nullptr;
     std::shared_ptr<Mouse> Mouse_ptr = nullptr;
 
 
@@ -94,11 +93,13 @@ private:
     int pic_num = 0;
     int color_index;
     OurPattern ourPattern;
+    double game_time_=0;
 
 public:
     bool is_one_cam = false;
     rclcpp::Node* node;
     interfaces::msg::DetectResult lidar_det;
+    interfaces::msg::DetectResult lidar_det1;
     bool is_close = false;
     bool is_init=false;
     rclcpp::Time time_now;
@@ -106,6 +107,9 @@ public:
     rclcpp::Publisher<interfaces::msg::DetectRes>::SharedPtr res_pub;
     interfaces::msg::NetDetect car_det;
     interfaces::msg::NetDetect armor_det;
+    interfaces::msg::LidarEnhance lidar_enhance_;
+    bool hero_guess_1_=false,hero_guess_2_=false;
+    int hero_time_1_=0,hero_time_2_=0;
 
     MyRadar(/* args */rclcpp::Node* node);
     ~MyRadar();

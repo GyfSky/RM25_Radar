@@ -1,5 +1,6 @@
 int8 classid
-float32 confidence
+float64 confidence
+float64[10] conf_matrix
 int8 camid
 float32 x1
 float32 y1

@@ -2,3 +2,5 @@ ros2 run direct_visual_lidar_calibration preprocess livox livox_preprocessed -av
 ros2 run direct_visual_lidar_calibration find_matches_superglue.py livox_preprocessed
 ros2 run direct_visual_lidar_calibration initial_guess_auto livox_preprocessed
 ros2 run direct_visual_lidar_calibration calibrate livox_preprocessed
+
+ros2 run direct_visual_lidar_calibration initial_guess_manual livox_preprocessed

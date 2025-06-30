@@ -24,6 +24,7 @@
 
 #include <open3d/Open3D.h>
 #include <open3d/visualization/visualizer/RenderOptionWithEditing.h>
+
 namespace upc_radar{
     class LidarRegistration : public rclcpp::Node
     {
@@ -32,32 +33,31 @@ namespace upc_radar{
         ~LidarRegistration(){}
     
         private:
-        double cost_thres;
-        double pub_map_grid_size;
-        double al_map_grid_size;
-        double pc_grid_size;
+        double cost_thres_;
+        double al_map_grid_size_;
+        double pc_grid_size_;
         
         bool manual_aligned_=false;
         bool auto_aligned_=false;
-        bool use_saved_T=false;
-        bool use_prepoints=true;
-        std::string situation;
-        std::string child_frame_id;
-        std::string sub_topic;
+        bool use_saved_T_=false;
+        bool use_prepoints_=true;
+        std::string situation_;
+        std::string child_frame_id_;
+        std::string sub_topic_;
         
-        Eigen::Matrix4d T;
+        Eigen::Matrix4d T_;
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> accumulated_clouds_;
         pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
 
-        int accumulate_time =30;
+        int accumulate_time_ =30;
         rclcpp::TimerBase::SharedPtr timer_;
         std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
-        Eigen::Matrix4d manual_trans(std::shared_ptr<open3d::geometry::PointCloud> pc2align, std::shared_ptr<open3d::geometry::PointCloud> mesh_pc);
+        Eigen::Matrix4d manualTrans(std::shared_ptr<open3d::geometry::PointCloud> pc2align, std::shared_ptr<open3d::geometry::PointCloud> mesh_pc);
         void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-        std::vector<size_t> select_points(std::shared_ptr<const open3d::geometry::PointCloud> pcd);
+        std::vector<size_t> selectPoints(std::shared_ptr<const open3d::geometry::PointCloud> pcd);
         void publishTF(const Eigen::Matrix4d& transform);
     };
 

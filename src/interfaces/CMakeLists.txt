@@ -15,11 +15,12 @@ find_package(geometry_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DetectFrame.msg"
   "msg/DetectResult.msg"
-  "msg/Rect.msg"
   "msg/NetDetect.msg"
   "msg/DetectObj.msg"
-  "msg/ImageByte.msg"
   "msg/DetectRes.msg"
+  "msg/RobotHP.msg"
+  "msg/GameState.msg"
+  "msg/LidarEnhance.msg"
   DEPENDENCIES geometry_msgs std_msgs
 )
 

@@ -31,7 +31,7 @@ MyRadar::MyRadar(rclcpp::Node* node){
     //     new Image(Common,Modes_ptr->pictureSource, "00F26632053", "Hik30", Modes_ptr->isSave, disk02,
     //                   start));
 
-    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, 12, Modes_ptr->Port_isOpen, Modes_ptr->usePort));
+    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, 12, Modes_ptr->Port_isOpen, Modes_ptr->usePort,node));
 
 
     //test

@@ -4,101 +4,205 @@
 
 namespace upc_radar{
     KalmanFilter::KalmanFilter(const rclcpp::NodeOptions& node_options):rclcpp::Node("kalman_filter_node",node_options),tf_buffer_(this->get_clock()),tf_listener_(tf_buffer_){
-        declare_parameter<double>("kalman.detect_r",1.7);
-        declare_parameter<double>("kalman.car_max_speed",2.0);
 
-        declare_parameter<double>("kalman.dt_",0.1);
-        declare_parameter<double>("kalman.sigma_q_x",50.0);
-        declare_parameter<double>("kalman.sigma_q_y",50.0);
-        declare_parameter<double>("kalman.sigma_r_x",0.1);
-        declare_parameter<double>("kalman.sigma_r_y",0.1);
+        prepareParameter();
 
-        declare_parameter<double>("cost.distance_weight",0.4);
-        declare_parameter<double>("cost.distance_thres",0.6);
-        declare_parameter<double>("cost.color_weight",0.6);
-        declare_parameter<double>("fusion.match_thresh",0.45);
-        declare_parameter<double>("clu.match_thres",0.85);
-        declare_parameter<double>("clu.dis_thres",2.2);
-        declare_parameter<double>("clu.min_dis_thres",0.4);
-
-        declare_parameter<double>("cam.match_thres",0.8);
-        declare_parameter<double>("cam.dis_thres",1.7);
-        declare_parameter<double>("cam.dis_weight",0.95);
-        declare_parameter<double>("cam.his_weight",0.05);
-        declare_parameter<double>("cam.time_offset",1.2);
-        declare_parameter<int>("classWithoutCar",12);
-        declare_parameter<int>("cluster.min_pts",5);
-        declare_parameter<double>("cluster.eps",0.25);
-
-        declare_parameter<double>("rect.iou_weight",0.25);
-        declare_parameter<double>("rect.dis_weight",0.75);
-        declare_parameter<double>("rect.iou_thres",0.1);
-        declare_parameter<double>("rect.dis_thres",2.3);
-        declare_parameter<double>("rect.match_thres",0.0);
-        declare_parameter<bool>("rect.use_rect2d",true);
-
-        is_one_lidar=declare_parameter<bool>("is_one_lidar",true);
         if (is_one_lidar) {
-            sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("/livox/lidar_dynamic", 10, std::bind(&KalmanFilter::callback, this, std::placeholders::_1));
+            sub_pc = this->create_subscription<sensor_msgs::msg::PointCloud2>("/livox/lidar_dynamic", 5, std::bind(&KalmanFilter::callback, this, std::placeholders::_1));
             RCLCPP_WARN(this->get_logger(), "is_one_lidar is true, only one lidar will be used.");
         }else {
             mid70_sub.subscribe(this, "/livox/mid70");
             avia_sub.subscribe(this, "/livox/avia");
-            MySyncPolicy sync_policy(10);
+            MySyncPolicy sync_policy(5);
             sync_policy.setMaxIntervalDuration(rclcpp::Duration(0,100000000));
             sync=std::make_shared<message_filters::Synchronizer<MySyncPolicy>>(std::ref(sync_policy),avia_sub,mid70_sub);
-            sync->registerCallback(&KalmanFilter::PcTimeSynC, this);
+            sync->registerCallback(&KalmanFilter::PCTimeSynC, this);
         }
 
-        sub_dep_ = this->create_subscription<interfaces::msg::DetectResult>("fusion_result", 100, std::bind(&KalmanFilter::dep_callback, this, std::placeholders::_1));
-        // sub_detect_= this->create_subscription<interfaces::msg::DetectFrame>("/resolve_result", 10, std::bind(&KalmanFilter::detect_callback, this, std::placeholders::_1));
-        // sub_main_img = this->create_subscription<sensor_msgs::msg::CompressedImage>("/compressed_image", rclcpp::SensorDataQoS(), std::bind(&KalmanFilter::getImg1, this, std::placeholders::_1));
+        // sub_detect= this->create_subscription<interfaces::msg::DetectFrame>("/resolve_result", 10, std::bind(&KalmanFilter::detectCallback, this, std::placeholders::_1));
 
-        pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_kalman", 10);
+        lidar_enh_pub_=this->create_publisher<interfaces::msg::LidarEnhance>("/lidar_enhance", 1);
+        pub_kalman = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_kalman", 10);
         pub_cluster = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_cluster", 10);
         pub_kmeans = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_kmeans", 10);
-        pub_point_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/vis_point", 10);
-        lidar_detect_pub_ = this->create_publisher<interfaces::msg::DetectResult>("/lidar_detect", 10);
+        pub_vis = this->create_publisher<visualization_msgs::msg::MarkerArray>("/vis_point", 10);
+        lidar_detect_pub = this->create_publisher<interfaces::msg::DetectResult>("/lidar_detect", 1);
 
-        sub_cam_=this->create_subscription<interfaces::msg::DetectRes>("/cam_result", 10, std::bind(&KalmanFilter::cam_callback, this, std::placeholders::_1));
+        sub_cam=this->create_subscription<interfaces::msg::DetectRes>("/cam_result", 3, std::bind(&KalmanFilter::camCallback, this, std::placeholders::_1));
+        // sub_robot_hp=this->create_subscription<interfaces::msg::RobotHP>("/robot_hp", 10, std::bind(&KalmanFilter::robotHPCallback, this, std::placeholders::_1));
 
+        net_pub=this->create_publisher<sensor_msgs::msg::PointCloud2>("/net_3D", 10);
+        pc_pub= this->create_publisher<sensor_msgs::msg::PointCloud2>("/pc_3D", 10);
 
-        //-------------------------------------------//
-        net_pub_=this->create_publisher<sensor_msgs::msg::PointCloud2>("/net_3D", 10);
-        ori_pub_=this->create_publisher<sensor_msgs::msg::PointCloud2>("/ori_3D", 10);
-        test_pub_= this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_3D", 10);
-        cv::Mat image=cv::imread("/home/thesky/RM25_Radar/resource/cam1.jpg");
-        show_img1=image.clone();
-        cv::namedWindow("depth1",0);
-        cv::resizeWindow("depth1",640,480);
-        cv::imshow("depth1",show_img1);
-        image=cv::imread("/home/thesky/RM25_Radar/resource/cam2.jpg");
-        show_img2=image.clone();
-        cv::namedWindow("depth2",0);
-        cv::resizeWindow("depth2",640,480);
-        cv::imshow("depth2",show_img2);
-        // camera_matrix1=cv::Matx33d(3574.7899975395749,0,2035.5162216399472,0,3570.1522168951046,1512.3941063924631,0,0,1);
-        // lidar2cam1=cv::Matx44d(0.00728,-0.01686,0.99983,0.06922,-0.99978,0.01956,0.00761,0.04613,-0.01968,-0.99967,-0.01672,0.00160,0,0,0,1);
-        camera_matrix1=cv::Matx33d(2291.14722575626,0,1103.67246,0,2291.55696902824,1086.45687,0,0,1);
-        lidar2cam1=cv::Matx44d(0.46173  , -0.00534 , 0.88700  , -0.00254  ,
--0.88300 , -0.09782  ,0.45906  , 0.09259   ,
-0.08431  , -0.99519 , -0.04988 , -0.00688 ,
-0.00000  , 0.00000 ,  0.00000 ,  1.00000);
-        lidar2cam1=lidar2cam1.inv();
-        camera_matrix2=cv::Matx33d(1703.57857839016,0,776.621431609538,0,1698.69114037183,558.752840063006,0,0,1);
-        lidar2cam2=cv::Matx44d(-0.24378 , -0.02513 , 0.96951  , 0.08269   ,
--0.96661 , 0.08764 ,  -0.24078 , -0.23952  ,
--0.07892 , -0.99583 , -0.04566 , 0.00146  ,
-0.00000 ,  0.00000  , 0.00000 ,  1.00000  );
-        lidar2cam2=lidar2cam2.inv();
+        show_img1=cv::imread("/home/thesky/RM25_Radar/resource/img/cam1.jpg");
+        cv::namedWindow("cam1",0);
+        cv::resizeWindow("cam1",640,480);
+        cv::imshow("cam1",show_img1);
+
+        show_img2=cv::imread("/home/thesky/RM25_Radar/resource/img/cam2.jpg");
+        cv::namedWindow("cam2",0);
+        cv::resizeWindow("cam2",640,480);
+        cv::imshow("cam2",show_img2);
+
         RCLCPP_WARN(this->get_logger(), "Kalman_filter_Node has been started.");
     }
 
-    // void KalmanFilter::cam_callback(const interfaces::msg::DetectRes::SharedPtr msg) {
-    //     cam_msg=*msg;
-    //     self_color=msg->self_color;
-    // }
-    /**/
+    void KalmanFilter::prepareParameter() {
+        declare_parameter<double>("kalman.detect_r",3.0);
+        declare_parameter<double>("kalman.car_max_speed",2.0);
+
+        declare_parameter<double>("kalman.dt_",0.1);
+        declare_parameter<double>("kalman.sigma_q_x",40.0);
+        declare_parameter<double>("kalman.sigma_q_y",40.0);
+        declare_parameter<double>("kalman.sigma_r_x",5.0);
+        declare_parameter<double>("kalman.sigma_r_y",5.0);
+
+        declare_parameter<double>("cost.distance_weight",1.0);
+        declare_parameter<double>("cost.distance_thres",6.0);
+        declare_parameter<double>("cost.color_weight",0.6);
+        declare_parameter<double>("fusion.match_thresh",0.45);
+        declare_parameter<double>("clu.match_thres",0.85);
+        declare_parameter<double>("clu.dis_thres",1.8);
+        declare_parameter<double>("clu.min_dis_thres",0.8);
+
+        declare_parameter<double>("cam.match_thres",0.9);
+        declare_parameter<double>("cam.dis_thres",1.8);
+        declare_parameter<double>("cam.dis_weight",0.95);
+        declare_parameter<double>("cam.his_weight",0.05);
+        declare_parameter<double>("cam.time_offset",0.0);
+        declare_parameter<int>("classWithoutCar",12);
+        declare_parameter<int>("cluster.min_pts",6);
+        declare_parameter<double>("cluster.eps",0.4);
+
+        declare_parameter<double>("rect.iou_weight",0.75);
+        declare_parameter<double>("rect.dis_weight",0.25);
+        declare_parameter<double>("rect.iou_thres",0.05);
+        declare_parameter<double>("rect.dis_thres",2.3);
+        declare_parameter<double>("rect.match_thres",0.0);
+        declare_parameter<bool>("rect.use_rect2d",true);
+
+        is_one_lidar=declare_parameter<bool>("is_one_lidar",false);
+
+        camera_matrix1=cv::Matx33d(2291.14722575626,0,1103.67246,0,2291.55696902824,1086.45687,0,0,1);
+        lidar2cam1=cv::Matx44d(0.48001 ,  -0.03327 , 0.87663 ,  0.00706   ,
+-0.87188 , -0.12860 , 0.47253 ,  0.26716   ,
+0.09701 ,  -0.99114 , -0.09073 , -0.21789 ,
+0.00000 ,  0.00000  , 0.00000  , 1.00000 );
+        lidar2cam1=lidar2cam1.inv();
+
+        camera_matrix2=cv::Matx33d(1703.57857839016,0,776.621431609538,0,1698.69114037183,558.752840063006,0,0,1);
+        lidar2cam2=cv::Matx44d(-0.26869 , -0.07683 , 0.96016 ,  -0.17722  ,
+-0.95942 , 0.10986  , -0.25969 , -0.10152  ,
+-0.08553 , -0.99097 , -0.10323 , 0.11610   ,
+0.00000 ,  0.00000  , 0.00000 ,  1.00000);
+        lidar2cam2=lidar2cam2.inv();
+
+        for (int i=0;i<5;i++) {
+            robot_hp.blue_robot_hp[i]=100;
+            robot_hp.red_robot_hp[i]=100;
+        }
+
+        prepareLocation();
+
+    }
+
+    void KalmanFilter::prepareLocation() {
+        // tunnel_slanted_[0]=cv::Point2f(15.4988,2.614);
+        // tunnel_slanted_[1]=cv::Point2f(16.4014,1.7841);
+        // tunnel_slanted_[2]=cv::Point2f(18.8454,4.6387);
+        // tunnel_slanted_[3]=cv::Point2f(17.8028,5.206);
+        tunnel_slanted_[0]=cv::Point2f(16.0,1.293);
+        tunnel_slanted_[1]=cv::Point2f(15.6,2.07);
+        tunnel_slanted_[2]=cv::Point2f(18.0,5.50);
+        tunnel_slanted_[3]=cv::Point2f(20.658,4.548);
+        tunnel_slanted_[4]=cv::Point2f(16.3,1.003);
+
+        tunnel_horizontal_[0]=cv::Point2f(16.0,1.293);
+        tunnel_horizontal_[1]=cv::Point2f(15.6,2.07);
+        tunnel_horizontal_[2]=cv::Point2f(13.901,1.844);
+        tunnel_horizontal_[3]=cv::Point2f(14.42,1.293);
+
+        supply_[0]=cv::Point2f(24.5,10.95);
+        supply_[1]=cv::Point2f(24.5,15.0);
+        supply_[2]=cv::Point2f(28.0,15.0);
+        supply_[3]=cv::Point2f(28.0,10.95);
+
+        outpost_[0]=cv::Point2f(17.5,12.4);
+        outpost_[1]=cv::Point2f(17.5,10.2);
+        outpost_[2]=cv::Point2f(18.8,10.2);
+        outpost_[3]=cv::Point2f(18.8,12.4);
+
+        little_engine_l_[0]=cv::Point2f(18.165,9.65);
+        little_engine_l_[1]=cv::Point2f(18.165,7.8889);
+        little_engine_l_[2]=cv::Point2f(19.3,7.8889);
+        little_engine_l_[3]=cv::Point2f(19.3,9.65);
+
+        little_engine_r_[0]=cv::Point2f(18.165,7.1111);
+        little_engine_r_[1]=cv::Point2f(18.165,5.35);
+        little_engine_r_[2]=cv::Point2f(19.3,5.35);
+        little_engine_r_[3]=cv::Point2f(19.3,7.1111);
+
+        high_way_[0]=cv::Point2f(20.932,15.0);
+        high_way_[1]=cv::Point2f(20.932,11.65);
+        high_way_[2]=cv::Point2f(24.5,11.65);
+        high_way_[3]=cv::Point2f(24.5,15.0);
+    }
+
+    void KalmanFilter::checkLocation(std::vector<Kalman_filter_plus> &KFs) {
+        std::vector<int> remove_index;
+        for (int i=0;i<KFs.size();i++) {
+            auto point=KFs[i].predict_point;
+            if (initornot(high_way_,point,4)==1) {
+                if (KFs[i].now_place!=highway) {
+                    KFs[i].last_place=KFs[i].now_place;
+                    KFs[i].now_place=highway;
+                }
+            }else if (initornot(supply_,point,4)==1) {
+                if (KFs[i].now_place!=supply) {
+                    KFs[i].last_place=KFs[i].now_place;
+                    KFs[i].now_place=supply;
+                    if (KFs[i].last_place==highway) {
+                        remove_index.push_back(i);
+                    }
+                }
+            }else {
+                if (KFs[i].now_place!=ordinary) {
+                    KFs[i].last_place=KFs[i].now_place;
+                    KFs[i].now_place=ordinary;
+                }
+            }
+        }
+        for (auto index:remove_index)
+            KFs.erase(KFs.begin()+index);
+    }
+
+    void KalmanFilter::robotHPCallback(const interfaces::msg::RobotHP::SharedPtr msg) {
+        robot_hp=*msg;
+        std::vector<Kalman_filter_plus> KFs_;
+        mtx.lock();
+        KFs_= KFs;
+        mtx.unlock();
+
+        for (auto kf:KFs_) {
+            int color=kf.get_color();
+            int num=kf.get_number();
+            if (color==1&&robot_hp.blue_robot_hp[num]==0) {
+                kf.death=true;
+                kf.death_cls.first=color;
+                kf.death_cls.second=num;
+            }else if (color==0&&robot_hp.red_robot_hp[num]==0) {
+                kf.death=true;
+                kf.death_cls.first=color;
+                kf.death_cls.second=num;
+            }else {
+                kf.death=false;
+            }
+        }
+
+        mtx.lock();
+        KFs= KFs_;
+        mtx.unlock();
+    }
 
     void KalmanFilter::getImg1(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
         show_img1 = cv::imdecode(rosImg_ptr->data, cv::IMREAD_COLOR).clone();
@@ -107,7 +211,8 @@ namespace upc_radar{
             std::cout << "error!!!!!" << std::endl;
         }
     }
-    void KalmanFilter::cam_callback(const interfaces::msg::DetectRes::SharedPtr msg) {
+
+    void KalmanFilter::camCallback(const interfaces::msg::DetectRes::SharedPtr msg) {
         rclcpp::Time time = msg->header.stamp;
         std::vector<Kalman_filter_plus> KFs_;
         cam_msg=*msg;
@@ -120,11 +225,11 @@ namespace upc_radar{
         self_color=msg->self_color;
 
         std::map<double,int> time_map;
-        std::vector<std::array<double, 4>> det;//x,y,颜色，编号
+        std::vector<std::array<double, 5>> det;//x,y,颜色，编号
         pcl::PointCloud<pcl::PointXYZ> ori_net;
         pcl::PointCloud<pcl::PointXYZ> ori_pc;
         std::cout<<msg->obj.size();
-        std::vector<bool> overlap(msg->obj.size(),false);
+        std::vector<bool> overlap_cam(msg->obj.size(),false);
         std::vector<bool> is_det(KFs_.size(),false);
         for (int i=0;i<msg->obj.size();i++) {
             if (msg->obj[i].x==0||msg->obj[i].y==0) continue;
@@ -132,8 +237,8 @@ namespace upc_radar{
                 if (!(msg->obj[i].x2 < msg->obj[j].x1 || msg->obj[j].x2 < msg->obj[i].x1) &&
                     !(msg->obj[i].y1 > msg->obj[j].y2 || msg->obj[j].y1 > msg->obj[i].y2)&&
                     msg->obj[j].x!=0&&msg->obj[j].y!=0) {
-                    overlap[i]=true;
-                    overlap[j]=true;
+                    overlap_cam[i]=true;
+                    overlap_cam[j]=true;
                 }
             }
         }
@@ -144,16 +249,20 @@ namespace upc_radar{
                 for(auto &kf : KFs_){
                     time_map[kf.camera_find_match(time,offset)]++;
                 }
-                ori_net.points.push_back(pcl::PointXYZ(obj.x,obj.y,2));
-                if (!use_rect2d||overlap[i]) {
+                if(self_color==1){//己方为蓝色时将坐标反转，因为此时相机传回的是准确的，雷达聚类的是反转的
+                    ori_net.points.push_back(pcl::PointXYZ(28-obj.x,15-obj.y,2));
+                }else {
+                    ori_net.points.push_back(pcl::PointXYZ(obj.x,obj.y,2));
+                }
+                if (!use_rect2d||overlap_cam[i]) {
                     if(self_color==1){//己方为蓝色时将坐标反转，因为此时相机传回的是准确的，雷达聚类的是反转的
                         obj.x=28-obj.x;
                         obj.y=15-obj.y;
                     }
                     if (obj.classid<5) {
-                        det.push_back({obj.x,obj.y,1,obj.classid});
+                        det.push_back({obj.x,obj.y,1,obj.classid,i});
                     }else {
-                        det.push_back({obj.x,obj.y,0,obj.classid-5});
+                        det.push_back({obj.x,obj.y,0,obj.classid-5,i});
                     }
                 }
             }
@@ -165,10 +274,42 @@ namespace upc_radar{
 
         if (fabs(time_id-0)<=0.00001) return;
 
+        std::vector<bool> overlap_lidar(KFs_.size(),false);
+        for (int i=0;i<KFs_.size();i++) {
+            double min_time=10;
+            cv::Rect rect_pc1,rect_pc2;
+            for (int k=0;k<KFs_[i].history.size();k++) {
+                if (fabs(KFs_[i].history[k].first-time_id)<=min_time) {
+                    min_time=fabs(KFs_[i].history[k].first-time_id);
+                    rect_pc1=KFs_[i].rect_2d1[k];
+                    rect_pc2=KFs_[i].rect_2d2[k];
+                }
+            }
+            if (min_time>0.5) continue;
+            for (int j=i+1;j<KFs_.size();j++) {
+                double min_time=10;
+                cv::Rect rect_t1,rect_t2;
+                for (int k=0;k<KFs_[j].history.size();k++) {
+                    if (fabs(KFs_[j].history[k].first-time_id)<=min_time) {
+                        min_time=fabs(KFs_[j].history[k].first-time_id);
+                        rect_t1=KFs_[j].rect_2d1[k];
+                        rect_t2=KFs_[j].rect_2d2[k];
+                    }
+                }
+                if (min_time>0.5) continue;
+                cv::Rect Intersection1 = rect_pc1&rect_t1 , Intersection2 = rect_pc2&rect_t2;
+                cv::Rect Union1 = rect_pc1|rect_t1 , Union2 = rect_pc2|rect_t2;
+                if (double(Intersection1.area())/double(Union1.area())>0||double(Intersection2.area())/double(Union2.area())>0) {
+                    overlap_lidar[i]=true;
+                    overlap_lidar[j]=true;
+                }
+            }
+        }
+
         cv::Mat img1=show_img1.clone();
         cv::Mat img2=show_img2.clone();
         for (int i=0;i<msg->obj.size();i++) {
-            if (!overlap[i]) {
+            if (!overlap_cam[i]) {
                 interfaces::msg::DetectObj obj=msg->obj[i];
                 if (obj.camid==1) {
                     cv::rectangle(img1,cv::Point(obj.x1,obj.y1),cv::Point(obj.x2,obj.y2),cv::Scalar(0,255,0),2);
@@ -189,14 +330,15 @@ namespace upc_radar{
         double rect_match_thres=get_parameter("rect.match_thres").as_double();
 
         for(int i=0;i<msg->obj.size();i++) {
-            if (!overlap[i]&&use_rect2d) {
-                int index;
+            if (!overlap_cam[i]&&use_rect2d) {
+                int index=-1;
                 double iou=0.0;
                 double match_value=0.0;
                 cv::Rect rect_cam(cv::Point(msg->obj[i].x1, msg->obj[i].y1), cv::Point(msg->obj[i].x2 ,msg->obj[i].y2));
                 for (int j=0;j<KFs_.size();j++) {
                     double min_time=10;
                     cv::Rect rect_pc;
+                    pcl::PointXY point;
                     for (int k=0;k<KFs_[j].history.size();k++) {
                         if (fabs(KFs_[j].history[k].first-time_id)<=min_time) {
                             min_time=fabs(KFs_[j].history[k].first-time_id);
@@ -204,13 +346,16 @@ namespace upc_radar{
                                 rect_pc=KFs_[j].rect_2d1[k];
                             else if (msg->obj[i].camid==2)
                                 rect_pc=KFs_[j].rect_2d2[k];
+                            point.x=KFs_[j].history[k].second.x;
+                            point.y=KFs_[j].history[k].second.y;
                         }
                     }
-                    if (min_time>0.5) continue;
+                    if (min_time>0.5||overlap_lidar[j]) continue;
                     cv::Rect Intersection = rect_cam & rect_pc;
                     cv::Rect Union = rect_cam|rect_pc;
                     if (double(Intersection.area())/double(Union.area())>rect_iou_thres) {
-                        double distance=sqrt(pow(msg->obj[i].x-KFs_[j].predict_point.x,2)+pow(msg->obj[i].y-KFs_[j].predict_point.y,2));
+                        double distance=sqrt(pow(msg->obj[i].x-point.x,2)+pow(msg->obj[i].y-point.y,2));
+                        if (self_color==1) distance=sqrt(pow(28.0-msg->obj[i].x-point.x,2)+pow(15.0-msg->obj[i].y-point.y,2));
                         distance=distance<rect_dis_thres?1-distance/rect_dis_thres:0;
                         double temp_value=rect_iou_weight*(double(Intersection.area())/double(Union.area()))+rect_dis_weight*distance;
                         if (temp_value>match_value) {
@@ -219,22 +364,26 @@ namespace upc_radar{
                         }
                     }
                 }
-                // RCLCPP_ERROR(this->get_logger(), "---------------------iou %f",iou);
+                // RCLCPP_ERROR(this->get_logger(), "---------------------iou %f",match_value);
 
-                if (match_value>rect_match_thres) {
+                if (match_value>rect_match_thres&&index!=-1) {
                     interfaces::msg::DetectObj obj=msg->obj[i];
                     if (obj.classid<5) {
                         KFs_[index].detect_history.push_back(std::make_pair(1,obj.classid));
                     }else {
                         KFs_[index].detect_history.push_back(std::make_pair(0,obj.classid-5));
                     }
+                    Eigen::MatrixXd new_ConfMatrix= Eigen::MatrixXd::Zero(1,10);
+                    for (int i=0;i<5;i++) new_ConfMatrix(0,i)=obj.conf_matrix[i+5];
+                    for (int i=5;i<10;i++) new_ConfMatrix(0,i)=obj.conf_matrix[i-5];
+                    KFs_[index].ws_armorConfMatrix = new_ConfMatrix * obj.confidence * 1.0/3.0 + (1.0 - obj.confidence * 1.0/3.0 ) * KFs_[index].ws_armorConfMatrix;
                     KFs_[index].detect_time.push_back(KFs_[index].GetTimeByRosTime(time));
                     if(KFs_[index].detect_history.size() > KFs_[index].max_detect_history){
                         KFs_[index].detect_history.erase(KFs_[index].detect_history.begin());
                         KFs_[index].detect_time.erase(KFs_[index].detect_time.begin());
                     }
                     is_det[index]=true;
-                    RCLCPP_ERROR(this->get_logger(),"---------------------sucess detect %d",index);
+                    // RCLCPP_ERROR(this->get_logger(),"---------------------sucess detect %d",index);
                 }else {
                     interfaces::msg::DetectObj obj=msg->obj[i];
                     if(self_color==1){//己方为蓝色时将坐标反转，因为此时相机传回的是准确的，雷达聚类的是反转的
@@ -242,9 +391,9 @@ namespace upc_radar{
                         obj.y=15-obj.y;
                     }
                     if (obj.classid<5) {
-                        det.push_back({obj.x,obj.y,1,obj.classid});
+                        det.push_back({obj.x,obj.y,1,obj.classid,i});
                     }else {
-                        det.push_back({obj.x,obj.y,0,obj.classid-5});
+                        det.push_back({obj.x,obj.y,0,obj.classid-5,i});
                     }
                 }
             }
@@ -270,8 +419,8 @@ namespace upc_radar{
             if (!is_one_lidar)
                 cv::rectangle(img2,cv::Point(rect_pc2.x,rect_pc2.y),cv::Point(rect_pc2.x+rect_pc2.height,rect_pc2.y+rect_pc2.width),cv::Scalar(0,0,255),2);
         }
-        cv::imshow("depth1",img1);
-        cv::imshow("depth2",img2);
+        cv::imshow("cam1",img1);
+        cv::imshow("cam2",img2);
         cv::waitKey(1);
 
         std::vector<std::vector<float> > dists;
@@ -291,33 +440,34 @@ namespace upc_radar{
 
         for(auto match : matches){
             KFs_[match[0]].detect_history.push_back(std::make_pair(det[match[1]][2], det[match[1]][3]));
+            Eigen::MatrixXd new_ConfMatrix= Eigen::MatrixXd::Zero(1,10);
+            for (int i=0;i<5;i++) new_ConfMatrix(0,i)=msg->obj[det[match[1]][4]].conf_matrix[i+5];
+            for (int i=5;i<10;i++) new_ConfMatrix(0,i)=msg->obj[det[match[1]][4]].conf_matrix[i-5];
+            KFs_[match[0]].ws_armorConfMatrix = new_ConfMatrix * msg->obj[det[match[1]][4]].confidence * 1.0/3.0 + (1.0 - msg->obj[det[match[1]][4]].confidence * 1.0/3.0 ) * KFs_[match[0]].ws_armorConfMatrix;
             KFs_[match[0]].detect_time.push_back(KFs_[match[0]].GetTimeByRosTime(time));
             if(KFs_[match[0]].detect_history.size() > KFs_[match[0]].max_detect_history){
                 KFs_[match[0]].detect_history.erase(KFs_[match[0]].detect_history.begin());
                 KFs_[match[0]].detect_time.erase(KFs_[match[0]].detect_time.begin());
             }
         }
-        sensor_msgs::msg::PointCloud2 net_3D;
-        pcl::toROSMsg(ori_net,net_3D);
-        net_3D.header.frame_id="rm_frame";
-        net_3D.header.stamp=time;
-        net_pub_->publish(net_3D);
+        sensor_msgs::msg::PointCloud2 det_3D;
+        pcl::toROSMsg(ori_net,det_3D);
+        det_3D.header.frame_id="rm_frame";
+        det_3D.header.stamp=time;
+        net_pub->publish(det_3D);
 
-        pcl::toROSMsg(ori_pc,net_3D);
-        net_3D.header.frame_id="rm_frame";
-        net_3D.header.stamp=time;
-        test_pub_->publish(net_3D);
+        pcl::toROSMsg(ori_pc,det_3D);
+        det_3D.header.frame_id="rm_frame";
+        det_3D.header.stamp=time;
+        pc_pub->publish(det_3D);
+
         mtx.lock();
         KFs= KFs_;
         mtx.unlock();
     }
 
-    void KalmanFilter::dep_callback(const interfaces::msg::DetectResult::SharedPtr msg) {
-        dep_msg=*msg;
-    }
-
     //记入噪音点
-    std::vector<int> KalmanFilter::NormalDBSCAN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,double eps,size_t min_points) {
+    std::vector<int> KalmanFilter::normalDBSCAN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,double eps,size_t min_points) {
 
         std::vector<pcl::Indices> nbs(cloud->points.size());
         pcl::KdTreeFLANN<pcl::PointXYZ> kd_Tree;
@@ -335,7 +485,7 @@ namespace upc_radar{
 
         int cluster_label = 0;
         for (size_t idx = 0; idx < cloud->points.size(); ++idx) {
-            // Label is not undefined.
+            //代表当前点已经处理过了
             if (labels[idx] != -2) {
                 continue;
             }
@@ -382,7 +532,7 @@ namespace upc_radar{
         return labels;
     }
 
-    std::vector<int> KalmanFilter::NormalDBSCAN(const open3d::geometry::PointCloud cloud,
+    std::vector<int> KalmanFilter::normalDBSCAN(const open3d::geometry::PointCloud cloud,
         double eps,size_t min_points,std::vector<std::vector<int>> &nbs){
 
         open3d::geometry::KDTreeFlann kdtree(cloud);
@@ -394,8 +544,6 @@ namespace upc_radar{
                     kdtree.SearchRadius(cloud.points_[idx], eps, nbs[idx], dists2);
                 }
             });
-
-        auto now_time1 = std::chrono::steady_clock::now();
 
         std::vector<int> labels(cloud.points_.size(), -2);
         int cluster_label = 0;
@@ -444,13 +592,10 @@ namespace upc_radar{
 
             cluster_label++;
         }
-        // auto end_time1 = std::chrono::steady_clock::now();
-        // float dur_time1 = std::chrono::duration_cast<std::chrono::milliseconds>(end_time1 - now_time1).count();
-        // RCLCPP_WARN(this->get_logger(), "cluster Callback time is %f ms", dur_time1);
         return labels;
     }
 
-    std::vector<int> KalmanFilter::NormalDBSCAN(const open3d::geometry::PointCloud cloud,
+    std::vector<int> KalmanFilter::normalDBSCAN(const open3d::geometry::PointCloud cloud,
         double eps,size_t min_points,std::vector<std::vector<int>> &nbs,std::vector<std::vector<int>> &clusters){
 
         open3d::geometry::KDTreeFlann kdtree(cloud);
@@ -538,7 +683,7 @@ namespace upc_radar{
         return labels;
     }
 
-    void KalmanFilter::get_cluster(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,std::vector<open3d::geometry::PointCloud> &out){
+    void KalmanFilter::getCluster(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,std::vector<open3d::geometry::PointCloud> &out){
         if (cloud->empty()) {return;}
         eps=get_parameter("cluster.eps").as_double();
         min_points=get_parameter("cluster.min_pts").as_int();
@@ -551,8 +696,8 @@ namespace upc_radar{
         std::vector<int> labels;
         std::vector<std::vector<int>> nbs(in_cloud.points_.size());
         std::vector<std::vector<int>> clusters;
-        labels=NormalDBSCAN(in_cloud,eps, min_points,nbs);
-        // labels=NormalDBSCAN(cloud,eps, min_points);
+        labels=normalDBSCAN(in_cloud,eps, min_points,nbs);
+        // labels=normalDBSCAN(cloud,eps, min_points);
         // labels=in_cloud.ClusterDBSCAN(eps, min_points);
 
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> points;
@@ -583,18 +728,18 @@ namespace upc_radar{
 
         for (int i = 0; i <=max_l; i++) {
             //open3d obb
-            if (pcs[i].points_.size()<=3) {
-                out.push_back(pcs[i]);
-                continue;
-            }
-            auto obb=pcs[i].GetOrientedBoundingBox(true);
-            auto pointss=obb.GetBoxPoints();
-            double width1=sqrt(pow(pointss[0][0]-pointss[1][0],2)+pow(pointss[0][1]-pointss[1][1],2)+pow(pointss[0][2]-pointss[1][2],2));
-            double height1=sqrt(pow(pointss[0][0]-pointss[2][0],2)+pow(pointss[0][1]-pointss[2][1],2)+pow(pointss[0][2]-pointss[2][2],2));
-            double depth1=sqrt(pow(pointss[0][0]-pointss[3][0],2)+pow(pointss[0][1]-pointss[3][1],2)+pow(pointss[0][2]-pointss[3][2],2));
-            if (height1>0.025&&width1>0.025&&depth1>0.025&&height1<1.5&&width1<1.5&&depth1<1.5) {
-                out.push_back(pcs[i]);
-            }
+            // if (!hasAtLeastThreeUniquePoints(pcs[i].points_)) {
+            //     out.push_back(pcs[i]);
+            //     continue;
+            // }
+            // auto obb=pcs[i].GetOrientedBoundingBox(true);
+            // auto pointss=obb.GetBoxPoints();
+            // double width1=sqrt(pow(pointss[0][0]-pointss[1][0],2)+pow(pointss[0][1]-pointss[1][1],2)+pow(pointss[0][2]-pointss[1][2],2));
+            // double height1=sqrt(pow(pointss[0][0]-pointss[2][0],2)+pow(pointss[0][1]-pointss[2][1],2)+pow(pointss[0][2]-pointss[2][2],2));
+            // double depth1=sqrt(pow(pointss[0][0]-pointss[3][0],2)+pow(pointss[0][1]-pointss[3][1],2)+pow(pointss[0][2]-pointss[3][2],2));
+            // if (height1>0.025&&width1>0.025&&depth1>0.025&&height1<1.5&&width1<1.5&&depth1<1.5) {
+            //     out.push_back(pcs[i]);
+            // }
 
             //法向量
             // auto center=pcs[i].GetCenter();
@@ -648,9 +793,371 @@ namespace upc_radar{
             //
             // std::cout<<"width:"<<width<<"height:"<<height<<"depth:"<<depth<<std::endl;
             // // std::cout<<"width1:"<<width1<<"height1:"<<height1<<"depth1:"<<depth1<<std::endl;
-            // if (depth>0.025&&!(height>1.5||width>1.5)) {
-            //     out.push_back(pcs[i]);
+            // if (depth>0.025) {
+                out.push_back(pcs[i]);
             // }
+        }
+    }
+
+    void KalmanFilter::guessWithoutClass(std::vector<Kalman_filter_plus> &KFs_,std::vector<int> u_strack,visualization_msgs::msg::MarkerArray &vis_array,std::vector<std::vector<int>> history_cost) {
+        for (auto index:u_strack) {
+            // if (KFs_[index].last_time>1.5) {
+            //     continue;
+            // }
+            auto point=KFs_[index].predict_point;
+            // 打符点下位置 英雄
+            if (initornot(tunnel_slanted_,point,5)==1) {
+                //self_color==1为自己为蓝方
+                if (self_color==1) {
+                    if (detect_res.red_x[0]==0&&detect_res.red_y[0]==0) {
+                        detect_res.red_x[0]= point.x;
+                        detect_res.red_y[0]= point.y;
+                        detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,0,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][0]);
+                        lidar_enhance_[0][0]=0;
+                    }
+                }else if (self_color==0) {
+                    if (detect_res.blue_x[0]==0&&detect_res.blue_y[0]==0) {
+                        detect_res.blue_x[0]= point.x;
+                        detect_res.blue_y[0]= point.y;
+                        detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,1,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][0]);
+                        lidar_enhance_[1][0]=0;
+                    }
+                }
+                continue;
+            }
+            // 前哨站位置 英雄
+            if (initornot(outpost_,point,4)==1) {
+                //self_color==1为自己为蓝方
+                if (self_color==1) {
+                    if (detect_res.red_x[0]==0&&detect_res.red_y[0]==0) {
+                        detect_res.red_x[0]= point.x;
+                        detect_res.red_y[0]= point.y;
+                        detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,0,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][0]);
+                        lidar_enhance_[0][0]=0;
+                    }
+                }else if (self_color==0) {
+                    if (detect_res.blue_x[0]==0&&detect_res.blue_y[0]==0) {
+                        detect_res.blue_x[0]= point.x;
+                        detect_res.blue_y[0]= point.y;
+                        detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,1,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][0]);
+                        lidar_enhance_[1][0]=0;
+                    }
+                }
+                continue;
+            }
+            // 左侧小资源岛 工程
+            if (initornot(little_engine_l_,point,4)==1) {
+                //self_color==1为自己为蓝方
+                if (self_color==1) {
+                    if (detect_res.red_x[1]==0&&detect_res.red_y[1]==0) {
+                        detect_res.red_x[1]= point.x;
+                        detect_res.red_y[1]= point.y;
+                        detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,0,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][1]);
+                        lidar_enhance_[0][1]=0;
+                    }
+                }else if (self_color==0) {
+                    if (detect_res.blue_x[1]==0&&detect_res.blue_y[1]==0) {
+                        detect_res.blue_x[1]= point.x;
+                        detect_res.blue_y[1]= point.y;
+                        detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,1,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][1]);
+                        lidar_enhance_[1][1]=0;
+                    }
+                }
+                continue;
+            }
+            // 右侧小资源岛 工程
+            if (initornot(little_engine_r_,point,4)==1) {
+                //self_color==1为自己为蓝方
+                if (self_color==1) {
+                    if (detect_res.red_x[1]==0&&detect_res.red_y[1]==0) {
+                        detect_res.red_x[1]= point.x;
+                        detect_res.red_y[1]= point.y;
+                        detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,0,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][1]);
+                        lidar_enhance_[0][1]=0;
+                    }
+                }else if (self_color==0) {
+                    if (detect_res.blue_x[1]==0&&detect_res.blue_y[1]==0) {
+                        detect_res.blue_x[1]= point.x;
+                        detect_res.blue_y[1]= point.y;
+                        detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
+                        detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
+                        vis_kal_maker(1,vis_array,1,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][1]);
+                        lidar_enhance_[1][1]=0;
+                    }
+                }
+            }
+        }
+    }
+
+    void KalmanFilter::guessWithClass(std::vector<Kalman_filter_plus> &KFs_,std::vector<std::vector<int>> matches_cls,std::vector<int> &remove_KFs_) {
+        for (auto match:matches_cls) {
+            //补给区
+            if(KFs_[match[0]].output_point.x>=24.5&&KFs_[match[0]].output_point.y>=10.95&&KFs_[match[0]].last_time>0.3&&
+               !(KFs_[match[0]].history.back().second.y>11.65&&KFs_[match[0]].history.back().second.x<24.3)){
+                //自己是红方
+                if (self_color==0&&match[1]>=5) {
+                    if (match[1]==6) {
+                        KFs_[match[0]].output_point.x=26.2;
+                        KFs_[match[0]].output_point.y=14.1;
+                        RCLCPP_ERROR(this->get_logger(),"enter mill!!!"); //工程兑矿区
+                    }else {
+                        KFs_[match[0]].output_point.x=25.6;
+                        KFs_[match[0]].output_point.y=13.2;
+                        RCLCPP_ERROR(this->get_logger(),"enter supply!!!"); //其他车补给点
+                    }
+                    lidar_enhance_[1][match[1]-5]=1;
+                    detect_res.blue_x[match[1]-5]=KFs_[match[0]].output_point.x;
+                    detect_res.blue_y[match[1]-5]=KFs_[match[0]].output_point.y;
+                    detect_res.v_x[match[1]-5] = 0;
+                    detect_res.v_y[match[1]-5] = 0;
+                    remove_KFs_.push_back(match[0]);
+                }else if (self_color==1&&match[1]<5) {
+                    if (match[1]==1) {
+                        KFs_[match[0]].output_point.x=1.8;
+                        KFs_[match[0]].output_point.y=0.9;
+                        RCLCPP_ERROR(this->get_logger(),"enter mill!!!"); //工程兑矿区
+                    }else {
+                        KFs_[match[0]].output_point.x=2.4;
+                        KFs_[match[0]].output_point.y=1.8;
+                        RCLCPP_ERROR(this->get_logger(),"enter supply!!!"); //其他车补给点
+                    }
+                    lidar_enhance_[0][match[1]]=1;
+                    detect_res.red_x[match[1]]=KFs_[match[0]].output_point.x;
+                    detect_res.red_y[match[1]]=KFs_[match[0]].output_point.y;
+                    detect_res.v_x[match[1]] = 0;
+                    detect_res.v_y[match[1]] = 0;
+                    remove_KFs_.push_back(match[0]);
+                }
+                continue;
+            }
+            //倾斜隧道
+            if(initornot(tunnel_slanted_,KFs_[match[0]].output_point,5)==1&&KFs_[match[0]].last_time>1.3) {
+                //自己是红方
+                if (self_color==0&&match[1]==5) {
+                    KFs_[match[0]].output_point.x=17.5392;
+                    KFs_[match[0]].output_point.y=4.1475;
+                    lidar_enhance_[1][match[1]-5]=1;
+                    detect_res.blue_x[match[1]-5]=KFs_[match[0]].output_point.x;
+                    detect_res.blue_y[match[1]-5]=KFs_[match[0]].output_point.y;
+                    detect_res.v_x[match[1]-5] = 0;
+                    detect_res.v_y[match[1]-5] = 0;
+                    remove_KFs_.push_back(match[0]);
+                }else if (self_color==1&&match[1]==0) {
+                    KFs_[match[0]].output_point.x=10.4608;
+                    KFs_[match[0]].output_point.y=10.8525;
+                    lidar_enhance_[0][match[1]]=1;
+                    detect_res.red_x[match[1]]=KFs_[match[0]].output_point.x;
+                    detect_res.red_y[match[1]]=KFs_[match[0]].output_point.y;
+                    detect_res.v_x[match[1]] = 0;
+                    detect_res.v_y[match[1]] = 0;
+                    remove_KFs_.push_back(match[0]);
+                }else if (match[1]<5){
+                    fake_kfs[0][match[1]].location=KFs_[match[0]].output_point;
+                    fake_kfs[0][match[1]].is_first=true;
+                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+                        fake_kfs[0][match[1]].v_x=speed*sin(35*M_PI/180);
+                        fake_kfs[0][match[1]].v_y=speed*cos(35*M_PI/180);
+                    }else {
+                        fake_kfs[0][match[1]].v_x=-speed*sin(35*M_PI/180);
+                        fake_kfs[0][match[1]].v_y=-speed*cos(35*M_PI/180);
+                    }
+                    lidar_enhance_[0][match[1]]=2;
+                    if (self_color==1) {
+                        fake_kfs[0][match[1]].location.x=28-fake_kfs[0][match[1]].location.x;
+                        fake_kfs[0][match[1]].location.y=15-fake_kfs[0][match[1]].location.y;
+                        fake_kfs[0][match[1]].v_x=-fake_kfs[0][match[1]].v_x;
+                        fake_kfs[0][match[1]].v_y=-fake_kfs[0][match[1]].v_y;
+                        detect_res.v_x[match[1]]=fake_kfs[0][match[1]].v_x;
+                        detect_res.v_y[match[1]]=fake_kfs[0][match[1]].v_y;
+                    }
+                    remove_KFs_.push_back(match[0]);
+                }else if (match[1]>=5){
+                    fake_kfs[1][match[1]-5].location=KFs_[match[0]].output_point;
+                    fake_kfs[1][match[1]-5].is_first=true;
+                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+                        fake_kfs[1][match[1]-5].v_x=speed*sin(35*M_PI/180);
+                        fake_kfs[1][match[1]-5].v_y=speed*cos(35*M_PI/180);
+                    }else {
+                        fake_kfs[1][match[1]-5].v_x=-speed*sin(35*M_PI/180);
+                        fake_kfs[1][match[1]-5].v_y=-speed*cos(35*M_PI/180);
+                    }
+                    lidar_enhance_[1][match[1]-5]=2;
+                    if (self_color==0) {
+                        detect_res.v_x[match[1]-5]=fake_kfs[1][match[1]-5].v_x;
+                        detect_res.v_y[match[1]-5]=fake_kfs[1][match[1]-5].v_y;
+                    }else {
+                        fake_kfs[1][match[1]-5].location.x=28-fake_kfs[1][match[1]-5].location.x;
+                        fake_kfs[1][match[1]-5].location.y=15-fake_kfs[1][match[1]-5].location.y;
+                        fake_kfs[1][match[1]-5].v_x=-fake_kfs[1][match[1]-5].v_x;
+                        fake_kfs[1][match[1]-5].v_y=-fake_kfs[1][match[1]-5].v_y;
+                    }
+                    remove_KFs_.push_back(match[0]);
+                }
+                continue;
+            }
+            //水平隧道
+            if(initornot(tunnel_horizontal_,KFs_[match[0]].output_point,4)==1&&KFs_[match[0]].last_time>0.2) {
+                if (match[1]<5){
+                    fake_kfs[0][match[1]].location=KFs_[match[0]].output_point;
+                    fake_kfs[0][match[1]].is_first=true;
+                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+                        fake_kfs[0][match[1]].v_x=speed;
+                        fake_kfs[0][match[1]].v_y=0;
+                    }else {
+                        fake_kfs[0][match[1]].v_x=-speed;
+                        fake_kfs[0][match[1]].v_y=0;
+                    }
+                    lidar_enhance_[0][match[1]]=3;
+                    if (self_color==1) {
+                        fake_kfs[0][match[1]].location.x=28-fake_kfs[0][match[1]].location.x;
+                        fake_kfs[0][match[1]].location.y=15-fake_kfs[0][match[1]].location.y;
+                        fake_kfs[0][match[1]].v_x=-fake_kfs[0][match[1]].v_x;
+                        fake_kfs[0][match[1]].v_y=-fake_kfs[0][match[1]].v_y;
+                        detect_res.v_x[match[1]]=fake_kfs[0][match[1]].v_x;
+                        detect_res.v_y[match[1]]=fake_kfs[0][match[1]].v_y;
+                    }
+                    remove_KFs_.push_back(match[0]);
+                }
+                else if (match[1]>=5){
+                    fake_kfs[1][match[1]-5].location=KFs_[match[0]].output_point;
+                    fake_kfs[1][match[1]-5].is_first=true;
+                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+                        fake_kfs[1][match[1]-5].v_x=speed;
+                        fake_kfs[1][match[1]-5].v_y=0;
+                    }else {
+                        fake_kfs[1][match[1]-5].v_x=-speed;
+                        fake_kfs[1][match[1]-5].v_y=0;
+                    }
+                    lidar_enhance_[1][match[1]-5]=3;
+                    if (self_color==0) {
+                        detect_res.v_x[match[1]-5]=fake_kfs[1][match[1]-5].v_x;
+                        detect_res.v_y[match[1]-5]=fake_kfs[1][match[1]-5].v_y;
+                    }else {
+                        fake_kfs[1][match[1]-5].location.x=28-fake_kfs[1][match[1]-5].location.x;
+                        fake_kfs[1][match[1]-5].location.y=15-fake_kfs[1][match[1]-5].location.y;
+                        fake_kfs[1][match[1]-5].v_x=-fake_kfs[1][match[1]-5].v_x;
+                        fake_kfs[1][match[1]-5].v_y=-fake_kfs[1][match[1]-5].v_y;
+                    }
+                    remove_KFs_.push_back(match[0]);
+                }
+            }
+        }
+    }
+
+    void KalmanFilter::speedSimulation() {
+        for (int i=0;i<5;i++) {
+            if (lidar_enhance_[0][i]==2) {
+                pcl::PointXY location=self_color==0?fake_kfs[0][i].location:pcl::PointXY(28-fake_kfs[0][i].location.x,15-fake_kfs[0][i].location.y);
+                if (initornot(tunnel_slanted_,location,5)!=1){
+                    if (fake_kfs[0][i].v_x>0) {
+                        double speed=sqrt(pow(fake_kfs[0][i].v_x,2)+pow(fake_kfs[0][i].v_y,2));
+                        fake_kfs[0][i].v_x=speed;
+                        fake_kfs[0][i].v_y=0;
+                        lidar_enhance_[0][i]=3;
+                    }
+                    detect_res.red_x[i]=fake_kfs[0][i].location.x;
+                    detect_res.red_y[i]=fake_kfs[0][i].location.y;
+                }else {
+                    if (fake_kfs[0][i].is_first==true) {
+                        detect_res.red_x[i]=fake_kfs[0][i].location.x;
+                        detect_res.red_y[i]=fake_kfs[0][i].location.y;
+                        fake_kfs[0][i].is_first=false;
+                    }else {
+                        fake_kfs[0][i].location.x=fake_kfs[0][i].location.x+fake_kfs[0][i].v_x*0.2;
+                        fake_kfs[0][i].location.y=fake_kfs[0][i].location.y+fake_kfs[0][i].v_y*0.2;
+                        detect_res.red_x[i]=fake_kfs[0][i].location.x;
+                        detect_res.red_y[i]=fake_kfs[0][i].location.y;
+                    }
+                }
+            }else if (lidar_enhance_[0][i]==3) {
+                pcl::PointXY location=self_color==0?fake_kfs[0][i].location:pcl::PointXY(28-fake_kfs[0][i].location.x,15-fake_kfs[0][i].location.y);
+                if (initornot(tunnel_horizontal_,location,4)!=1){
+                    if (fake_kfs[0][i].v_x<0) {
+                        double speed=sqrt(pow(fake_kfs[0][i].v_x,2)+pow(fake_kfs[0][i].v_y,2));
+                        fake_kfs[0][i].v_x=-speed*sin(35*M_PI/180)*2.0;
+                        fake_kfs[0][i].v_y=-speed*cos(35*M_PI/180)*2.0;
+                        lidar_enhance_[0][i]=2;
+                    }
+                    detect_res.red_x[i]=fake_kfs[0][i].location.x;
+                    detect_res.red_y[i]=fake_kfs[0][i].location.y;
+                }else {
+                    if (fake_kfs[0][i].is_first==true) {
+                        detect_res.red_x[i]=fake_kfs[0][i].location.x;
+                        detect_res.red_y[i]=fake_kfs[0][i].location.y;
+                        fake_kfs[0][i].is_first=false;
+                    }else {
+                        fake_kfs[0][i].location.x=fake_kfs[0][i].location.x+fake_kfs[0][i].v_x*0.2;
+                        fake_kfs[0][i].location.y=fake_kfs[0][i].location.y+fake_kfs[0][i].v_y*0.2;
+                        detect_res.red_x[i]=fake_kfs[0][i].location.x;
+                        detect_res.red_y[i]=fake_kfs[0][i].location.y;
+                    }
+                }
+            }
+            if (lidar_enhance_[1][i]==2) {
+                pcl::PointXY location=self_color==0?fake_kfs[1][i].location:pcl::PointXY(28-fake_kfs[1][i].location.x,15-fake_kfs[1][i].location.y);
+                if (initornot(tunnel_slanted_,location,5)!=1){
+                    if (fake_kfs[1][i].v_x>0) {
+                        double speed=sqrt(pow(fake_kfs[1][i].v_x,2)+pow(fake_kfs[1][i].v_y,2));
+                        fake_kfs[1][i].v_x=speed;
+                        fake_kfs[1][i].v_y=0;
+                        lidar_enhance_[1][i]=3;
+                    }
+                    detect_res.blue_x[i]=fake_kfs[1][i].location.x;
+                    detect_res.blue_y[i]=fake_kfs[1][i].location.y;
+                }else {
+                    if (fake_kfs[1][i].is_first==true) {
+                        detect_res.blue_x[i]=fake_kfs[1][i].location.x;
+                        detect_res.blue_y[i]=fake_kfs[1][i].location.y;
+                        fake_kfs[1][i].is_first=false;
+                    }else {
+                        fake_kfs[1][i].location.x=fake_kfs[1][i].location.x+fake_kfs[1][i].v_x*0.2;
+                        fake_kfs[1][i].location.y=fake_kfs[1][i].location.y+fake_kfs[1][i].v_y*0.2;
+                        detect_res.blue_x[i]=fake_kfs[1][i].location.x;
+                        detect_res.blue_y[i]=fake_kfs[1][i].location.y;
+                    }
+                }
+            }else if (lidar_enhance_[1][i]==3) {
+                pcl::PointXY location=self_color==0?fake_kfs[1][i].location:pcl::PointXY(28-fake_kfs[1][i].location.x,15-fake_kfs[1][i].location.y);
+                if (initornot(tunnel_horizontal_,location,4)!=1){
+                    if (fake_kfs[1][i].v_x<0) {
+                        double speed=sqrt(pow(fake_kfs[1][i].v_x,2)+pow(fake_kfs[1][i].v_y,2));
+                        fake_kfs[1][i].v_x=-speed*sin(35*M_PI/180)*2.0;
+                        fake_kfs[1][i].v_y=-speed*cos(35*M_PI/180)*2.0;
+                        lidar_enhance_[1][i]=2;
+                    }
+                    detect_res.blue_x[i]=fake_kfs[1][i].location.x;
+                    detect_res.blue_y[i]=fake_kfs[1][i].location.y;
+                }else {
+                    if (fake_kfs[1][i].is_first==true) {
+                        detect_res.blue_x[i]=fake_kfs[1][i].location.x;
+                        detect_res.blue_y[i]=fake_kfs[1][i].location.y;
+                        fake_kfs[1][i].is_first=false;
+                    }else {
+                        fake_kfs[1][i].location.x=fake_kfs[1][i].location.x+fake_kfs[1][i].v_x*0.2;
+                        fake_kfs[1][i].location.y=fake_kfs[1][i].location.y+fake_kfs[1][i].v_y*0.2;
+                        detect_res.blue_x[i]=fake_kfs[1][i].location.x;
+                        detect_res.blue_y[i]=fake_kfs[1][i].location.y;
+                    }
+                }
+            }
         }
     }
 
@@ -664,7 +1171,7 @@ namespace upc_radar{
         return cv::Point3d(u,v,d);
     }
 
-    void KalmanFilter::detect_callback(const interfaces::msg::DetectFrame::SharedPtr msg){
+    void KalmanFilter::detectCallback(const interfaces::msg::DetectFrame::SharedPtr msg){
         rclcpp::Time time = msg->header.stamp;
         std::vector<Kalman_filter_plus> KFs_;
         mtx.lock();
@@ -675,7 +1182,7 @@ namespace upc_radar{
         self_color=msg->self_color;
         detect_msg=*msg;
         std::map<double,int> time_map;
-        std::vector<std::array<double, 4>> det;//x,y,颜色，编号
+        std::vector<std::array<double, 5>> det;//x,y,颜色，编号
 
         pcl::PointCloud<pcl::PointXYZ> ori_net;///
         for(int i=0;i<6;i++){
@@ -691,7 +1198,7 @@ namespace upc_radar{
                 for(auto &kf : KFs_){
                     time_map[kf.camera_find_match(time,offset)]++;
                 }
-                det.push_back({red_point.x,red_point.y,0,i});
+                det.push_back({red_point.x,red_point.y,0,i,i});
             }
             pcl::PointXY blue_point;
             blue_point.x = msg->blue_x[i];
@@ -705,7 +1212,7 @@ namespace upc_radar{
                 for(auto &kf : KFs_){
                     time_map[kf.camera_find_match(time,offset)]++;
                 }
-                det.push_back({blue_point.x,blue_point.y,1,i});
+                det.push_back({blue_point.x,blue_point.y,1,i,i});
             }
         }
         double time_id =
@@ -780,10 +1287,10 @@ namespace upc_radar{
         pcl::toROSMsg(net_det, output);
         output.header.frame_id = "rm_frame";
         output.header.stamp = msg->header.stamp;
-        net_pub_->publish(output);
+        net_pub->publish(output);
         pcl::toROSMsg(ori_net, output);
         output.header.stamp = msg->header.stamp;
-        ori_pub_->publish(output);
+        net_pub->publish(output);
 
         pcl::transformPointCloud(temp,temp, transform.inverse());
         for(size_t i=0;i<temp.points.size();i++){
@@ -794,7 +1301,7 @@ namespace upc_radar{
         }
         pcl::toROSMsg(temp, output);
         output.header.stamp = msg->header.stamp;
-        test_pub_->publish(output);
+        pc_pub->publish(output);
         // cv::imshow("depth",img);
         // cv::waitKey(1);
 
@@ -802,53 +1309,7 @@ namespace upc_radar{
         KFs= KFs_;
         mtx.unlock();
     }
-    // void KalmanFilter::detect_callback(const interfaces::msg::DetectFrame::SharedPtr msg){
-    //     rclcpp::Time time = msg->header.stamp;
-    //     self_color=msg->self_color;
-    //     detect_msg=*msg;
-    //     for(int i=0;i<6;i++){
-    //         pcl::PointXY red_point;
-    //         red_point.x = msg->red_x[i];
-    //         red_point.y = msg->red_y[i];
-    //         if(red_point.x!=0&&red_point.y!=0){
-    //             if(self_color==1){//己方为蓝色时将坐标反转，因为此时相机传回的是准确的，雷达聚类的是反转的
-    //                 red_point.x=28-red_point.x;
-    //                 red_point.y=15-red_point.y;
-    //             }
-    //             for(auto &kf : KFs_){
-    //                 // int number = i+1;
-    //                 // if (number == 6)number++;
-    //                 kf.camera_match(time, red_point, 0, i);
-    //             }
-    //         }
-    //
-    //         pcl::PointXY blue_point;
-    //         blue_point.x = msg->blue_x[i];
-    //         blue_point.y = msg->blue_y[i];
-    //         if(blue_point.x!=0&&blue_point.y!=0){
-    //             if(self_color==1){
-    //                 blue_point.x=28-blue_point.x;
-    //                 blue_point.y=15-blue_point.y;
-    //             }
-    //             for(auto &kf : KFs_){
-    //                 // int number = i+1;
-    //                 // if (number == 6)number++;
-    //                 kf.camera_match(time, blue_point, 1, i);
-    //             }
-    //         }
-    //     }
-    //     // std::cout<<"recieve"<<std::endl;
-    //     // for(auto &kf : KFs_)
-    //     // {
-    //     //     for(int i=kf.history.size() - 1; i >= 0; i--)
-    //     //     {
-    //     //         if(Kalman_filter_plus::GetTimeByRosTime(time)-kf.history[i].first > 5)
-    //     //         {
-    //     //             kf.history.erase(kf.history.begin() + i);
-    //     //         }
-    //     //     }
-    //     // }
-    // }
+
     void KalmanFilter::check(std::vector<Kalman_filter_plus> &KFs_){
         for (int i=0;i<KFs_.size();i++) {
             int i_color=KFs_[i].get_color(),i_number=KFs_[i].get_number(),max_index=i;
@@ -867,7 +1328,7 @@ namespace upc_radar{
                 }
             }
             for (auto index:same_lists) {
-                std::set<int> remove_detect;
+                std::set<int,std::greater<>> remove_detect;
                 if (index!=max_index) {
                     for (int i=0;i<KFs_[index].detect_history.size();i++) {
                         if (KFs_[index].detect_history[i].first==i_color&&KFs_[index].detect_history[i].second==i_number)
@@ -880,75 +1341,15 @@ namespace upc_radar{
             }
         }
     }
-    // void KalmanFilter::check(){
-    //     std::set<int> remove_KFs_;
-    //     for (int i=0;i<KFs_.size();i++) {
-    //         //检查自身位置是否合法
-    //         if(KFs_[i].predict_point.x>=27.5||KFs_[i].predict_point.x<=0.5||
-    //             KFs_[i].predict_point.y>=15.1||KFs_[i].predict_point.y<=-0.) {
-    //             remove_KFs_.insert(i);
-    //             continue;
-    //         }
-    //         //检查自身速度是否合法
-    //         // int history_size=KFs_[i].history.size();
-    //         // if (history_size==1)continue;
-    //         // double distance=Distance(KFs_[i].history[history_size-1].second,KFs_[i].history[history_size-2].second);
-    //         // double time=KFs_[i].history[history_size-1].first-KFs_[i].history[history_size-2].first;
-    //         double speed_x=KFs_[i].KF.statePost.at<float>(1);
-    //         double speed_y=KFs_[i].KF.statePost.at<float>(3);
-    //         double speed=sqrt(speed_x*speed_x+speed_y*speed_y);
-    //         // std::cout<<"distance:"<<distance<<"   time:"<<time<<"  speed:"<<distance/time<<std::endl;
-    //         if(speed>4.7) {
-    //             remove_KFs_.insert(i);
-    //             continue;
-    //         }
-    //
-    //         int i_color=KFs_[i].get_color(),i_number=KFs_[i].get_number(),max_index=i;
-    //         int max_freq=KFs_[i].get_freq(i_color,i_number);
-    //         std::vector<int> same_lists;
-    //         same_lists.push_back(i);
-    //         for(int j=i+1;j<KFs_.size();j++) {
-    //             //检查是否距离过近
-    //             if(KFs_[i].Distance(KFs_[i].predict_point,KFs_[j].predict_point)<=0.2) {
-    //                 remove_KFs_.insert(j);
-    //                 continue;
-    //             }
-    //             //检查颜色编号是否相同
-    //             int j_color=KFs_[j].get_color(),j_number=KFs_[j].get_number();
-    //             int j_freq=KFs_[j].get_freq(j_color,j_number);
-    //             if (i_color==j_color&&i_number==j_number) {
-    //                 if (j_freq>max_freq) {
-    //                     max_freq=j_freq;
-    //                     max_index=j;
-    //                 }
-    //                 same_lists.push_back(j);
-    //             }
-    //         }
-    //         for (auto index:same_lists) {
-    //             std::set<int> remove_detect;
-    //             if (index!=max_index) {
-    //                 for (int i=0;i<KFs_[index].detect_history.size();i++) {
-    //                     if (KFs_[index].detect_history[i].first==i_color&&KFs_[index].detect_history[i].second==i_number)
-    //                         remove_detect.insert(i);
-    //                 }
-    //             }
-    //             for (auto idx:remove_detect) {
-    //                 KFs_[index].detect_history.erase(KFs_[index].detect_history.begin()+idx);
-    //             }
-    //         }
-    //     }
-    //     for (auto index:remove_KFs_) {
-    //         KFs_.erase(KFs_.begin()+index);
-    //     }
-    // }
+
     //检查是否有超出地图边界的及近似重合的检测器，并将其删除predict_point
-    void KalmanFilter::check_KFs(std::vector<Kalman_filter_plus> &KFs_){
-        std::set<int> remove_KFs_;
+    void KalmanFilter::checkKFs(std::vector<Kalman_filter_plus> &KFs_){
+        std::set<int,std::greater<>> remove_KFs_;
         for(int i=0;i<KFs_.size();i++){
-            for(int j=i+1;j<KFs_.size();j++){
-                if(KFs_[i].Distance(KFs_[i].predict_point,KFs_[j].predict_point)<=0.25)
-                    remove_KFs_.insert(j);
-            }
+            // for(int j=i+1;j<KFs_.size();j++){
+            //     if(KFs_[i].Distance(KFs_[i].predict_point,KFs_[j].predict_point)<=0.35)
+            //         remove_KFs_.insert(j);
+            // }
 
             if(KFs_[i].predict_point.x>=28.0||KFs_[i].predict_point.x<=0.0||
                 KFs_[i].predict_point.y>=15.0||KFs_[i].predict_point.y<=0.0)
@@ -969,7 +1370,119 @@ namespace upc_radar{
         }
     }
 
-    void KalmanFilter::get_2drect(std::vector<open3d::geometry::PointCloud> pcs,Eigen::Transform<float, 3, 2> transform,std::vector<cv::Rect> &rects,int camid) {
+    void KalmanFilter::checkClass(std::vector<Kalman_filter_plus> &KFs_) {
+        int num=0;
+        std::vector<std::vector<int>> history={{0,0,0,0,0,0},{0,0,0,0,0,0}};
+
+        for(int i=0;span==0&&i<KFs_.size();i++){
+            if(KFs_[i].detect_history.size()==0)continue;
+            //此处还需要优化，避免出现多个卡尔曼对象对应到同一个红蓝点
+            int i_color=KFs_[i].get_color(),i_number=KFs_[i].get_number(),max_index=i;
+            // std::cout<<"---"<<i_color<<" "<<i_number<<"---"<<std::endl;
+            auto freq_time=KFs_[i].get_freq(i_color,i_number);
+            //time_index更新时间最近的卡尔曼索引，max_index最多匹配的卡尔曼索引
+            int max_freq=freq_time.first,time_index=i;
+            double max_time=freq_time.second;
+
+            std::vector<int> same_lists;
+            same_lists.push_back(i);
+            if (history[i_color][i_number]>0)continue;
+
+            for(int j=0;j<KFs_.size();j++) {
+                int j_color=KFs_[j].get_color(),j_number=KFs_[j].get_number();
+                auto j_freq_time=KFs_[j].get_freq(j_color,j_number);
+                int j_freq=j_freq_time.first;
+                double j_time=j_freq_time.second;
+                if (i_color==j_color&&i_number==j_number) {
+                    if (j_freq>max_freq) {
+                        max_freq=j_freq;
+                        max_index=j;
+                    }
+                    if (j_time>max_time) {
+                        max_time=j_time;
+                        time_index=j;
+                    }
+                    same_lists.push_back(j);
+                }
+            }
+            //对不是最近更新的卡尔曼对象，删除时间最久的一个检测记录
+            if (same_lists.size()>1) {
+                for (auto index:same_lists) {
+                    std::set<int,std::greater<>> remove_detect;
+                    double min_time=max_time;
+                    int min_index=-1;
+                    if (index!=time_index) {
+                        for (int i=0;i<KFs_[index].detect_history.size();i++) {
+                            if (KFs_[index].detect_history[i].first==i_color&&KFs_[index].detect_history[i].second==i_number) {
+                                if (KFs_[index].detect_time[i]<min_time) {
+                                    min_time=KFs_[index].detect_time[i];
+                                    min_index=i;
+                                }
+                            }
+                        }
+                        if (min_index!=-1)
+                            remove_detect.insert(min_index);
+                    }
+                    for (auto idx:remove_detect) {
+                        KFs_[index].detect_history.erase(KFs_[index].detect_history.begin()+idx);
+                        KFs_[index].detect_time.erase(KFs_[index].detect_time.begin()+idx);
+                    }
+                    // KFs_[index].ws_armorConfMatrix(0,i_color*5+i_number)=std::max(0.1,KFs_[index].ws_armorConfMatrix(0,i_color*5+i_number)-0.1);
+                }
+            }
+        //     //最终检测结果采用最多匹配的卡尔曼对象
+        //     if(i_color == 1){//蓝色
+        //         history[1][i_number]++;
+        //         vis_kal_maker(1,vis_array,1,i_number,KFs_[max_index].predict_point.x,KFs_[max_index].predict_point.y,KFs_[max_index].detect_history.size(),history[1][i_number]);
+        //         if (KFs_[max_index].last_time>1.5) {
+        //             continue;
+        //         }
+        //         detect_res.blue_x[i_number] = KFs_[max_index].predict_point.x;
+        //         detect_res.blue_y[i_number] = KFs_[max_index].predict_point.y;
+        //         if(self_color==0) {
+        //             detect_res.v_x[i_number] = KFs_[max_index].KF.statePost.at<float>(1);
+        //             detect_res.v_y[i_number] = KFs_[max_index].KF.statePost.at<float>(3);
+        //         }
+        //     }else if(i_color == 0){//红色
+        //         history[0][i_number]++;
+        //         vis_kal_maker(1,vis_array,0,i_number,KFs_[max_index].predict_point.x,KFs_[max_index].predict_point.y,KFs_[max_index].detect_history.size(),history[0][i_number]);
+        //         if (KFs_[max_index].last_time>1.5) {
+        //             continue;
+        //         }
+        //         detect_res.red_x[i_number] = KFs_[max_index].predict_point.x;
+        //         detect_res.red_y[i_number] = KFs_[max_index].predict_point.y;
+        //         if(self_color==1) {
+        //             detect_res.v_x[i_number] = KFs_[max_index].KF.statePost.at<float>(1);
+        //             detect_res.v_y[i_number] = KFs_[max_index].KF.statePost.at<float>(3);
+        //         }
+        //     }
+        // num++;
+        }
+    }
+
+    void KalmanFilter::clearOutPut() {
+        for (int i=0;i<5;i++) {
+            if (lidar_enhance_[0][i]==0) {
+                if (self_color==1) {
+                    detect_res.v_x[i]=0;
+                    detect_res.v_y[i]=0;
+                }
+                detect_res.red_x[i]=0;
+                detect_res.red_y[i]=0;
+            }
+            if (lidar_enhance_[1][i]==0) {
+                if (self_color==0) {
+                    detect_res.v_x[i]=0;
+                    detect_res.v_y[i]=0;
+                }
+                detect_res.blue_x[i]=0;
+                detect_res.blue_y[i]=0;
+            }
+        }
+    }
+
+    void KalmanFilter::getRect2d(std::vector<open3d::geometry::PointCloud> pcs,Eigen::Transform<float, 3, 2> transform,std::vector<cv::Rect> &rects,int camid) {
+        // std::vector<cv::Point3d> pts;
         for(auto pc:pcs){
             // cv::Mat img=show_img.clone();
             pc.Transform(transform.matrix().cast<double>().inverse());
@@ -981,27 +1494,48 @@ namespace upc_radar{
                 else if (camid==2)
                     pts_2d=lidarToCamera(pcl::PointXYZ(point[0],point[1],point[2]),camera_matrix2,lidar2cam2);
 
-                // if(pts_2d.x>=0&&pts_2d.x<4096&&pts_2d.y>=0&&pts_2d.y<3000){
-                    if (pts_2d.y>max.y) {
-                        max.y=pts_2d.y;
-                    }
-                    if (pts_2d.x>max.x) {
-                        max.x=pts_2d.x;
-                    }
-                    if (pts_2d.x<min.x) {
-                        min.x=pts_2d.x;
-                    }
-                    if (pts_2d.y<min.y) {
-                        min.y=pts_2d.y;
-                    }
-                // }
+                if (pts_2d.y>max.y) {
+                    max.y=pts_2d.y;
+                }
+                if (pts_2d.x>max.x) {
+                    max.x=pts_2d.x;
+                }
+                if (pts_2d.x<min.x) {
+                    min.x=pts_2d.x;
+                }
+                if (pts_2d.y<min.y) {
+                    min.y=pts_2d.y;
+                }
             }
             rects.push_back(cv::Rect(min,max));
+            // if (camid==1) {
+            //     auto ttt=lidarToCamera(pcl::PointXYZ(pc.GetCenter()[0],pc.GetCenter()[1],pc.GetCenter()[2]),camera_matrix1,lidar2cam1);
+            //     pts.push_back(ttt);
+            // }else if (camid==2) {
+            //     auto ttt=lidarToCamera(pcl::PointXYZ(pc.GetCenter()[0],pc.GetCenter()[1],pc.GetCenter()[2]),camera_matrix2,lidar2cam2);
+            //     pts.push_back(ttt);
+            // }
         }
-
+        // if (camid==1) {
+        //     cv::Mat img1=show_img1.clone();
+        //     for (int i=0;i<pcs.size();i++) {
+        //         cv::rectangle(img1,cv::Point(rects[i].x,rects[i].y),cv::Point(rects[i].x+rects[i].height,rects[i].y+rects[i].width),cv::Scalar(0,0,255),2);
+        //         cv::circle(img1,cv::Point(pts[i].x,pts[i].y),5,cv::Scalar(0,0,255),-1);
+        //     }
+        //     cv::imshow("cam1",img1);
+        //     cv::waitKey(1);
+        // }else if (camid==2) {
+        //     cv::Mat img2=show_img2.clone();
+        //     for (int i=0;i<pcs.size();i++) {
+        //         cv::rectangle(img2,cv::Point(rects[i].x,rects[i].y),cv::Point(rects[i].x+rects[i].height,rects[i].y+rects[i].width),cv::Scalar(0,0,255),2);
+        //         cv::circle(img2,cv::Point(pts[i].x,pts[i].y),5,cv::Scalar(0,0,255),-1);
+        //     }
+        //     cv::imshow("cam2",img2);
+        //     cv::waitKey(1);
+        // }
     }
 
-    void KalmanFilter::get_cluster_id(std::vector<Clus_pc>&clus_pcs,std::vector<open3d::geometry::PointCloud> pcs,std::vector<cv::Rect>rects) {
+    void KalmanFilter::getClusterID(std::vector<ClusPC>&clus_pcs,std::vector<open3d::geometry::PointCloud> pcs,std::vector<cv::Rect>rects) {
         clus_pcs.resize(pcs.size());
         std::vector<std::array<double, 8>> det;
         std::vector<bool> overlap(cam_msg.obj.size(),false);
@@ -1064,7 +1598,7 @@ namespace upc_radar{
                 // RCLCPP_ERROR(this->get_logger(), "---------------------iou %f",iou);
                 interfaces::msg::DetectObj obj=cam_msg.obj[i];
                 if (iou>0.2) {
-                    Clus_pc clus_pc;
+                    ClusPC clus_pc;
                     if (obj.classid<5) {
                         clus_pc.color=1;
                         clus_pc.num=obj.classid;
@@ -1076,7 +1610,7 @@ namespace upc_radar{
                     clus_pc.center=center;
                     is_det[index]=true;
                     clus_pcs[index]=clus_pc;
-                    RCLCPP_ERROR(this->get_logger(),"---------------------sucess detect %d",index);
+                    // RCLCPP_ERROR(this->get_logger(),"---------------------sucess detect %d",index);
                 }else {
                     if(self_color==1){//己方为蓝色时将坐标反转，因为此时相机传回的是准确的，雷达聚类的是反转的
                         obj.x=28-obj.x;
@@ -1106,7 +1640,7 @@ namespace upc_radar{
         linear_assignment(dists, dist_size, dist_size_size,match_thres,matches,u_cluster,u_track);
 
         for(auto match : matches){
-            Clus_pc clus_pc;
+            ClusPC clus_pc;
             clus_pc.center=pcs[match[0]].GetCenter();
             clus_pc.color=det[match[1]][2];
             clus_pc.num=det[match[1]][3];
@@ -1115,7 +1649,7 @@ namespace upc_radar{
         }
         for (auto index:u_cluster) {
             if (is_det[index]) continue;
-            Clus_pc clus_pc;
+            ClusPC clus_pc;
             clus_pc.center=pcs[index].GetCenter();
             clus_pcs[index]=clus_pc;
         }
@@ -1129,13 +1663,168 @@ namespace upc_radar{
         cv::waitKey(1);
     }
 
-    void KalmanFilter::PcTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2) {
+    void KalmanFilter::updateKFs(std::vector<Kalman_filter_plus> &KFs_,pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_xy,const std::vector<cv::Rect> &rects1,
+        const std::vector<cv::Rect> &rects2,const std::vector<open3d::geometry::PointCloud> &pcs,pcl::PointCloud<pcl::PointXYZ> &kmeans_out,rclcpp::Time time) {
+
+        std::vector<cv::Point3d> centers1;
+        for(auto &kf : KFs_){//一开始KFs_中没有元素，因此此处循环不会进行 若有元素，则进行预测更新
+            kf.update_predict_point();
+            kf.has_updated = false;
+            centers1.push_back(lidarToCamera(pcl::PointXYZ(kf.predict_point.x,kf.predict_point.y,kf.history.back().second.z),camera_matrix1,lidar2cam1));
+        }
+        // checkKFs(KFs_);
+
+        double clu_match_thres=get_parameter("clu.match_thres").as_double();
+        double clu_dis_thres=get_parameter("clu.dis_thres").as_double();
+        double clu_min_dis_thres=get_parameter("clu.min_dis_thres").as_double();
+
+        std::vector<std::vector<float> > dists;
+        int dist_size=0,dist_size_size=0;
+        Eigen::MatrixXd cost_matrix = getCloudCost(*cloud_xy,KFs_,rects1,centers1,dist_size, dist_size_size,clu_dis_thres);
+        eigenMat2VecVec(cost_matrix,dists);
+        std::vector<std::vector<int> > matches;
+        std::vector<int> u_track,u_cluster;
+        //进行匹配
+        linear_assignment(dists, dist_size, dist_size_size,clu_match_thres ,matches,u_cluster,u_track);
+        std::vector<KUData> again_clus(pcs.size());
+        std::vector<bool> is_kmeans(KFs_.size(),false);
+
+        for (auto index:u_track) {
+            Kalman_filter_plus kf=KFs_[index];
+            if (kf.last_time>2.5||kf.detect_history.size()==0) continue;
+            for(int i=0;i<pcs.size();i++) {
+                std::array<cv::Point2f,5> AABB;
+                auto min_pc=pcs[i].GetMinBound();
+                auto max_pc=pcs[i].GetMaxBound();
+                AABB[0]=cv::Point2f(min_pc[0]-0.1,min_pc[1]-0.1);
+                AABB[1]=cv::Point2f(min_pc[0]-0.1,max_pc[1]+0.1);
+                AABB[2]=cv::Point2f(max_pc[0]+0.1,max_pc[1]+0.1);
+                AABB[3]=cv::Point2f(max_pc[0]+0.1,min_pc[1]-0.1);
+                if (initornot(AABB,kf.predict_point,4)==1) {
+                    again_clus[i].mutli_in+=1;
+                    again_clus[i].utrack_idx.push_back(index);
+                    is_kmeans[index]=true;
+                    break;
+                }
+            }
+        }
+
+        for(auto match : matches){
+            if (again_clus[match[0]].mutli_in>0) {
+                pcl::PointCloud<pcl::PointXYZ>::Ptr new_pc(new pcl::PointCloud<pcl::PointXYZ>);
+                for(auto point:pcs[match[0]].points_)
+                    new_pc->points.push_back(pcl::PointXYZ(point[0],point[1],point[2]));
+
+                int num_dimension = 3;
+                int num_points = new_pc->size();
+                std::vector<std::vector<float>> features(num_points, std::vector<float>(num_dimension));
+                for (int i = 0; i < new_pc->points.size(); ++i){
+                    features[i][0] = new_pc->points[i].x;
+                    features[i][1] = new_pc->points[i].y;
+                    features[i][2] = new_pc->points[i].z;
+                }
+
+                pcl::Kmeans kmean(num_points, num_dimension);
+                kmean.setInputData(features);
+                kmean.setClusterSize(again_clus[match[0]].mutli_in+1);
+                kmean.kMeans();
+
+                auto center = kmean.get_centroids();
+
+                for (auto point:center) {
+                    kmeans_out.points.push_back(pcl::PointXYZ(point[0],point[1],point[2]));
+                    again_clus[match[0]].kmeans_pc.points.push_back(pcl::PointXYZI(point[0],point[1],point[2],0));
+                    // std::cout<<"x: "<<point[0]<<"y: "<<point[1]<<"z: "<<point[2]<<std::endl;
+                }
+                std::vector<Kalman_filter_plus> new_KFs;
+                new_KFs.push_back(KFs_[match[1]]);
+                for(auto index:again_clus[match[0]].utrack_idx) {
+                    new_KFs.push_back(KFs_[index]);
+                }
+
+                std::vector<std::vector<float> > new_dists;
+                int new_dist_size=0,new_dist_size_size=0;
+                Eigen::MatrixXd new_cost_matrix = getCloudCost(again_clus[match[0]].kmeans_pc,new_KFs,new_dist_size, new_dist_size_size,clu_dis_thres);
+                eigenMat2VecVec(new_cost_matrix,new_dists);
+                std::vector<std::vector<int> > new_matches;
+                std::vector<int> new_u_track,new_u_cluster;
+                //进行匹配
+                linear_assignment(new_dists, new_dist_size, new_dist_size_size,clu_match_thres ,new_matches,new_u_cluster,new_u_track);
+                for(auto new_match : new_matches) {
+                    if (new_match[1]==0) {
+                        KFs_[match[1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects1[match[0]]);
+                        KFs_[match[1]].rect_2d2.push_back(rects2[match[0]]);
+                        if (KFs_[match[1]].rect_2d2.size()>KFs_[match[1]].max_history)
+                            KFs_[match[1]].rect_2d2.erase(KFs_[match[1]].rect_2d2.begin());
+                    }else {
+                        KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects1[match[0]]);
+                        KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.push_back(rects2[match[0]]);
+                        if (KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.size()>KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].max_history)
+                            KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.erase(KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.begin());
+                    }
+                }
+            }else {
+                KFs_[match[1]].update(cloud_xy->points[match[0]],time,rects1[match[0]]);
+                KFs_[match[1]].rect_2d2.push_back(rects2[match[0]]);
+                if (KFs_[match[1]].rect_2d2.size()>KFs_[match[1]].max_history)
+                    KFs_[match[1]].rect_2d2.erase(KFs_[match[1]].rect_2d2.begin());
+            }
+        }
+        if (matches.size()==0) {
+            for (int index=0;index<cloud_xy->size();index++) {
+                Kalman_filter_plus kf(cloud_xy->points[index], time,reinterpret_cast<rclcpp::Node*>(this),rects1[index]);//time为最后更新时间
+                kf.rect_2d2.push_back(rects2[index]);
+                KFs_.push_back(kf);
+            }
+        }
+
+        //TODO：没有更新的kalman 用距离找符合阈值的最近的聚类去更新
+
+        // for (auto index:u_track) {
+        //     if (is_kmeans[index]) continue;
+        //     double min_distance = 10000.0;
+        //     int min_index = -1;
+        //     for (int i=0;i<cloud_xy->size();i++) {
+        //         double distance = KFs_[index].Distance(KFs_[index].predict_point,pcl::PointXY(cloud_xy->points[i].x,cloud_xy->points[i].y));
+        //         if (distance<clu_dis_thres*clu_match_thres&&distance<min_distance) {
+        //             min_index=i;
+        //             min_distance=distance;
+        //         }
+        //     }
+        //     if (min_index != -1) {
+        //         KFs_[index].update(cloud_xy->points[min_index],time,rects1[min_index]);
+        //         KFs_[index].rect_2d2.push_back(rects2[min_index]);
+        //         if (KFs_[index].rect_2d2.size()>KFs_[index].max_history)
+        //             KFs_[index].rect_2d2.erase(KFs_[index].rect_2d2.begin());
+        //     }
+        // }
+
+        //新增kalman
+        for (auto cluster:u_cluster) {
+            double min_dis=10000.0;
+            for (auto match : matches) {
+                double distance=Distance(cloud_xy->points[cluster],cloud_xy->points[match[0]]);
+                if (distance<min_dis) {
+                    min_dis=distance;
+                }
+            }
+            if (min_dis>clu_min_dis_thres) {
+                Kalman_filter_plus kf(cloud_xy->points[cluster], time,reinterpret_cast<rclcpp::Node*>(this),rects1[cluster]);//time为最后更新时间
+                kf.rect_2d2.push_back(rects2[cluster]);
+                KFs_.push_back(kf);
+            }
+        }
+        checkKFs(KFs_);
+    }
+
+    void KalmanFilter::PCTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2) {
         rclcpp::Time time = msg1->header.stamp;
         std::vector<Kalman_filter_plus> KFs_;
         mtx.lock();
         KFs_= KFs;
         mtx.unlock();
 
+        clearOutPut();
         auto transform = Eigen::Affine3f::Identity();
         if(!get_lidar2world){
             try{
@@ -1172,15 +1861,16 @@ namespace upc_radar{
 
         auto now_time1 = std::chrono::steady_clock::now();
         std::vector<open3d::geometry::PointCloud> pcs;
-        get_cluster(receive_cloud,pcs);
+        getCluster(receive_cloud,pcs);
         std::vector<cv::Rect> rects1,rects2;
-        get_2drect(pcs,transform,rects1,1);
-        get_2drect(pcs,transform,rects2,2);
-        std::vector<Clus_pc> clus_pcs;
-        // get_cluster_id(clus_pcs,pcs,rects);
+        getRect2d(pcs,transform,rects1,1);
+        getRect2d(pcs,transform,rects2,2);
+
+        std::vector<ClusPC> clus_pcs;
+        // getClusterID(clus_pcs,pcs,rects);
         auto end_time1 = std::chrono::steady_clock::now();
         float dur_time1 = std::chrono::duration_cast<std::chrono::milliseconds>(end_time1 - now_time1).count();
-        RCLCPP_WARN(this->get_logger(), "cluster Callback time is %f ms", dur_time1);
+        // RCLCPP_WARN(this->get_logger(), "cluster Callback time is %f ms", dur_time1);
 
         for(int i=0;i<pcs.size();i++){
             pcl::PointXYZI point_xy;
@@ -1198,128 +1888,8 @@ namespace upc_radar{
         cluster_out.header.stamp = msg1->header.stamp;
         pub_cluster->publish(cluster_out);
 
-        for(auto &kf : KFs_){//一开始KFs_中没有元素，因此此处循环不会进行 若有元素，则进行预测更新
-            kf.update_predict_point();
-            kf.has_updated = false;
-        }
-        check_KFs(KFs_);
-
-        double clu_match_thres=get_parameter("clu.match_thres").as_double();
-        double clu_dis_thres=get_parameter("clu.dis_thres").as_double();
-        double clu_min_dis_thres=get_parameter("clu.min_dis_thres").as_double();
-
-        std::vector<std::vector<float> > dists;
-        int dist_size=0,dist_size_size=0;
-        Eigen::MatrixXd cost_matrix = getCloudCost(*cloud_xy,KFs_,dist_size, dist_size_size,clu_dis_thres);
-        eigenMat2VecVec(cost_matrix,dists);
-        std::vector<std::vector<int> > matches;
-        std::vector<int> u_track,u_cluster;
-        //进行匹配
-        linear_assignment(dists, dist_size, dist_size_size,clu_match_thres ,matches,u_cluster,u_track);
-        std::vector<One_> again_clus(pcs.size());
-        for (auto index:u_track) {
-            Kalman_filter_plus kf=KFs[index];
-            if (kf.last_time>1) continue;
-            for(int i=0;i<pcs.size();i++) {
-                std::array<cv::Point2f,5> AABB;
-                auto min_pc=pcs[i].GetMinBound();
-                auto max_pc=pcs[i].GetMaxBound();
-                AABB[0]=cv::Point2f(min_pc[0]-0.05,min_pc[1]-0.05);
-                AABB[1]=cv::Point2f(min_pc[0]-0.05,max_pc[1]+0.05);
-                AABB[2]=cv::Point2f(max_pc[0]+0.05,max_pc[1]+0.05);
-                AABB[3]=cv::Point2f(max_pc[0]+0.05,min_pc[1]-0.05);
-                if (initornot(AABB,kf.predict_point,4)==1) {
-                    again_clus[i].mutli_in+=1;
-                    again_clus[i].I_utrack.push_back(index);
-                    break;
-                }
-            }
-        }
-
         pcl::PointCloud<pcl::PointXYZ> kmeans_out;
-        for(auto match : matches){
-            if (again_clus[match[0]].mutli_in>0) {
-                pcl::PointCloud<pcl::PointXYZ>::Ptr new_pc(new pcl::PointCloud<pcl::PointXYZ>);
-                for(auto point:pcs[match[0]].points_)
-                    new_pc->points.push_back(pcl::PointXYZ(point[0],point[1],point[2]));
-
-                int num_dimension = 3;
-                int num_points = new_pc->size();
-                std::vector<std::vector<float>> features(num_points, std::vector<float>(num_dimension));
-                for (int i = 0; i < new_pc->points.size(); ++i){
-                    features[i][0] = new_pc->points[i].x;
-                    features[i][1] = new_pc->points[i].y;
-                    features[i][2] = new_pc->points[i].z;
-                }
-
-                pcl::Kmeans kmean(num_points, num_dimension);
-                kmean.setInputData(features);
-                //两类
-                kmean.setClusterSize(again_clus[match[0]].mutli_in+1);
-                kmean.kMeans();
-
-                auto center = kmean.get_centroids();
-
-                for (auto point:center) {
-                    kmeans_out.points.push_back(pcl::PointXYZ(point[0],point[1],point[2]));
-                    again_clus[match[0]].kmeans_pc.points.push_back(pcl::PointXYZI(point[0],point[1],point[2],0));
-                    std::cout<<"x: "<<point[0]<<"y: "<<point[1]<<"z: "<<point[2]<<std::endl;
-                }
-                std::vector<Kalman_filter_plus> new_KFs;
-                new_KFs.push_back(KFs_[match[1]]);
-                for(auto index:again_clus[match[0]].I_utrack) {
-                    new_KFs.push_back(KFs_[index]);
-                }
-
-                std::vector<std::vector<float> > new_dists;
-                int new_dist_size=0,new_dist_size_size=0;
-                Eigen::MatrixXd new_cost_matrix = getCloudCost(again_clus[match[0]].kmeans_pc,new_KFs,new_dist_size, new_dist_size_size,clu_dis_thres);
-                eigenMat2VecVec(new_cost_matrix,new_dists);
-                std::vector<std::vector<int> > new_matches;
-                std::vector<int> new_u_track,new_u_cluster;
-                //进行匹配
-                linear_assignment(new_dists, new_dist_size, new_dist_size_size,clu_match_thres ,new_matches,new_u_cluster,new_u_track);
-                for(auto new_match : new_matches) {
-                    if (new_match[1]==0) {
-                        KFs_[match[1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects1[match[0]]);
-                        KFs_[match[1]].rect_2d2.push_back(rects2[match[0]]);
-                        if (KFs_[match[1]].rect_2d2.size()>KFs_[match[1]].max_history)
-                            KFs_[match[1]].rect_2d2.erase(KFs_[match[1]].rect_2d2.begin());
-                    }else {
-                        KFs_[again_clus[match[0]].I_utrack[new_match[1]-1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects1[match[0]]);
-                        KFs_[again_clus[match[0]].I_utrack[new_match[1]-1]].rect_2d2.push_back(rects2[match[0]]);
-                        if (KFs_[again_clus[match[0]].I_utrack[new_match[1]-1]].rect_2d2.size()>KFs_[again_clus[match[0]].I_utrack[new_match[1]-1]].max_history)
-                            KFs_[again_clus[match[0]].I_utrack[new_match[1]-1]].rect_2d2.erase(KFs_[again_clus[match[0]].I_utrack[new_match[1]-1]].rect_2d2.begin());
-                    }
-                }
-            }else {
-                KFs_[match[1]].update(cloud_xy->points[match[0]],time,rects1[match[0]]);
-                KFs_[match[1]].rect_2d2.push_back(rects2[match[0]]);
-                if (KFs_[match[1]].rect_2d2.size()>KFs_[match[1]].max_history)
-                    KFs_[match[1]].rect_2d2.erase(KFs_[match[1]].rect_2d2.begin());
-            }
-        }
-        if (matches.size()==0) {
-            for (int index=0;index<cloud_xy->size();index++) {
-                Kalman_filter_plus kf(cloud_xy->points[index], time,reinterpret_cast<rclcpp::Node*>(this),rects1[index]);//time为最后更新时间
-                kf.rect_2d2.push_back(rects2[index]);
-                KFs_.push_back(kf);
-            }
-        }
-        for (auto cluster:u_cluster) {
-            double min_dis=10000.0;
-            for (auto match : matches) {
-                double distance=Distance(cloud_xy->points[cluster],cloud_xy->points[match[0]]);
-                if (distance<min_dis) {
-                    min_dis=distance;
-                }
-            }
-            if (min_dis>clu_min_dis_thres) {
-                Kalman_filter_plus kf(cloud_xy->points[cluster], time,reinterpret_cast<rclcpp::Node*>(this),rects1[cluster]);//time为最后更新时间
-                kf.rect_2d2.push_back(rects2[cluster]);
-                KFs_.push_back(kf);
-            }
-        }
+        updateKFs(KFs_,cloud_xy,rects1,rects2,pcs,kmeans_out,time);
 
         sensor_msgs::msg::PointCloud2 output_kms;
         pcl::toROSMsg(kmeans_out, output_kms);
@@ -1327,20 +1897,19 @@ namespace upc_radar{
         output_kms.header.stamp = msg1->header.stamp;
         pub_kmeans->publish(output_kms);
 
-        check_KFs(KFs_);
+        std::vector<int> remove_KFs_;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
-
         for(int i = KFs_.size() - 1; i >= 0; i--){
             KFs_[i].forword_predict();
-            if(KFs_[i].last_time>2.5){
-                KFs_.erase(KFs_.begin() + i);
-            }
+            if(KFs_[i].last_time>3.5)
+                remove_KFs_.push_back(i);
         }
-        // check();
-        interfaces::msg::DetectResult detect_res;
-        visualization_msgs::msg::MarkerArray vis_array;
-        // std::cout<<"----------------------"<<std::endl;
+        sort(remove_KFs_.begin(),remove_KFs_.end(),std::greater<>());
+        for (auto index:remove_KFs_)
+            KFs_.erase(KFs_.begin() + index);
 
+        // check();
+        visualization_msgs::msg::MarkerArray vis_array;
 
         for(int i = KFs_.size() - 1; i >= 0; i--){
             pcl::PointXYZRGB point;
@@ -1383,96 +1952,13 @@ namespace upc_radar{
         pcl::toROSMsg(*cloud_filtered, output);
         output.header.frame_id = "rm_frame";
         output.header.stamp = msg1->header.stamp;
-        pub_->publish(output);
+        pub_kalman->publish(output);
 
-        int num=0;
         std::vector<std::vector<int>> history_cost={{0,0,0,0,0,0},{0,0,0,0,0,0}};
-        std::vector<std::vector<int>> history={{0,0,0,0,0,0},{0,0,0,0,0,0}};
+        checkClass(KFs_);
+        checkLocation(KFs_);
 
-        for(int i=0;span==0&&i<KFs_.size();i++){
-            if(KFs_[i].detect_history.size()==0)continue;
-            //此处还需要优化，避免出现多个卡尔曼对象对应到同一个红蓝点
-            int i_color=KFs_[i].get_color(),i_number=KFs_[i].get_number(),max_index=i;
-            // std::cout<<"---"<<i_color<<" "<<i_number<<"---"<<std::endl;
-            auto freq_time=KFs_[i].get_freq(i_color,i_number);
-            //time_index更新时间最近的卡尔曼索引，max_index最多匹配的卡尔曼索引
-            int max_freq=freq_time.first,time_index=i;
-            double max_time=freq_time.second;
-
-            std::vector<int> same_lists;
-            same_lists.push_back(i);
-            if (history[i_color][i_number]>0)continue;
-
-            for(int j=0;j<KFs_.size();j++) {
-                int j_color=KFs_[j].get_color(),j_number=KFs_[j].get_number();
-                auto j_freq_time=KFs_[j].get_freq(j_color,j_number);
-                int j_freq=j_freq_time.first;
-                double j_time=j_freq_time.second;
-                if (i_color==j_color&&i_number==j_number) {
-                    if (j_freq>max_freq) {
-                        max_freq=j_freq;
-                        max_index=j;
-                    }
-                    if (j_time>max_time) {
-                        max_time=j_time;
-                        time_index=j;
-                    }
-                    same_lists.push_back(j);
-                }
-            }
-            //对不是最近更新的卡尔曼对象，删除时间最久的一个检测记录
-            if (same_lists.size()>1) {
-                for (auto index:same_lists) {
-                    std::set<int> remove_detect;
-                    double min_time=max_time;
-                    int min_index=-1;
-                    if (index!=time_index) {
-                        for (int i=0;i<KFs_[index].detect_history.size();i++) {
-                            if (KFs_[index].detect_history[i].first==i_color&&KFs_[index].detect_history[i].second==i_number) {
-                                if (KFs_[index].detect_time[i]<min_time) {
-                                    min_time=KFs_[index].detect_time[i];
-                                    min_index=i;
-                                }
-                            }
-                        }
-                        if (min_index!=-1)
-                            remove_detect.insert(min_index);
-                    }
-                    for (auto idx:remove_detect) {
-                        KFs_[index].detect_history.erase(KFs_[index].detect_history.begin()+idx);
-                        KFs_[index].detect_time.erase(KFs_[index].detect_time.begin()+idx);
-                    }
-                }
-            }
-        //     //最终检测结果采用最多匹配的卡尔曼对象
-        //     if(i_color == 1){//蓝色
-        //         history[1][i_number]++;
-        //         vis_kal_maker(1,vis_array,1,i_number,KFs_[max_index].predict_point.x,KFs_[max_index].predict_point.y,KFs_[max_index].detect_history.size(),history[1][i_number]);
-        //         if (KFs_[max_index].last_time>1.5) {
-        //             continue;
-        //         }
-        //         detect_res.blue_x[i_number] = KFs_[max_index].predict_point.x;
-        //         detect_res.blue_y[i_number] = KFs_[max_index].predict_point.y;
-        //         if(self_color==0) {
-        //             detect_res.v_x[i_number] = KFs_[max_index].KF.statePost.at<float>(1);
-        //             detect_res.v_y[i_number] = KFs_[max_index].KF.statePost.at<float>(3);
-        //         }
-        //     }else if(i_color == 0){//红色
-        //         history[0][i_number]++;
-        //         vis_kal_maker(1,vis_array,0,i_number,KFs_[max_index].predict_point.x,KFs_[max_index].predict_point.y,KFs_[max_index].detect_history.size(),history[0][i_number]);
-        //         if (KFs_[max_index].last_time>1.5) {
-        //             continue;
-        //         }
-        //         detect_res.red_x[i_number] = KFs_[max_index].predict_point.x;
-        //         detect_res.red_y[i_number] = KFs_[max_index].predict_point.y;
-        //         if(self_color==1) {
-        //             detect_res.v_x[i_number] = KFs_[max_index].KF.statePost.at<float>(1);
-        //             detect_res.v_y[i_number] = KFs_[max_index].KF.statePost.at<float>(3);
-        //         }
-        //     }
-        // num++;
-        }
-
+        //利用匈牙利匹配输出最终定位结果
         std::vector<std::vector<float>> cost_confMatrix_vec;
         int num_strack,num_cls;
         std::vector<std::vector<int> > matches_cls;
@@ -1487,39 +1973,57 @@ namespace upc_radar{
             if(match[1]>=5){//蓝色
                 history_cost[1][match[1]-5]++;
                 vis_kal_maker(1,vis_array,1,match[1]-5,KFs_[match[0]].predict_point.x,KFs_[match[0]].predict_point.y,KFs_[match[0]].detect_history.size(),history_cost[1][match[1]-5]);
-                if (KFs_[match[0]].last_time>1.5) {
-                    continue;
-                }
-                detect_res.blue_x[match[1]-5] = KFs_[match[0]].predict_point.x;
-                detect_res.blue_y[match[1]-5] = KFs_[match[0]].predict_point.y;
+                // if (KFs_[match[0]].last_time>1.5) {
+                //     continue;
+                // }
+                detect_res.blue_x[match[1]-5] = KFs_[match[0]].output_point.x;
+                detect_res.blue_y[match[1]-5] = KFs_[match[0]].output_point.y;
                 if(self_color==0) {
                     detect_res.v_x[match[1]-5] = KFs_[match[0]].KF.statePost.at<float>(1);
                     detect_res.v_y[match[1]-5] = KFs_[match[0]].KF.statePost.at<float>(3);
                 }
+                if (KFs_[match[0]].last_time<0.5)
+                    lidar_enhance_[1][match[1]-5]=0;
             }else{//红色
                 history_cost[0][match[1]]++;
                 vis_kal_maker(1,vis_array,0,match[1],KFs_[match[0]].predict_point.x,KFs_[match[0]].predict_point.y,KFs_[match[0]].detect_history.size(),history_cost[0][match[1]]);
-                if (KFs_[match[0]].last_time>1.5) {
-                    continue;
-                }
-                detect_res.red_x[match[1]] = KFs_[match[0]].predict_point.x;
-                detect_res.red_y[match[1]] = KFs_[match[0]].predict_point.y;
+                // if (KFs_[match[0]].last_time>1.5) {
+                //     continue;
+                // }
+                detect_res.red_x[match[1]] = KFs_[match[0]].output_point.x;
+                detect_res.red_y[match[1]] = KFs_[match[0]].output_point.y;
                 if(self_color==1) {
                     detect_res.v_x[match[1]] = KFs_[match[0]].KF.statePost.at<float>(1);
                     detect_res.v_y[match[1]] = KFs_[match[0]].KF.statePost.at<float>(3);
                 }
+                if (KFs_[match[0]].last_time<0.5)
+                    lidar_enhance_[0][match[1]]=0;
             }
         }
+
+        //未知点（无种类）进行特殊位置猜测
+        guessWithoutClass(KFs_,u_strack,vis_array,history_cost);
+
+        remove_KFs_.clear();
+        //进行特殊位置跟踪器处理及猜点
+        guessWithClass(KFs_,matches_cls,remove_KFs_);
+
+        //进行速度模拟
+        speedSimulation();
+
+        sort(remove_KFs_.begin(),remove_KFs_.end(),std::greater<>());
+        for (auto index:remove_KFs_)
+            KFs_.erase(KFs_.begin() + index);
 
         //self_color==1为自己为蓝方
         if(self_color==1){
             //地图默认以红方的角点为原点，因此己方为蓝方时需要转换坐标系
             for(int i=0;i<6;i++){
-                if(detect_res.blue_x[i]!=0&&detect_res.blue_y[i]!=0){
+                if(detect_res.blue_x[i]!=0&&detect_res.blue_y[i]!=0&&lidar_enhance_[1][i]==0){
                     detect_res.blue_x[i]=28-detect_res.blue_x[i];
                     detect_res.blue_y[i]=15-detect_res.blue_y[i];
                 }
-                if(detect_res.red_x[i]!=0&&detect_res.red_y[i]!=0){
+                if(detect_res.red_x[i]!=0&&detect_res.red_y[i]!=0&&lidar_enhance_[0][i]==0){
                     detect_res.red_x[i]=28-detect_res.red_x[i];
                     detect_res.red_y[i]=15-detect_res.red_y[i];
                     detect_res.v_x[i]=-detect_res.v_x[i];
@@ -1535,9 +2039,19 @@ namespace upc_radar{
                 vis_maker(3,vis_array,0,i,detect_res.red_x[i],detect_res.red_y[i]);
             }
         }
+        interfaces::msg::LidarEnhance lidar_enhance;
+        for (int i=0;i<5;i++) {
+            if (lidar_enhance_[1][i]>0)
+                lidar_enhance.blue_enhance[i]=true;
+
+            if (lidar_enhance_[0][i]>0)
+                lidar_enhance.red_enhance[i]=true;
+        }
         detect_res.header.stamp = rclcpp::Clock().now();
-        lidar_detect_pub_->publish(detect_res);
-        pub_point_->publish(vis_array);
+        lidar_enhance.header.stamp = rclcpp::Clock().now();
+        lidar_detect_pub->publish(detect_res);
+        pub_vis->publish(vis_array);
+        lidar_enh_pub_->publish(lidar_enhance);
 
         mtx.lock();
         KFs= KFs_;
@@ -1546,9 +2060,8 @@ namespace upc_radar{
         auto end_time = std::chrono::steady_clock::now();
         float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
         RCLCPP_WARN(this->get_logger(), "Kalman Callback time is %f ms", dur_time);
-        span++;
-        span=span%2;
-        RCLCPP_ERROR(this->get_logger(), "Kalman Callback span is %d", span);
+        // span++;
+        // span=span%2;
     }
     /*
     void KalmanFilter::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg){
@@ -1592,11 +2105,11 @@ namespace upc_radar{
         }
         auto now_time1 = std::chrono::steady_clock::now();
         std::vector<open3d::geometry::PointCloud> pcs;
-        get_cluster(cloud,pcs);
+        getCluster(cloud,pcs);
         std::vector<cv::Rect> rects;
-        get_2drect(pcs,transform,rects,1);
+        getRect2d(pcs,transform,rects,1);
         std::vector<Clus_pc> clus_pcs;
-        get_cluster_id(clus_pcs,pcs,rects);
+        getClusterID(clus_pcs,pcs,rects);
         auto end_time1 = std::chrono::steady_clock::now();
         float dur_time1 = std::chrono::duration_cast<std::chrono::milliseconds>(end_time1 - now_time1).count();
         RCLCPP_WARN(this->get_logger(), "cluster Callback time is %f ms", dur_time1);
@@ -1621,7 +2134,7 @@ namespace upc_radar{
             kf.has_updated = false;
         }
 
-        check_KFs(KFs_);
+        checkKFs(KFs_);
 
         double clu_match_thres=get_parameter("clu.match_thres").as_double();
         double clu_dis_thres=get_parameter("clu.dis_thres").as_double();
@@ -1636,7 +2149,7 @@ namespace upc_radar{
         std::vector<int> u_track,u_cluster;
         //进行匹配
         linear_assignment(dists, dist_size, dist_size_size,clu_match_thres ,matches,u_cluster,u_track);
-        std::vector<One_> again_clus(pcs.size());
+        std::vector<KUData> again_clus(pcs.size());
         for (auto index:u_track) {
             Kalman_filter_plus kf=KFs[index];
             if (kf.last_time>1||kf.detect_history.size()==0) continue;
@@ -1775,7 +2288,7 @@ namespace upc_radar{
         output_kms.header.frame_id = "rm_frame";
         output_kms.header.stamp = msg->header.stamp;
         pub_kmeans->publish(output_kms);
-        check_KFs(KFs_);
+        checkKFs(KFs_);
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
         //过滤出红蓝方有位置信息的检测点
 
@@ -1963,9 +2476,9 @@ namespace upc_radar{
         pcl::fromROSMsg(*msg, *cloud);
         auto now_time1 = std::chrono::steady_clock::now();
         std::vector<open3d::geometry::PointCloud> pcs;
-        get_cluster(cloud,pcs);
+        getCluster(cloud,pcs);
         std::vector<cv::Rect> rects;
-        get_2drect(pcs,transform,rects,1);
+        getRect2d(pcs,transform,rects,1);
         auto end_time1 = std::chrono::steady_clock::now();
         float dur_time1 = std::chrono::duration_cast<std::chrono::milliseconds>(end_time1 - now_time1).count();
         RCLCPP_WARN(this->get_logger(), "cluster Callback time is %f ms", dur_time1);
@@ -2029,7 +2542,7 @@ namespace upc_radar{
         //         // std::cout<<"new kf"<<std::endl;
         //     }
         // }
-        check_KFs(KFs_);
+        checkKFs(KFs_);
         // //添加对多个聚类匹配到同一个卡尔曼对象时的处理，但会导致飞的卡尔曼增多
         // std::unordered_map<int,std::vector<int>> target_list;
         // std::vector<bool> is_updated(KFs_.size(),false);
@@ -2123,21 +2636,21 @@ namespace upc_radar{
         std::vector<int> u_track,u_cluster;
         //进行匹配
         linear_assignment(dists, dist_size, dist_size_size,clu_match_thres ,matches,u_cluster,u_track);
-        std::vector<One_> again_clus(pcs.size());
+        std::vector<KUData> again_clus(pcs.size());
         for (auto index:u_track) {
             Kalman_filter_plus kf=KFs[index];
-            if (kf.last_time>1||kf.detect_history.size()==0) continue;
+            if (kf.last_time>1) continue;
             for(int i=0;i<pcs.size();i++) {
                 std::array<cv::Point2f,5> AABB;
                 auto min_pc=pcs[i].GetMinBound();
                 auto max_pc=pcs[i].GetMaxBound();
-                AABB[0]=cv::Point2f(min_pc[0]-0.05,min_pc[1]-0.05);
-                AABB[1]=cv::Point2f(min_pc[0]-0.05,max_pc[1]+0.05);
-                AABB[2]=cv::Point2f(max_pc[0]+0.05,max_pc[1]+0.05);
-                AABB[3]=cv::Point2f(max_pc[0]+0.05,min_pc[1]-0.05);
+                AABB[0]=cv::Point2f(min_pc[0]-0.1,min_pc[1]-0.1);
+                AABB[1]=cv::Point2f(min_pc[0]-0.1,max_pc[1]+0.1);
+                AABB[2]=cv::Point2f(max_pc[0]+0.1,max_pc[1]+0.1);
+                AABB[3]=cv::Point2f(max_pc[0]+0.1,min_pc[1]-0.1);
                 if (initornot(AABB,kf.predict_point,4)==1) {
                     again_clus[i].mutli_in+=1;
-                    again_clus[i].I_utrack.push_back(index);
+                    again_clus[i].utrack_idx.push_back(index);
                     break;
                 }
             }
@@ -2174,7 +2687,7 @@ namespace upc_radar{
                 }
                 std::vector<Kalman_filter_plus> new_KFs;
                 new_KFs.push_back(KFs_[match[1]]);
-                for(auto index:again_clus[match[0]].I_utrack) {
+                for(auto index:again_clus[match[0]].utrack_idx) {
                     new_KFs.push_back(KFs_[index]);
                 }
 
@@ -2190,7 +2703,7 @@ namespace upc_radar{
                     if (new_match[1]==0) {
                         KFs_[match[1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects[match[0]]);
                     }else {
-                        KFs_[again_clus[match[0]].I_utrack[new_match[1]-1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects[match[0]]);
+                        KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects[match[0]]);
                     }
                 }
             }else {
@@ -2255,7 +2768,7 @@ namespace upc_radar{
         //         // std::cout<<"find kf"<<std::endl;
         //     }
         // }
-        check_KFs(KFs_);
+        checkKFs(KFs_);
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
         //过滤出红蓝方有位置信息的检测点
         //TODO：需要对己方为蓝方的时候作处理
@@ -2316,12 +2829,18 @@ namespace upc_radar{
         //         }
         //     }
         // }
+        std::vector<int> remove_KFs_;
         for(int i = KFs_.size() - 1; i >= 0; i--){
             KFs_[i].forword_predict();
+            KFs_[i].forword_predict();
+            KFs_[i].forword_predict();
             if(KFs_[i].last_time>2.5){
-                KFs_.erase(KFs_.begin() + i);
+                remove_KFs_.push_back(i);
             }
         }
+        sort(remove_KFs_.begin(),remove_KFs_.end(),std::greater<>());
+        for (auto index:remove_KFs_)
+            KFs_.erase(KFs_.begin() + index);
         // check();
         interfaces::msg::DetectResult detect_res;
         //
@@ -2409,24 +2928,13 @@ namespace upc_radar{
                 vis_maker(2,vis_array,1,i,detect_msg.blue_x[i],detect_msg.blue_y[i]);
             }
         }
-        for(int i=0;i<6;i++){
-            if(dep_msg.red_x[i]!=0&&dep_msg.red_y[i]!=0){
-                // cloud_filtered->points.push_back(pcl::PointXYZRGB(dep_msg.red_x[i],dep_msg.red_y[i],1.5,255,241,67));
-                vis_maker(4,vis_array,0,i,dep_msg.red_x[i],dep_msg.red_y[i]);
-            }
-
-            if(dep_msg.blue_x[i]!=0&&dep_msg.blue_y[i]!=0){
-                // cloud_filtered->points.push_back(pcl::PointXYZRGB(dep_msg.blue_x[i],dep_msg.blue_y[i],1.5,0,176,240));
-                vis_maker(4,vis_array,1,i,dep_msg.blue_x[i],dep_msg.blue_y[i]);
-            }
-        }
 
         cloud_filtered->header.frame_id = "rm_frame";
         sensor_msgs::msg::PointCloud2 output;
         pcl::toROSMsg(*cloud_filtered, output);
         output.header.frame_id = "rm_frame";
         output.header.stamp = msg->header.stamp;
-        pub_->publish(output);
+        pub_kalman->publish(output);
 
 
         int num=0;
@@ -2465,7 +2973,7 @@ namespace upc_radar{
 
             if (same_lists.size()>1) {
                 for (auto index:same_lists) {
-                    std::set<int> remove_detect;
+                    std::set<int,std::greater<>> remove_detect;
                     double min_time=max_time;
                     int min_index=-1;
                     if (index!=time_index) {
@@ -2705,8 +3213,8 @@ namespace upc_radar{
             }
         }
         detect_res.header.stamp = rclcpp::Clock().now();
-        lidar_detect_pub_->publish(detect_res);
-        pub_point_->publish(vis_array);
+        lidar_detect_pub->publish(detect_res);
+        pub_vis->publish(vis_array);
 
         mtx.lock();
         KFs= KFs_;

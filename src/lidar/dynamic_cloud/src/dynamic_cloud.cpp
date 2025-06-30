@@ -25,19 +25,28 @@ namespace upc_radar{
 
         if(mesh_filter_mode){
             prepare_meshes();
-            sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(sub_topic, 10, std::bind(&DynamicCloud::callback_mesh, this, std::placeholders::_1));
+            sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(sub_topic, 5, std::bind(&DynamicCloud::callback_mesh, this, std::placeholders::_1));
         }else{
-            prepare_meshes();
+            // prepare_meshes();
             declare_parameter<double>("pc.dis_thres", 0.1);
             declare_parameter<int>("pc.thread", 12);
             declare_parameter<std::string>("pc.map_path", "resource/RM2025.pcd");
             prepare_pcd();
-            sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(sub_topic, 10, std::bind(&DynamicCloud::callback_pc, this, std::placeholders::_1));
+            sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(sub_topic, 5, std::bind(&DynamicCloud::callback_pc, this, std::placeholders::_1));
         }
 
-        pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic, 10);
+        sub_game_state=this->create_subscription<interfaces::msg::GameState>("/game_state", 10, std::bind(&DynamicCloud::callback_game_state, this, std::placeholders::_1));
+        pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic, 5);
         pub_raw = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic + "/raw", 3);
         RCLCPP_WARN(this->get_logger(), "Dynamic_cloud Node start");
+    }
+
+    void DynamicCloud::callback_game_state(const interfaces::msg::GameState::SharedPtr msg) {
+        if (msg->game_progress==2&&!is_15s) {
+            is_15s=true;
+            pre_map=true;
+            RCLCPP_ERROR(this->get_logger(), "game_progress: %d",msg->game_progress);
+        }
     }
 
     bool DynamicCloud::get_transform(std::string frame_id,Eigen::Affine3f &transform){
@@ -90,8 +99,8 @@ namespace upc_radar{
         sor.setLeafSize(0.05f, 0.05f, 0.05f);
         auto result = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
         sor.filter(*result);
-        map_cloud = result;
-        kd_Tree.setInputCloud(map_cloud);
+        map_pc = result;
+        kd_Tree.setInputCloud(map_pc);
     }
 
     void DynamicCloud::seg_normal(pcl::PointCloud<pcl::PointXYZ> pcl2cloud,
@@ -150,6 +159,7 @@ namespace upc_radar{
         accumulate_time=get_parameter("dynamic.accumulate").as_int();
 
         auto receive_cloud = pcl::PointCloud<pcl::PointXYZ>();
+        // pcl::fromROSMsg(*msg,receive_cloud);
         // int num=0;
         auto tran_points = reinterpret_cast<const upc_radar::LivoxPointXyzrtl*>(msg->data.data());
         for(size_t i=0;i<msg->width;i++){
@@ -174,6 +184,30 @@ namespace upc_radar{
         pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
         pcl::transformPointCloud(receive_cloud, transformed_cloud, transform);
 
+        if (pre_map) {
+            pcl::PointCloud<pcl::PointXYZ> map_cloud;
+            for (auto point:transformed_cloud) {
+                if (point.x > 28.1 || point.y < -0.1 || point.y > 15.1 || point.z < -0.1 || point.z > 1.35) {
+                    continue;
+                }
+                map_cloud.push_back(point);
+            }
+            map_clouds_.push_back(map_cloud);
+        }
+        if (map_clouds_.size()>=150) {
+            pcl::PointCloud<pcl::PointXYZ> map_clouds;
+            for(auto it = map_clouds_.begin();it!=map_clouds_.end();++it){
+                map_clouds += *it;
+            }
+            *map_pc=map_clouds;
+            kd_Tree.setInputCloud(map_pc);
+            std::string path= frame_id+"1.pcd";
+            pcl::io::savePCDFileASCII(path,map_clouds);
+            RCLCPP_ERROR(this->get_logger(),path.c_str());
+            pre_map=false;
+            map_clouds_.clear();
+        }
+
         pcl::PointCloud<pcl::PointXYZ> filtered_cloud;
         if (situation == "rm25") {
             get_filtered_cloud25(transformed_cloud, filtered_cloud);
@@ -181,9 +215,9 @@ namespace upc_radar{
             get_filtered_cloudlab(transformed_cloud, filtered_cloud);
         } else if (situation == "rm24") {
             get_filtered_cloud24(transformed_cloud, filtered_cloud);
+        }else if (situation == "rm23") {
+            get_filtered_cloud24(transformed_cloud, filtered_cloud);
         }
-
-        // RCLCPP_ERROR(this->get_logger(), "filtered_cloud.size() is %d", filtered_cloud.size());
 
         // if(remove_outlier){
         //     double thres=get_parameter("sor.thres").as_double();
@@ -208,16 +242,16 @@ namespace upc_radar{
         for(auto it = accumulated_clouds_.begin();it!=accumulated_clouds_.end();++it){
             accumulated_cloud += *it;
         }
-        // std::ofstream fout("resource/test.txt");
+
+        // std::ofstream fout("resource/test1.txt");
         // if(!fout)
-        //     std::cout<<"file cant open!!!"<<std::endl;
+        //     RCLCPP_ERROR(this->get_logger(),"file cant open!!!");
         // else {
-        //     for (int i=0;i<accumulated_cloud.points.size();i++) {
-        //         fout<<accumulated_cloud[i].x<<" "<<accumulated_cloud[i].y<<" "<<accumulated_cloud[i].z<<std::endl;
+        //     for (auto pc:accumulated_cloud.points) {
+        //         fout<<pc.x<<" "<<pc.y<<" "<<pc.z<<std::endl;
         //     }
         //     fout.close();
         // }
-        // RCLCPP_ERROR(this->get_logger(), "accumulated_clouds_.size() is %d", accumulated_cloud.size());
 
         if(remove_outlier){
             double thres=get_parameter("sor.thres").as_double();
@@ -230,7 +264,6 @@ namespace upc_radar{
         pcl::toROSMsg(accumulated_cloud, output);
         output.header.frame_id = "rm_frame";
         output.header.stamp = time;
-        // output.header.stamp = msg->header.stamp;
         pub_->publish(output);
         pcl::toROSMsg(receive_cloud, output);
         output.header.frame_id = frame_id;

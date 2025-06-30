@@ -15,7 +15,7 @@ class PrepareCalib : public rclcpp::Node {
         cam_info_pub_ = this->create_publisher<sensor_msgs::msg::CameraInfo>("/camera_info", 10);
         image_pub_= this->create_publisher<sensor_msgs::msg::Image>("/image", 10);
         timer_image = this->create_wall_timer(std::chrono::milliseconds(100), [this]() {
-            cv::Mat image=cv::imread("resource/644.jpg");
+            cv::Mat image=cv::imread("resource/c2.png");
             sensor_msgs::msg::CameraInfo cam_info;
             std::vector<double> D{0.0, 0.0, 0.0, 0.0, 0.0};
 

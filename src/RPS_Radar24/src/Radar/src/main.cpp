@@ -64,23 +64,14 @@ int main(int argc, char **argv){
     rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_sec_img;
     rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_car;
     rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_armor;
-    rclcpp::Subscription<interfaces::msg::DetectResult>::SharedPtr sub_lidar;
+    rclcpp::Subscription<interfaces::msg::DetectResult>::SharedPtr sub_lidar_det;
+    rclcpp::Subscription<interfaces::msg::LidarEnhance>::SharedPtr sub_lidar_enh;
+
+    MyRadar radar(nh.get());
+
     sub_main_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/Hik60", rclcpp::SensorDataQoS(), &getImg1);
     sub_sec_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/Hik30", rclcpp::SensorDataQoS(), &getImg2);
-    MyRadar radar(nh.get());
-    // sub_img = nh->create_subscription<sensor_msgs::msg::Image>("/image", 10,
-    //     [radar](const sensor_msgs::msg::Image::SharedPtr msg) {
-    //         radar.MainCam_Image_ptr->Cam_img = cv_bridge::toCvCopy(msg, "bgr8")->image;
-    //         // auto msg_test = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", radar.MainCam_Image_ptr->Cam_img).toImageMsg();
-    //         // auto now_time = std::chrono::steady_clock::now();
-    //         // auto img = cv_bridge::toCvShare(msg_test, "bgr8")->image;
-    //         // auto end_time = std::chrono::steady_clock::now();
-    //         // float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
-    //         // std::cout<<"-----------------"<<dur_time/1000<<std::endl;
-    //         flag=true;
-    //     }
-    // );
-    sub_lidar= nh->create_subscription<interfaces::msg::DetectResult>("/lidar_detect", 10,
+    sub_lidar_det= nh->create_subscription<interfaces::msg::DetectResult>("/lidar_detect", 1,
         [&radar](const interfaces::msg::DetectResult::SharedPtr msg) {
             radar.lidar_det=*msg;
         });
@@ -93,9 +84,13 @@ int main(int argc, char **argv){
         [&radar](const interfaces::msg::NetDetect::SharedPtr msg) {
             radar.armor_det=*msg;
         });
+    sub_lidar_enh=nh->create_subscription<interfaces::msg::LidarEnhance>("/lidar_enhance", 1,
+        [&radar](const interfaces::msg::LidarEnhance::SharedPtr msg) {
+            radar.lidar_enhance_=*msg;
+        });
 
     radar.detect_pub=nh->create_publisher<interfaces::msg::DetectFrame>("/resolve_result", 10);
-    radar.res_pub=nh->create_publisher<interfaces::msg::DetectRes>("/cam_result", 10);
+    radar.res_pub=nh->create_publisher<interfaces::msg::DetectRes>("/cam_result", 3);
 
     if (radar.getPictureSource()==ros) {
         while(rclcpp::ok()){
@@ -120,7 +115,7 @@ int main(int argc, char **argv){
             float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
             std::cout<<"\033[31m"<<"time is : "<<dur_time/1000<<" s"<<"\033[0m"<<std::endl;
         }
-    }else if(radar.getPictureSource()==camera_||radar.getPictureSource()==video){
+    }else if(radar.getPictureSource()==camera_||radar.getPictureSource()==video||radar.getPictureSource()==single_picture){
         while(true){
             auto now_time = std::chrono::steady_clock::now();
             radar.Init(argc, argv);

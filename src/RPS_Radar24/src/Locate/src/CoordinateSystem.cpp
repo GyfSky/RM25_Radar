@@ -102,8 +102,7 @@ void MatrixCoordinateSystem::set_warring_and_place_by_locate3D(const MapVertex& 
     }
 }
 
-void MatrixCoordinateSystem::coordinateCorrection(cv::Point3d &Locate3D, OurPattern ourPattern){
-    //？？
+bool MatrixCoordinateSystem::coordinateCorrection(cv::Point3d &Locate3D, OurPattern ourPattern){
     if(Locate3D.y < edge)
         Locate3D.y = edge;
     else if(Locate3D.y > (venue_h - edge))
@@ -119,8 +118,9 @@ void MatrixCoordinateSystem::coordinateCorrection(cv::Point3d &Locate3D, OurPatt
                 Locate3D.x = 26.5;
             else if(Locate3D.x > 24.7)
                 Locate3D.x = 24.0;
-
         }
+        if (Locate3D.x < 0)
+            return false;
     }
     else if(ourPattern == blue){
         if(Locate3D.x < 1.0)
@@ -132,8 +132,22 @@ void MatrixCoordinateSystem::coordinateCorrection(cv::Point3d &Locate3D, OurPatt
             else if(Locate3D.x < 3.3)
                 Locate3D.x = 4.0;
         }
+        if (Locate3D.x > 28)
+            return false;
     }
+    return true;
+}
 
+bool MatrixCoordinateSystem::Correction(cv::Point3d &Locate3D, OurPattern ourPattern){
+    if(ourPattern == red){
+        if (Locate3D.x < 0.2)
+            return false;
+    }
+    else if(ourPattern == blue){
+        if (Locate3D.x > 27.8)
+            return false;
+    }
+    return true;
 }
 
 /***
@@ -160,6 +174,8 @@ void  MatrixCoordinateSystem::solve_reality_3d(const cv::Mat T_, const double fx
     double tx = T.at<float>(0, 3);
     double ty = T.at<float>(1, 3);
     double tz = T.at<float>(2, 3);
+    int index=0;
+    std::vector<int> remove_lists;
     //遍历每个轨迹
     for (auto & track : tracks) {
         double Hight = 0;
@@ -272,16 +288,20 @@ void  MatrixCoordinateSystem::solve_reality_3d(const cv::Mat T_, const double fx
             track.Locate3D.y = (((a - A * g) * ((B * i - f) * Hight + (B * tz - ty)) -
                                (d - B * g) * ((A * i - c) * Hight + (A * tz - tx))) / Z);
 
-            coordinateCorrection(track.Locate3D, ourPattern);
+            bool flag=coordinateCorrection(track.Locate3D, ourPattern);
+            if (!flag) remove_lists.push_back(index);
             track._Locate3D = track.Locate3D;
         }
         if(track.tracklet_len>1e-6)
             track.push_front_change_Locate3D_and_distance((track.Locate3D-track.old_Locate3D));
         track.old_Locate3D = track.Locate3D;
+        index++;
 //        tracks[s].old_Locate3D.z = 0.0;
 //        std::cout << "change_Locate3Ds:2  "  << tracks[s].change_Locate3Ds << std::endl;
     }
-
+    sort(remove_lists.begin(),remove_lists.end(),std::greater<>());
+    for(auto i:remove_lists)
+        tracks.erase(tracks.begin()+i);
 }
 
 

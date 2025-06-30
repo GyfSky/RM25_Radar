@@ -10,6 +10,11 @@ STrack::STrack(int cls, float x, float y){
     tlwh[1]=1;
     tlwh[2]=1;
     tlwh[3]=1;
+    tlbr.resize(4);
+    tlbr[0]=1;
+    tlbr[1]=1;
+    tlbr[2]=10;
+    tlbr[3]=10;
 }
 
 STrack::STrack(){
@@ -240,28 +245,9 @@ STrack::~STrack()
 void STrack::set_confs_by_locate3D(STrack &new_track,OurPattern ourPattern, std::vector<int> windmill_car){
     if(new_track.placeType == windmill){
         this->windmill_car_conf = this->windmill_car_conf * this->up_magnification;
-        for(auto cls: windmill_car){
-            new_track.ws_armorConfMatrix(0, cls)  = std::min(0.84, new_track.ws_armorConfMatrix(0, cls) + this->windmill_car_conf);
-        }
-//        if(this->windmill_car_conf > new_track.conf_armor){
-//            new_track.conf_armor = this->windmill_car_conf;
-//        }
-    }
-    else if(new_track.placeType == startupArea){
-        this->startupArea_car_conf = this->startupArea_car_conf * this->up_magnification;
-        if(ourPattern==red){
-            new_track.ws_armorConfMatrix(0, half_classWithoutCar-1) = std::min(0.84,  new_track.ws_armorConfMatrix(0, half_classWithoutCar-1) + startupArea_car_conf);
-//            if(new_track.ws_armorConfMatrix(0, 5) > new_track.conf_armor){
-//                new_track.conf_armor = new_track.ws_armorConfMatrix(0, 5);
-//            }
-        }
-        else if(ourPattern==blue){
-            new_track.ws_armorConfMatrix(0, classWithoutCar-1)  = std::min(0.84,  new_track.ws_armorConfMatrix(0, classWithoutCar-1) + startupArea_car_conf);
-//            if(new_track.ws_armorConfMatrix(0, 11) > new_track.conf_armor){
-//                new_track.conf_armor = new_track.ws_armorConfMatrix(0, 11);
-//            }
-        }
-//        std::cout << "this->startupArea_car_conf :" << this->startupArea_car_conf << ", " << new_track.ws_armorConfMatrix <<std::endl;
+        // for(auto cls: windmill_car){
+        //     new_track.ws_armorConfMatrix(0, cls)  = std::min(0.84, new_track.ws_armorConfMatrix(0, cls) + this->windmill_car_conf);
+        // }
     }else{
         this->startupArea_car_conf = new_track.startupArea_car_conf;
         this->windmill_car_conf = new_track.windmill_car_conf;

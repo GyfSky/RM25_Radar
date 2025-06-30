@@ -4,6 +4,8 @@
 
 #include "../include/PretreatObjs.h"
 
+#include <rclcpp/logging.hpp>
+
 PretreatObjs::PretreatObjs(OurPattern ourPattern) {
     this->ourPattern = ourPattern;
     YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
@@ -31,6 +33,12 @@ PretreatObjs::PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_
     this->isBR = config["pretreatObjs"]["isBR"].as<bool>();
 //    this->isGuess = config["pretreatObjs"]["isGuess"].as<bool>();
     this->maxSize = config["pretreatObjs"]["maxSize"].as<int>();
+
+    redLower=Scalar(10, 105, 105);
+    redUpper=Scalar(30, 155, 255);
+    blueLower=Scalar(93, 125, 125);
+    blueUpper=Scalar(115, 255, 255);
+
 
     //2cam
     this->sec_is_left = sec_is_left;
@@ -808,7 +816,7 @@ void PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
 }
 
 
-bool PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::DetectionObj> armors) {
+bool PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::DetectionObj> armors,cv::Mat &car_img) {
     auto trackStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 //        float carLocate2D[2] = {(car.x1+car.x2)/2, (car.y1+car.y2)/2};
     double w_getAllArea = 0.0;  // 得到所有在car里面装甲版的总面积
@@ -857,6 +865,24 @@ bool PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
     }
     set_confs_by_locate3D(car.windmill_car_conf, car.startupArea_car_conf);
     update_classfy(temp_bestcls, conf_armor,car_armorConfMatrix);
+    double conf=0.0;
+    int index =-1;
+    for (int i=0;i<armors.size();i++) {
+        if (armors[i].classId==temp_bestcls&&armors[i].confidence>conf) {
+            conf=armors[i].confidence;
+            index=i;
+        }
+        cv::Rect r = cv::Rect(armors[i].x1, armors[i].y1, armors[i].x2 - armors[i].x1, armors[i].y2 - armors[i].y1);
+        if (!check_color(car_img(r),armors[i].classId))
+            return true;
+    }
+    // if (index!=-1) {
+    //     cv::Rect r = cv::Rect(armors[index].x1, armors[index].y1, armors[index].x2 - armors[index].x1, armors[index].y2 - armors[index].y1);
+    //     if (!check_color(car_img(r),armors[index].classId)) {
+    //         cv::Mat test=car_img(r);
+    //         return true;
+    //     }
+    // }
     if (half_classWithoutCar==5) {
         if (temp_bestcls>=5&&temp_bestcls<=9) {
             temp_bestcls-=1;
@@ -878,6 +904,50 @@ bool PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
     auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 //    std::cout << "get_Armors_w_conf_Double_net: " << 1000./(trackEndTime - trackStartTime) << std::endl;
     return false;
+}
+
+bool PretreatObjs::check_color(cv::Mat armor,int cls) {
+    cv::Mat hsvImage;
+    int rl_h1=rl_h,rl_s1=rl_s,rl_v1=rl_v,rh_h1=rh_h,rh_s1=rh_s,rh_v1=rh_v;
+    // cv::createTrackbar("rl_h", "Hik30", &rl_h1, 255);
+    // cv::createTrackbar("rl_s", "Hik30", &rl_s1, 255);
+    // cv::createTrackbar("rl_v", "Hik30", &rl_v1, 255);
+    // cv::createTrackbar("rh_h", "Hik30", &rh_h1, 255);
+    // cv::createTrackbar("rh_s", "Hik30", &rh_s1, 255);
+    // cv::createTrackbar("rh_v", "Hik30", &rh_v1, 255);
+    rl_h=rl_h1;rl_s=rl_s1;rl_v=rl_v1;rh_h=rh_h1;rh_s=rh_s1;rh_v=rh_v1;
+    cvtColor(armor, hsvImage, COLOR_BGR2HSV);
+    Mat redMask,blueMask;
+    // redLower= Scalar(rl_h, rl_s, rl_v);
+    // redUpper= Scalar(rh_h, rh_s, rh_v);
+    // blueLower= Scalar(bl_h, bl_s, bl_v);
+    // blueUpper = Scalar(bh_h, bh_s, bh_v);
+    inRange(hsvImage, redLower, redUpper, redMask);//偏黄
+    inRange(hsvImage, blueLower, blueUpper, blueMask);
+
+    // 寻找轮廓
+    vector<vector<Point>> contoursRed, contoursBlue;
+    findContours(redMask, contoursRed, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    findContours(blueMask, contoursBlue, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    bool red=false,blue=false;
+    if (contoursRed.size()!=0)
+        red=true;
+    if (contoursBlue.size()!=0)
+        blue=true;
+    // if (red&&blue) {
+    //     return true;
+    // }else if(red&&cls>5) {
+    //     return true;
+    // }else if (blue&&cls<=5) {
+    //     return true;
+    // }else{
+    //     return false;
+    // }
+    if (red||blue) {
+        return true;
+    }else{
+        return false;
+    }
 }
 
 /**

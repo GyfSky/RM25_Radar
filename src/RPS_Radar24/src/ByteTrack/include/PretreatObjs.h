@@ -38,6 +38,9 @@ private:
     double sum_windmill_car_conf = 0.56;
     double startupArea_car_conf = 0.6;
     double windmill_car_conf;
+    Scalar redLower,redUpper,blueLower,blueUpper;
+    int rl_h=10,rl_s=105,rl_v=255,rh_h=30,rh_s=155,rh_v=255;
+    int bl_h=93,bl_s=55,bl_v=125,bh_h=115,bh_s=255,bh_v=255;
 
 public:
     cv::Mat H, H2, perspective_K;
@@ -52,6 +55,7 @@ public:
 
     void getW_of_armorConfs(int maxSize);
     void set_windmill_car(std::vector<int> windmill_car);
+    bool check_color(cv::Mat armor,int cls);
 
     TRTInferV1::DetectionObj objs2newMainObjs(TRTInferV1::DetectionObj objs, cv::Mat obj2Main);
 
@@ -110,7 +114,7 @@ public:
 
     void set_confs_by_locate3D(double &windmill_car_conf, double &startupArea_car_conf);
     void get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::Object> armors);
-    bool get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::DetectionObj> armors);
+    bool get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::DetectionObj> armors,cv::Mat &car_img);
 
     //    void updataStrack_ws_confMatrixs(STrack &sTrack);
 };

@@ -921,70 +921,114 @@ void MapGraphMtx::get_fortress_R_placeConfig(std::vector<MapVertex> &vexs,PlaceC
     std::array<Eigen::Matrix<double, 3, 1>,25> temp_onegroup_points;
 
     //平地
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(7.0,8.0657,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(7.2899,7.5636,0.15)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(6.8899,6.8707,0.15)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(6.3101,6.8707,0.15)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(5.9101,7.5636,0.15)));
-    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(6.20,8.0657,0.15)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(6.9266,8.0657,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(7.2532,7.50,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(6.9266,6.9343,0.15)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(6.2734,6.9343,0.15)));
+    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(5.9468,7.50,0.15)));
+    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(6.2734,8.0657,0.15)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 6, placeColor, mist,startupArea, false);
 
     //上坡
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(7.2899,7.5636,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(6.8899,6.8707,0.15)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.1645,6.5222,0.0)));
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(7.2532,7.50,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(6.9266,8.0657,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.1645,8.4778,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(7.7291,7.50,0.0)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,startupArea, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(6.3101,6.8707,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.9101,7.5636,0.15)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(7.2532,7.50,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(6.9266,6.9343,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.1645,6.5222,0.0)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(7.7291,7.50,0.0)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,startupArea, false);
+    this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(6.2734,6.9343,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(6.9266,6.9343,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.1645,6.5222,0.0)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(6.0355,6.5222,0.0)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, mist,startupArea, false);
+    this->creat_dir(vexs, vexs.size()-4, vexs.size()-1,offset);
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(6.2734,6.9343,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.9468,7.50,0.15)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.4709,7.50,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(6.0355,6.5222,0.0)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,startupArea, false);
-    this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
+    this->creat_dir(vexs, vexs.size()-5, vexs.size()-1,offset);
 
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(6.20,8.0657,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(7.0,8.0657,0.15)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(6.2734,8.0657,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(6.9266,8.0657,0.15)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.1645,8.4778,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(6.0355,8.4778,0.0)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,startupArea, false);
+    this->creat_dir(vexs, vexs.size()-6, vexs.size()-1,offset);
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(6.2734,8.0657,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.9468,7.50,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.4709,7.50,0.0)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(6.0355,8.4778,0.0)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, mist,startupArea, false);
-    this->creat_dir(vexs, vexs.size()-4, vexs.size()-1,offset);
+    this->creat_dir(vexs, vexs.size()-7, vexs.size()-1,offset);
 }
 
 void MapGraphMtx::get_fortress_B_placeConfig(std::vector<MapVertex> &vexs,PlaceColor placeColor, int offset){
     std::array<Eigen::Matrix<double, 3, 1>,25> temp_onegroup_points;
 
-    //平地
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-7.0,15-8.0657,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-7.2899,15-7.5636,0.15)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-6.8899,15-6.8707,0.15)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-6.3101,15-6.8707,0.15)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-5.9101,15-7.5636,0.15)));
-    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(28-6.20,15-8.0657,0.15)));
+        //平地
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-6.9266,15-8.0657,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-7.2532,15-7.50,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-6.9266,15-6.9343,0.15)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-6.2734,15-6.9343,0.15)));
+    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-5.9468,15-7.50,0.15)));
+    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(28-6.2734,15-8.0657,0.15)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 6, placeColor, mist,startupArea, false);
 
     //上坡
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-7.2899,15-7.5636,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-6.8899,15-6.8707,0.15)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.1645,15-6.5222,0.0)));
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-7.2532,15-7.50,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-6.9266,15-8.0657,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.1645,15-8.4778,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-7.7291,15-7.50,0.0)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,startupArea, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-6.3101,15-6.8707,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.9101,15-7.5636,0.15)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-7.2532,15-7.50,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-6.9266,15-6.9343,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.1645,15-6.5222,0.0)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-7.7291,15-7.50,0.0)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,startupArea, false);
+    this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-6.2734,15-6.9343,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-6.9266,15-6.9343,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.1645,15-6.5222,0.0)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-6.0355,15-6.5222,0.0)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, mist,startupArea, false);
+    this->creat_dir(vexs, vexs.size()-4, vexs.size()-1,offset);
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-6.2734,15-6.9343,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.9468,15-7.50,0.15)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.4709,15-7.50,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-6.0355,15-6.5222,0.0)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,startupArea, false);
-    this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
+    this->creat_dir(vexs, vexs.size()-5, vexs.size()-1,offset);
 
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-6.20,15-8.0657,0.15)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-7.0,15-8.0657,0.15)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-6.2734,15-8.0657,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-6.9266,15-8.0657,0.15)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.1645,15-8.4778,0.0)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-6.0355,15-8.4778,0.0)));
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,startupArea, false);
+    this->creat_dir(vexs, vexs.size()-6, vexs.size()-1,offset);
+
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-6.2734,15-8.0657,0.15)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.9468,15-7.50,0.15)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.4709,15-7.50,0.0)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-6.0355,15-8.4778,0.0)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, mist,startupArea, false);
-    this->creat_dir(vexs, vexs.size()-4, vexs.size()-1,offset);
+    this->creat_dir(vexs, vexs.size()-7, vexs.size()-1,offset);
 }
 
 void MapGraphMtx::get_trapezium_R_placeConfig(std::vector<MapVertex> &vexs, PlaceColor placeColor, int offset) {
@@ -992,68 +1036,68 @@ void MapGraphMtx::get_trapezium_R_placeConfig(std::vector<MapVertex> &vexs, Plac
 
     //10坡
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(3.0248,9.7987,0.0)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.3481,9.7987,0.0)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.3481,10.95,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.0248,9.7987,0.0)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.0248,10.95,0.2)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(3.0248,10.95,0.2)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, mist,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bmist,ordinary, false);
 
     //10坡后,43坡后
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(3.0248,10.95,0.2)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(3.0248,12.5,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.4981,12.5,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(5.4981,10.95,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.1748,12.5,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(5.1748,10.95,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //10坡后
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(3.0248,12.5,0.2)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(3.0248,15,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.4981,15,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(5.4981,12.5,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.1748,15,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(5.1748,12.5,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rmist,ordinary, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //43坡
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.9423,10.95,0.6030)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.9423,12.5,0.6030)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.4981,12.5,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(5.4981,10.95,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.6190,10.95,0.60)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.6190,12.5,0.60)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(5.1748,12.5,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(5.1748,10.95,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
 
     //最佳打符点
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.9423,10.95,0.6030)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.9423,12.5,0.6030)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(9.6846,12.5,0.6030)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(10.0313,11.9304,0.6030)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(9.0285,10.95,0.6030)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.6190,10.95,0.60)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.6190,12.5,0.60)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.6647,12.5,0.60)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(8.29,11.8791,0.60)));
+    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(7.6394,10.95,0.60)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 5, placeColor, mist,windmill, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //高地平地(最佳打符点遮挡，全遮)
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.4981,13.0702,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.4981,12.5,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.1748,13.0702,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.1748,12.5,0.2)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.0178,12.5,0.2)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(7.0178,13.0702,0.2)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, hide,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-4, vexs.size()-1,offset);
 
     //高地平地(最佳打符点遮挡，遮己方)
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(7.0178,13.0702,0.2)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(7.0178,12.5,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(9.6841,12.5,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(10.1506,12.0229,0.2)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(10.7267,12.7761,0.2)));
-    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(11.2383,12.9247,0.2)));
-    temp_onegroup_points.at(6) = ((Eigen::Matrix<double, 3, 1>(11.3405,13.0702,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(7.6647,12.5,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(8.4474,11.9520,0.2)));
+    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(9.0234,12.7747,0.2)));
+    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(9.5292,12.9247,0.2)));
+    temp_onegroup_points.at(6) = ((Eigen::Matrix<double, 3, 1>(9.6303,13.0702,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 7, placeColor, Rhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //高地平地(无遮挡)
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.4981,15,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.4981,13.0702,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(11.3405,13.0702,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(11.8914,13.8575,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(5.1748,15,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(5.1748,13.0702,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(9.6303,13.0702,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(10.1823,13.8575,0.2)));
     temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(13.5797,13.8575,0.2)));
     temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(13.5797,15,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 6, placeColor, Clear,ordinary, false);
@@ -1062,10 +1106,10 @@ void MapGraphMtx::get_trapezium_R_placeConfig(std::vector<MapVertex> &vexs, Plac
     this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
 
     //20坡
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(11.3110,12.7671,0.0)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(10.4881,11.6796,0.0)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(10.1506,12.0229,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(10.7267,12.7761,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(9.6073,12.7747,0.0)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(8.8391,11.6777,0.0)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(8.4474,11.9520,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(9.0234,12.7747,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
 }
@@ -1075,68 +1119,68 @@ void MapGraphMtx::get_trapezium_B_placeConfig(std::vector<MapVertex> &vexs, Plac
 
     //10坡
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-3.0248,15-9.7987,0.0)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.3481,15-9.7987,0.0)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.3481,15-10.95,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.0248,15-9.7987,0.0)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.0248,15-10.95,0.2)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-3.0248,15-10.95,0.2)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, mist,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rmist,ordinary, false);
 
     //10坡后,43坡后
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-3.0248,15-10.95,0.2)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-3.0248,15-12.5,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-12.5,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-10.95,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-12.5,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-10.95,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //10坡后
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-3.0248,15-12.5,0.2)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-3.0248,15-15,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-15,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-12.5,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-15,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-12.5,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bmist,ordinary, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //43坡
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.9423,15-10.95,0.6030)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.9423,15-12.5,0.6030)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-12.5,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-10.95,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.6190,15-10.95,0.60)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.6190,15-12.5,0.60)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-12.5,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-10.95,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Rhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
 
     //最佳打符点
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.9423,15-10.95,0.6030)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.9423,15-12.5,0.6030)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-9.6846,15-12.5,0.6030)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-10.0313,15-11.9304,0.6030)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-9.0285,15-10.95,0.6030)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.6190,15-10.95,0.60)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.6190,15-12.5,0.60)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.6647,15-12.5,0.60)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-8.29,15-11.8791,0.60)));
+    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-7.6394,15-10.95,0.60)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 5, placeColor, mist,windmill, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //高地平地(最佳打符点遮挡，全遮)
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-13.0702,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-12.5,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-13.0702,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-12.5,0.2)));
     temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.0178,15-12.5,0.2)));
     temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-7.0178,15-13.0702,0.2)));
-    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, hide,ordinary, false);
+    this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-4, vexs.size()-1,offset);
 
     //高地平地(最佳打符点遮挡，遮己方)
     temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-7.0178,15-13.0702,0.2)));
     temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-7.0178,15-12.5,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-9.6841,15-12.5,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-10.1506,15-12.0229,0.2)));
-    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-10.7267,15-12.7761,0.2)));
-    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(28-11.2383,15-12.9247,0.2)));
-    temp_onegroup_points.at(6) = ((Eigen::Matrix<double, 3, 1>(28-11.3405,15-13.0702,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-7.6647,15-12.5,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-8.4474,15-11.9520,0.2)));
+    temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-9.0234,15-12.7747,0.2)));
+    temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(28-9.5292,15-12.9247,0.2)));
+    temp_onegroup_points.at(6) = ((Eigen::Matrix<double, 3, 1>(28-9.6303,15-13.0702,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 7, placeColor, Bhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-2, vexs.size()-1,offset);
 
     //高地平地(无遮挡)
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-15,0.2)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.4981,15-13.0702,0.2)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-11.3405,15-13.0702,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-11.8914,15-13.8575,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-15,0.2)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-5.1748,15-13.0702,0.2)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-9.6303,15-13.0702,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-10.1823,15-13.8575,0.2)));
     temp_onegroup_points.at(4) = ((Eigen::Matrix<double, 3, 1>(28-13.5797,15-13.8575,0.2)));
     temp_onegroup_points.at(5) = ((Eigen::Matrix<double, 3, 1>(28-13.5797,15-15,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 6, placeColor, Clear,ordinary, false);
@@ -1145,10 +1189,10 @@ void MapGraphMtx::get_trapezium_B_placeConfig(std::vector<MapVertex> &vexs, Plac
     this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
 
     //20坡
-    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-11.3110,15-12.7671,0.0)));
-    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-10.4881,15-11.6796,0.0)));
-    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-10.1506,15-12.0229,0.2)));
-    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-10.7267,15-12.7761,0.2)));
+    temp_onegroup_points.at(0) = ((Eigen::Matrix<double, 3, 1>(28-9.6073,15-12.7747,0.0)));
+    temp_onegroup_points.at(1) = ((Eigen::Matrix<double, 3, 1>(28-8.8391,15-11.6777,0.0)));
+    temp_onegroup_points.at(2) = ((Eigen::Matrix<double, 3, 1>(28-8.4474,15-11.9520,0.2)));
+    temp_onegroup_points.at(3) = ((Eigen::Matrix<double, 3, 1>(28-9.0234,15-12.7747,0.2)));
     this->push_back_MapVertex(vexs ,temp_onegroup_points, 4, placeColor, Bhide,ordinary, false);
     this->creat_dir(vexs, vexs.size()-3, vexs.size()-1,offset);
 }

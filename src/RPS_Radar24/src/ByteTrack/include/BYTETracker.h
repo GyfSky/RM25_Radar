@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CostMatrix.h"
+#include "../../Locate/include/CoordinateSystem.h"
 #include <interfaces/msg/detect_result.hpp>
+#include <interfaces/msg/lidar_enhance.hpp>
 
 //struct Object
 //{
@@ -13,13 +15,17 @@
 class BYTETracker : private CostMatrix
 {
 public:
-	BYTETracker(OurPattern ourPattern);
+	BYTETracker(OurPattern ourPattern,std::shared_ptr<MatrixCoordinateSystem> CooSystem_ptr);
 	~BYTETracker();
 
 //	vector<STrack> update(const vector<Object>& objects);
+	void clear_cam_accurate();
 	void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<Car> &cars);
 	void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections, vector<STrack> &out);
-    void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections, vector<STrack> &out,vector<STrack> &to_sentry,interfaces::msg::DetectResult lidar_det);
+    void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections,
+    	vector<STrack> &out,vector<STrack> &to_sentry,interfaces::msg::DetectResult lidar_det,interfaces::msg::LidarEnhance lidar_enhance);
+	OurPattern ourPatternColor;
+	std::shared_ptr<MatrixCoordinateSystem> CooSystem_ptr = nullptr;
 
 private:
     void set_windmill_car(std::vector<int> windmill_car);
@@ -73,5 +79,5 @@ private:
     std::vector<int> windmill_car; //打符车的标号
 	vector<STrack> removed_stracks;
 	byte_kalman::KalmanFilter kalman_filter;
-
+	bool cam_accurate_[2][5]={};
 };
