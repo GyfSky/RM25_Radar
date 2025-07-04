@@ -1691,7 +1691,7 @@ namespace upc_radar{
 
         for (auto index:u_track) {
             Kalman_filter_plus kf=KFs_[index];
-            if (kf.last_time>2.5||kf.detect_history.size()==0) continue;
+            if (kf.last_time>2.5||kf.detect_history.size()==0||KFs_[index].kmeans_time_>15) continue;
             for(int i=0;i<pcs.size();i++) {
                 std::array<cv::Point2f,5> AABB;
                 auto min_pc=pcs[i].GetMinBound();
@@ -1753,11 +1753,13 @@ namespace upc_radar{
                 for(auto new_match : new_matches) {
                     if (new_match[1]==0) {
                         KFs_[match[1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects1[match[0]]);
+                        KFs_[match[1]].kmeans_time_++;
                         KFs_[match[1]].rect_2d2.push_back(rects2[match[0]]);
                         if (KFs_[match[1]].rect_2d2.size()>KFs_[match[1]].max_history)
                             KFs_[match[1]].rect_2d2.erase(KFs_[match[1]].rect_2d2.begin());
                     }else {
                         KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].update(again_clus[match[0]].kmeans_pc.points[new_match[0]],time,rects1[match[0]]);
+                        KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].kmeans_time_++;
                         KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.push_back(rects2[match[0]]);
                         if (KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.size()>KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].max_history)
                             KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.erase(KFs_[again_clus[match[0]].utrack_idx[new_match[1]-1]].rect_2d2.begin());
@@ -1765,6 +1767,7 @@ namespace upc_radar{
                 }
             }else {
                 KFs_[match[1]].update(cloud_xy->points[match[0]],time,rects1[match[0]]);
+                KFs_[match[1]].kmeans_time_=0;
                 KFs_[match[1]].rect_2d2.push_back(rects2[match[0]]);
                 if (KFs_[match[1]].rect_2d2.size()>KFs_[match[1]].max_history)
                     KFs_[match[1]].rect_2d2.erase(KFs_[match[1]].rect_2d2.begin());

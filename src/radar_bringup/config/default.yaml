@@ -9,7 +9,7 @@
     #RM2025
     #al_map_grid_size: 0.2
     pc_grid_size: 0.3
-    use_saved_T: true
+    use_saved_T: false
     use_prepoints: false
     is_one_lidar: false
 

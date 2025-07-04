@@ -31,6 +31,7 @@ class Kalman_filter_plus {
     PlaceType last_place=ordinary,now_place=ordinary;
 
     rclcpp::Node* node;
+    int kmeans_time_=0;
     float last_time = 0;//丢失的总时间，即没有观测到目标，只进行预测
     std::chrono::steady_clock::time_point timer;//最后更新时间
     std::vector<std::pair<double, pcl::PointXYZI>> history;//放最佳估计点，时间，坐标

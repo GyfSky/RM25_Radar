@@ -12,7 +12,7 @@
 #     video_path: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-04_16_38_22/shangjiao.mp4"  #  视频路径
 
 general:
-  cam_use_saved_T: true
+  cam_use_saved_T: false
   lidar_use_saved_T: false
   lidar_use_prepoints: true
   situation: "rm25"
