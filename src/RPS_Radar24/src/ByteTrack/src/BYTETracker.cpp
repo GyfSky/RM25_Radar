@@ -882,8 +882,6 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
         current_frame_lost_stracks[i].mark_lostCopy();//设置为copy lost 状态
         // if(is_lose_predict){
             lost_predict_stracks.push_back(current_frame_lost_stracks[i]);//？？
-        }
-    }
         // }
     }
     clear_cam_accurate();
