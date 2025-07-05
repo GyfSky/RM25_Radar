@@ -2,11 +2,15 @@
 
 std::string getData();
 
+
+
 PictureSource MyRadar::getPictureSource() {
     return this->Modes_ptr->pictureSource;
 }
 
 MyRadar::MyRadar(rclcpp::Node* node){
+
+MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
     this->node = node;
     after = 4000;bafter = after;int start = 0;
 
@@ -43,7 +47,7 @@ MyRadar::MyRadar(rclcpp::Node* node){
 
     //获取图像
     this->MainCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631",node, "Hik60", Modes_ptr->isSave, disk02,
+        new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60", Modes_ptr->isSave, disk02,
                       start));
 
     // this->CoordSolve_ptr  = std::shared_ptr<CoordSolver>(new CoordSolver(Modes_ptr->ourPattern));//英雄吊射？？
@@ -54,7 +58,7 @@ MyRadar::MyRadar(rclcpp::Node* node){
             std::this_thread::sleep_for(std::chrono::milliseconds (10));
         this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern));
         this->SecCam_Image_ptr = std::shared_ptr<Image>(
-                new Image(Common,Modes_ptr->pictureSource, "00F26632053",node, "Hik30", Modes_ptr->isSave, disk02,
+                new Image(Common,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30", Modes_ptr->isSave, disk02,
                           start));
         this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(this->MainCam_ptr, this->SecCam_ptr, false));
     }else{
@@ -66,7 +70,7 @@ MyRadar::MyRadar(rclcpp::Node* node){
     this->BYTETracker_ptr = std::shared_ptr<BYTETracker>(new BYTETracker(Modes_ptr->ourPattern,this->CooSystem_ptr));
 
     //串口
-    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort,node));
+    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort,node.get()));
 
 
     //test
@@ -688,18 +692,18 @@ void MyRadar::Init(int argc, char **argv){
 void MyRadar::Save() {
     if(Modes_ptr->isSave == true_){
         YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-        std::string path = config["save"]["save_bag_path"].as<std::string>() + getData();
+        std::string path = config["save"]["save_bag_path"].as<std::string>() + getDate();
         std::string topics = config["Livox"]["lidarTopicName"].as<std::string>();
 
         if(Modes_ptr->pictureSource==camera_){
             MainCam_Image_ptr->setSaveMode();
-            this->save_main_dir = config["save"]["save_bag_path"].as<std::string>() + getData() + "main";
+            this->save_main_dir = config["save"]["save_bag_path"].as<std::string>() + getDate() + "main";
             topics+=" /cam/";
             topics+=MainCam_Image_ptr->Cam_winname;
             mkdir((this->save_main_dir).c_str(), S_IRWXU);
             if(!is_one_cam){
                 SecCam_Image_ptr->setSaveMode();
-                this->save_sec_dir = config["save"]["save_bag_path"].as<std::string>() + getData() + "sec";
+                this->save_sec_dir = config["save"]["save_bag_path"].as<std::string>() + getDate() + "sec";
                 topics+=" /cam/";
                 topics+=SecCam_Image_ptr->Cam_winname;
                 mkdir((this->save_sec_dir).c_str(), S_IRWXU);
@@ -997,7 +1001,7 @@ void MyRadar::Spin(int argc, char **argv){
                 detect_pub->publish(temp_res);
                 res_pub->publish(final_res);
                 std::cout << "-----------------step  test start--------------" << std::endl;
-
+                rclcpp::spin_some(this->node);
                 BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out,to_sentry,lidar_det,lidar_enhance_);
                 std::cout << "updata is OK" << std::endl;
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -1561,6 +1565,7 @@ void MyRadar::Spin(int argc, char **argv){
 //                MainCam_Image_ptr->draw_rusult(STacks, true);
 
                 // BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out);
+                rclcpp::spin_some(this->node);
                 BYTETracker_ptr->update(tracked_stracks,lost_stracks, lost_predict_stracks,STacks, out,to_sentry,lidar_det,lidar_enhance_);
                 std::cout << "updata is OK" << std::endl;
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -1723,15 +1728,4 @@ void MyRadar::Close(){
     if(!is_one_cam){
         SecCam_Image_ptr->Close();
     }
-}
-
-std::string getData(){
-    char now[64];
-    std::time_t tt;
-    struct tm *ttime;
-    tt = time(nullptr);
-    ttime = localtime(&tt);
-    strftime(now, 64, "%Y-%m-%d_%H_%M_%S", ttime);
-    std::string now_string(now);
-    return now_string;
 }

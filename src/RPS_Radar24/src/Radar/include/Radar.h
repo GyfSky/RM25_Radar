@@ -97,7 +97,7 @@ private:
 
 public:
     bool is_one_cam = false;
-    rclcpp::Node* node;
+    rclcpp::Node::SharedPtr node;
     interfaces::msg::DetectResult lidar_det;
     interfaces::msg::DetectResult lidar_det1;
     bool is_close = false;
@@ -111,7 +111,7 @@ public:
     bool hero_guess_1_=false,hero_guess_2_=false;
     int hero_time_1_=0,hero_time_2_=0;
 
-    MyRadar(/* args */rclcpp::Node* node);
+    MyRadar(/* args */rclcpp::Node::SharedPtr node);
     ~MyRadar();
     std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
     std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;

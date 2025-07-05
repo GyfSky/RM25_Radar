@@ -38,25 +38,6 @@ bool flag1 = false,flag2=false;
 cv::Mat img1,img2;
 rclcpp::Time ros_time;
 
-void getImg1(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
-    // ros_time=rclcpp::Clock().now();
-    ros_time=rosImg_ptr->header.stamp;
-    img1 = cv::imdecode(rosImg_ptr->data, cv::IMREAD_COLOR);
-    if(!img1.empty()){
-        flag1=true;
-    }else{
-        std::cout << "error!!!!!" << std::endl;
-    }
-}
-void getImg2(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr){
-    img2 = cv::imdecode(rosImg_ptr->data, cv::IMREAD_COLOR);
-    if(!img2.empty()){
-        flag2=true;
-    }else{
-        std::cout << "error!!!!!" << std::endl;
-    }
-}
-
 int main(int argc, char **argv){
     rclcpp::init(argc, argv);
     auto nh = rclcpp::Node::make_shared("camera_detector");
@@ -67,10 +48,7 @@ int main(int argc, char **argv){
     rclcpp::Subscription<interfaces::msg::DetectResult>::SharedPtr sub_lidar_det;
     rclcpp::Subscription<interfaces::msg::LidarEnhance>::SharedPtr sub_lidar_enh;
 
-    MyRadar radar(nh.get());
-
-    sub_main_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/Hik60", rclcpp::SensorDataQoS(), &getImg1);
-    sub_sec_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/cam/Hik30", rclcpp::SensorDataQoS(), &getImg2);
+    MyRadar radar(nh);
     sub_lidar_det= nh->create_subscription<interfaces::msg::DetectResult>("/lidar_detect", 1,
         [&radar](const interfaces::msg::DetectResult::SharedPtr msg) {
             radar.lidar_det=*msg;
@@ -118,7 +96,6 @@ int main(int argc, char **argv){
     }else if(radar.getPictureSource()==camera_||radar.getPictureSource()==video||radar.getPictureSource()==single_picture){
         while(rclcpp::ok()){
             auto now_time = std::chrono::steady_clock::now();
-            rclcpp::spin_some(nh);
             radar.Init(argc, argv);
             radar.Spin(argc, argv);
             if(cv::waitKey(1) == 'q'){
