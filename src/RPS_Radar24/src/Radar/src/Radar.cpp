@@ -1,14 +1,8 @@
 #include "../include/Radar.h"
 
-std::string getData();
-
-
-
 PictureSource MyRadar::getPictureSource() {
     return this->Modes_ptr->pictureSource;
 }
-
-MyRadar::MyRadar(rclcpp::Node* node){
 
 MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
     this->node = node;
