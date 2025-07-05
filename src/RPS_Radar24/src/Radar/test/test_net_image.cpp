@@ -1,7 +1,7 @@
 #include "../include/Radar.h"
 
 
-MyRadar::MyRadar(rclcpp::Node* node){
+MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
     after = 1500;bafter = after;int start = 0;
 
     this->Modes_ptr = std::shared_ptr<Modes>(new Modes());
@@ -31,7 +31,7 @@ MyRadar::MyRadar(rclcpp::Node* node){
     //     new Image(Common,Modes_ptr->pictureSource, "00F26632053", "Hik30", Modes_ptr->isSave, disk02,
     //                   start));
 
-    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, 12, Modes_ptr->Port_isOpen, Modes_ptr->usePort,node));
+    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, 12, Modes_ptr->Port_isOpen, Modes_ptr->usePort,node.get()));
 
 
     //test

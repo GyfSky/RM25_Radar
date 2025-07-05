@@ -14,6 +14,17 @@
 //enum UsePort       {USB0 = 0,USB1 = 1, USB2 = 2};
 //enum TF {true_,false_};
 
+inline std::string getDate(){
+    char now[64];
+    std::time_t tt;
+    struct tm *ttime;
+    tt = time(nullptr);
+    ttime = localtime(&tt);
+    strftime(now, 64, "%Y-%m-%d_%H_%M_%S", ttime);
+    std::string now_string(now);
+    return now_string;
+}
+
 class Port {
 private:
     int fd;
