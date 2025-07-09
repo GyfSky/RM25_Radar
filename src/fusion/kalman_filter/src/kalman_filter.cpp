@@ -1855,6 +1855,49 @@ namespace upc_radar{
         checkKFs(KFs_);
     }
 
+    void KalmanFilter::droneTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2) {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr receive_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_xy(new pcl::PointCloud<pcl::PointXYZI>);
+        pcl::fromROSMsg(*msg1, *cloud1);
+        pcl::fromROSMsg(*msg2, *cloud2);
+        *receive_cloud+=*cloud1;
+        *receive_cloud+=*cloud2;
+        if (receive_cloud->empty()) {return;}
+
+        open3d::geometry::PointCloud in_cloud;
+        for(size_t i=0;i<receive_cloud->points.size();i++)
+            in_cloud.points_.push_back(Eigen::Vector3d(receive_cloud->points[i].x,receive_cloud->points[i].y,receive_cloud->points[i].z));
+        std::vector<int> labels;
+        std::vector<std::vector<int>> nbs(in_cloud.points_.size());
+        std::vector<std::vector<int>> clusters;
+        labels=normalDBSCAN(in_cloud,1.4, 10,nbs);
+
+        std::vector<open3d::geometry::PointCloud> pcs;
+        open3d::geometry::PointCloud pc_noise;
+        int max_l = *std::max_element(labels.begin(), labels.end());
+        for (int i = 0; i <= max_l; i++) {
+            pcs.emplace_back(open3d::geometry::PointCloud());
+        }
+        if (pcs.empty()) {return;}
+        for (size_t i = 0; i < in_cloud.points_.size(); i++) {
+            if(labels[i] >= 0) {
+                pcs[labels[i]].points_.push_back(in_cloud.points_[i]);
+            }else
+                pc_noise.points_.push_back(in_cloud.points_[i]);
+        }
+
+        int max_index=0;
+        if (max_l>=1) max_index=std::distance(pcs.begin(), std::max_element(pcs.begin(), pcs.end(), compareBySize));
+        interfaces::msg::DroneLocation drone_location;
+        drone_location.header.stamp = msg1->header.stamp;
+        drone_location.x = int(((26.2-pcs[max_index].GetCenter()[0])/15.2)*100.0);
+        if (drone_location.x>100)drone_location.x=100;
+        if (drone_location.x<0)drone_location.x=0;
+        pub_drone_->publish(drone_location);
+    }
+
     void KalmanFilter::PCTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2) {
         rclcpp::Time time = msg1->header.stamp;
         std::vector<Kalman_filter_plus> KFs_;
