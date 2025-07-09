@@ -8,7 +8,6 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
     this->ourPattern = ourPattern;
     this->mode_num = mode_num;
     port_out.resize(2*this->mode_num);
-    test_time=rclcpp::Clock().now();
     sentryRadarDataT_lock.lock();
     for (int i=0;i<10;i++) {
         sentryRadarDataT.data.char_data[i]=0.0;
@@ -21,7 +20,6 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
     buff_time_=rclcpp::Clock().now();
     self_offense_time_=rclcpp::Clock().now();
     rival_offense_time_=rclcpp::Clock().now();
-    outpost_die_time_=rclcpp::Clock().now();
     trigger_time_=rclcpp::Clock().now();
 
     std::ofstream fout("resource/debug.txt", std::ios::app);
@@ -39,7 +37,6 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
     judgment_condition_time_.insert(std::pair<int,int>(4,100));
     judgment_condition_time_.insert(std::pair<int,int>(5,300));
     judgment_condition_time_.insert(std::pair<int,int>(6,400));
-    judgment_condition_time_.insert(std::pair<int,int>(7,100));
 
     judgment_condition_string_.insert(std::pair<int,string>(0,"self_dart"));
     judgment_condition_string_.insert(std::pair<int,string>(1,"rival_dart"));
@@ -48,9 +45,8 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
     judgment_condition_string_.insert(std::pair<int,string>(4,"rival_offense"));
     judgment_condition_string_.insert(std::pair<int,string>(5,"time_3_55"));
     judgment_condition_string_.insert(std::pair<int,string>(6,"time_1_40"));
-    judgment_condition_string_.insert(std::pair<int,string>(7,"manual"));
 
-    for (int i=0;i<8;i++) {
+    for (int i=0;i<7;i++) {
         judgment_condition_[i][0]=0;
         judgment_condition_[i][1]=judgment_condition_time_[i];
     }
@@ -169,7 +165,7 @@ void Port::updataDroneData(unsigned int x) {
     drone_location_lock_.unlock();
 }
 
-void Port::updateGameTime(double time) {
+void Port::updateGameTime(double &time) {
     game_time_lock_.lock();
     time=game_during_time_;
     game_time_lock_.unlock();
@@ -351,14 +347,6 @@ void Port::checkGameTime() {
     }
 }
 
-void Port::checkManual() {
-    dartInfo_lock.lock();
-    if (time_init&&rclcpp::Clock().now().seconds()-outpost_die_time_.seconds()>10&&dartInfo.data.target==0) {
-        judgment_condition_[Judgment::manual][0]=1;
-    }
-    dartInfo_lock.unlock();
-}
-
 void Port::checkTrigger() {
     vulnerability_times_lock.lock();
     int dacideing=vulnerability_times.data.dacideing;
@@ -370,7 +358,6 @@ void Port::checkTrigger() {
         checkSelfOffense();
         checkRivalOffense();
         checkGameTime();
-        checkManual();
     }
 }
 
@@ -384,7 +371,7 @@ void Port::autoDecisionMaking(){
     int radar_info=vulnerability_times.data.radar_info;
     vulnerability_times_lock.unlock();
 
-    for (int i=0;i<8;i++) {
+    for (int i=0;i<7;i++) {
         if (time_init&&judgment_condition_[i][0]==1) {
             if (number>=3&&radar_info>0) {
                 dacision_time_flag=true;
@@ -399,7 +386,7 @@ void Port::autoDecisionMaking(){
                     fout<<"------------------"<<std::endl;
                     fout.close();
                 }
-                for (int j=0;j<8;j++) {
+                for (int j=0;j<7;j++) {
                     judgment_condition_[j][0]=0;
                     judgment_condition_[j][1]=judgment_condition_time_[j];
                 }
@@ -505,10 +492,6 @@ void Port::getData() {
                         robotHP.red_robot_hp[2] = gameRobotHpT.data.red_3_robot_HP;
                         robotHP.red_robot_hp[3] = gameRobotHpT.data.red_4_robot_HP;
                         robotHP.red_robot_hp[4] = gameRobotHpT.data.red_7_robot_HP;
-                        if (time_init&&!is_outpost_die_&&((color_index==0&&gameRobotHpT.data.blue_outpost_HP==0)||(color_index==mode_num&&gameRobotHpT.data.red_outpost_HP==0))) {
-                            is_outpost_die_=true;
-                            outpost_die_time_=rclcpp::Clock().now();
-                        }
                         gameRobotHpT_lock.unlock();
                         pub_hp->publish(robotHP);
                     }break;
@@ -522,10 +505,6 @@ void Port::getData() {
                     }break;
                     case CMD_RADAR_MARK_DATA_T:
                     {
-                        // auto tim=rclcpp::Clock().now();
-                        // int gap=tim.seconds()-test_time.seconds();
-                        // test_time=tim;
-                        // RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "！！！！！！！！！！！！！！！！！！！！！！！！！！！,%d",gap);
                         enemys_lock.lock();
                         memcpy(enemys.u_char8, buff + ptr, temp_frameHeader.data.data_length);
                         RCLCPP_ERROR(rclcpp::get_logger("judge"),"1: %d,2: %d,3: %d,4: %d,7: %d",enemys.data.mark_hero_progress,
