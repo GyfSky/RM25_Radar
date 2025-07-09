@@ -1,3 +1,3 @@
 std_msgs/Header header
-bool[5] blue_enhance
-bool[5] red_enhance
+int8[5] blue_enhance
+int8[5] red_enhance

@@ -21,6 +21,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RobotHP.msg"
   "msg/GameState.msg"
   "msg/LidarEnhance.msg"
+  "msg/DroneLocation.msg"
   DEPENDENCIES geometry_msgs std_msgs
 )
 

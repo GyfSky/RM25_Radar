@@ -18,6 +18,7 @@
 #include <interfaces/msg/detect_obj.hpp>
 #include <interfaces/msg/detect_res.hpp>
 #include <interfaces/msg/lidar_enhance.hpp>
+#include <interfaces/msg/drone_location.hpp>
 
 // class MyRadar : public Livox
 class MyRadar 
@@ -110,6 +111,13 @@ public:
     interfaces::msg::LidarEnhance lidar_enhance_;
     bool hero_guess_1_=false,hero_guess_2_=false;
     int hero_time_1_=0,hero_time_2_=0;
+    interfaces::msg::DroneLocation drone_location_;
+
+    bool hero_guess_1_=false,hero_guess_2_=false,engineer_guess_1_=false,engineer_guess_2_=false;
+    int hero_time_1_=0,hero_time_2_=0,engineer_time_1_=0,engineer_time_2_=0;
+
+    cv::Point3d hero_location1_,hero_location2_,hero_location3_,buff_location_,
+    engineer_location1_,engineer_location2_,fortress_location_,supply_location_;
 
     MyRadar(/* args */rclcpp::Node::SharedPtr node);
     ~MyRadar();

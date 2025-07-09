@@ -38,6 +38,7 @@ namespace upc_radar{
         sub_game_state=this->create_subscription<interfaces::msg::GameState>("/game_state", 10, std::bind(&DynamicCloud::callback_game_state, this, std::placeholders::_1));
         pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic, 5);
         pub_raw = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic + "/raw", 3);
+        pub_drone_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic + "/drone", 5);
         RCLCPP_WARN(this->get_logger(), "Dynamic_cloud Node start");
     }
 
@@ -208,9 +209,9 @@ namespace upc_radar{
             map_clouds_.clear();
         }
 
-        pcl::PointCloud<pcl::PointXYZ> filtered_cloud;
+        pcl::PointCloud<pcl::PointXYZ> filtered_cloud,drone_cloud;
         if (situation == "rm25") {
-            get_filtered_cloud25(transformed_cloud, filtered_cloud);
+            get_filtered_cloud25(transformed_cloud, filtered_cloud,drone_cloud);
         } else if (situation == "lab") {
             get_filtered_cloudlab(transformed_cloud, filtered_cloud);
         } else if (situation == "rm24") {
@@ -261,14 +262,22 @@ namespace upc_radar{
 
         sensor_msgs::msg::PointCloud2 output;
         accumulated_cloud.header.frame_id = "rm_frame";
+
         pcl::toROSMsg(accumulated_cloud, output);
         output.header.frame_id = "rm_frame";
         output.header.stamp = time;
         pub_->publish(output);
+
+        pcl::toROSMsg(drone_cloud, output);
+        output.header.frame_id = "rm_frame";
+        output.header.stamp = time;
+        pub_drone_->publish(output);
+
         pcl::toROSMsg(receive_cloud, output);
         output.header.frame_id = frame_id;
         output.header.stamp = time;
         pub_raw->publish(output);
+
         auto end_time = std::chrono::steady_clock::now();
         float dur_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now_time).count();
         RCLCPP_WARN(this->get_logger(), "Dynamic Callback time is %f ms", dur_time);

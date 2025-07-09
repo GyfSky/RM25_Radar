@@ -64,6 +64,10 @@ struct FakeKF{
     bool is_first;
 };
 
+bool compareBySize (const open3d::geometry::PointCloud& a,const open3d::geometry::PointCloud& b) {
+    return a.points_.size() < b.points_.size();
+}
+
 template <typename T>
 void eigenMat2VecVec(Eigen::MatrixXd &eigen,std::vector<std::vector<T>> &vecVec){
     int col = eigen.cols();//列

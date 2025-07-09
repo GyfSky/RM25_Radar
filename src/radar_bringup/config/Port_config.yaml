@@ -7,7 +7,6 @@
 # stopBits 类型  int  停止位   取值为 1 或者2
 # parity   类型  int  效验类型 取值为N,E,O,S
 # portChar 类型  char* 串口路径
-
 speed: 115200
 dataBits: 8
 stopBits: 1

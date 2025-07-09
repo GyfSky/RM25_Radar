@@ -329,8 +329,9 @@ typedef union {
         uint32_t dart_hit_time:9;
         uint32_t dart_hit_target:3;
         uint32_t center_gain:2;
+        uint32_t fortress:2;
 
-        uint32_t else_:9;
+        uint32_t else_:7;
 
     }data;
     unsigned char u_char8[4];

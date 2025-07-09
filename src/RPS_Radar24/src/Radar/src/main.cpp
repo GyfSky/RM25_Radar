@@ -88,6 +88,11 @@ int main(int argc, char **argv){
         [&radar](const interfaces::msg::LidarEnhance::SharedPtr msg) {
             radar.lidar_enhance_=*msg;
         });
+    rclcpp::Subscription<interfaces::msg::DroneLocation>::SharedPtr sub_drone_location;
+    sub_drone_location=nh->create_subscription<interfaces::msg::DroneLocation>("/drone_location", 1,
+        [&radar](const interfaces::msg::DroneLocation::SharedPtr msg) {
+            radar.drone_location_=*msg;
+        });
 
     radar.detect_pub=nh->create_publisher<interfaces::msg::DetectFrame>("/resolve_result", 10);
     radar.res_pub=nh->create_publisher<interfaces::msg::DetectRes>("/cam_result", 3);

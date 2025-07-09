@@ -8,6 +8,7 @@
 #include "interfaces/msg/detect_frame.hpp"
 #include "interfaces/msg/lidar_enhance.hpp"
 #include "interfaces/msg/detect_res.hpp"
+#include "interfaces/msg/drone_location.hpp"
 #include "interfaces/msg/detect_obj.hpp"
 #include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/ml/kmeans.h>
@@ -71,7 +72,7 @@ namespace upc_radar{
         interfaces::msg::DetectRes cam_msg;
         interfaces::msg::RobotHP robot_hp;
         interfaces::msg::DetectResult detect_res;
-        int lidar_enhance_[2][5]={};//0为不进行特殊处理，1为保持静止，2为模拟倾斜移动，3为模拟水平移动
+        int lidar_enhance_[2][5]={};//0为不进行特殊处理，1为补给区静止，2为模拟倾斜移动，3为模拟水平移动，4为隧道处静止，5为工程猜测点+英雄前哨站猜测点，6为英雄高地猜测点
         bool first_b_change_=true,first_r_change_=true;
         std::array<std::array<FakeKF,5>,2> fake_kfs;
 
@@ -79,6 +80,10 @@ namespace upc_radar{
         message_filters::Subscriber<sensor_msgs::msg::PointCloud2> mid70_sub;
         message_filters::Subscriber<sensor_msgs::msg::PointCloud2> avia_sub;
         std::shared_ptr<message_filters::Synchronizer<MySyncPolicy>> sync;
+        //飞机点云同步
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> drone1_sub_;
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> drone2_sub_;
+        std::shared_ptr<message_filters::Synchronizer<MySyncPolicy>> drone_sync_;
 
         //单雷达
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_pc;
@@ -96,6 +101,7 @@ namespace upc_radar{
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_kalman;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cluster;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_kmeans;
+        rclcpp::Publisher<interfaces::msg::DroneLocation>::SharedPtr pub_drone_;
 
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr net_pub;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pc_pub;
@@ -106,6 +112,7 @@ namespace upc_radar{
 
         void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
         void PCTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2);
+        void droneTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2);
         void camCallback(const interfaces::msg::DetectRes::SharedPtr msg);
         void clearOutPut();
 

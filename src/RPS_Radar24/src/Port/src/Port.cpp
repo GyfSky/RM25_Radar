@@ -7,12 +7,66 @@
 Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,rclcpp::Node* node) {
     this->ourPattern = ourPattern;
     this->mode_num = mode_num;
+    port_out.resize(2*this->mode_num);
     test_time=rclcpp::Clock().now();
     sentryRadarDataT_lock.lock();
     for (int i=0;i<10;i++) {
         sentryRadarDataT.data.char_data[i]=0.0;
     }
     sentryRadarDataT_lock.unlock();
+    drone_location_lock_.lock();
+    drone_location_x_=0;
+    drone_location_lock_.unlock();
+
+    buff_time_=rclcpp::Clock().now();
+    self_offense_time_=rclcpp::Clock().now();
+    rival_offense_time_=rclcpp::Clock().now();
+    outpost_die_time_=rclcpp::Clock().now();
+    trigger_time_=rclcpp::Clock().now();
+
+    std::ofstream fout("resource/debug.txt", std::ios::app);
+    if(!fout) {
+        std::cout<<"file cant open!!!"<<std::endl;
+    }else {
+        fout<<"------new------    "<<getDate()<<std::endl;
+        fout.close();
+    }
+
+    judgment_condition_time_.insert(std::pair<int,int>(0,200));
+    judgment_condition_time_.insert(std::pair<int,int>(1,200));
+    judgment_condition_time_.insert(std::pair<int,int>(2,400));
+    judgment_condition_time_.insert(std::pair<int,int>(3,100));
+    judgment_condition_time_.insert(std::pair<int,int>(4,100));
+    judgment_condition_time_.insert(std::pair<int,int>(5,300));
+    judgment_condition_time_.insert(std::pair<int,int>(6,400));
+    judgment_condition_time_.insert(std::pair<int,int>(7,100));
+
+    judgment_condition_string_.insert(std::pair<int,string>(0,"self_dart"));
+    judgment_condition_string_.insert(std::pair<int,string>(1,"rival_dart"));
+    judgment_condition_string_.insert(std::pair<int,string>(2,"self_buff"));
+    judgment_condition_string_.insert(std::pair<int,string>(3,"self_offense"));
+    judgment_condition_string_.insert(std::pair<int,string>(4,"rival_offense"));
+    judgment_condition_string_.insert(std::pair<int,string>(5,"time_3_55"));
+    judgment_condition_string_.insert(std::pair<int,string>(6,"time_1_40"));
+    judgment_condition_string_.insert(std::pair<int,string>(7,"manual"));
+
+    for (int i=0;i<8;i++) {
+        judgment_condition_[i][0]=0;
+        judgment_condition_[i][1]=judgment_condition_time_[i];
+    }
+
+    dartInfo_lock.lock();
+    dartInfo.data.new_hit_target=0;
+    dartInfo.data.cumulative_hit_time=0;
+    dartInfo.data.target=0;
+    dartInfo_lock.unlock();
+
+    eventDataT_lock.lock();
+    eventDataT.data.dart_hit_time=0;
+    eventDataT.data.big_buff=0;
+    eventDataT.data.small_buff=0;
+    eventDataT_lock.unlock();
+
     enemys_lock.lock();
     enemys.data.mark_engineer_progress=0;
     enemys.data.mark_hero_progress=0;
@@ -20,9 +74,15 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
     enemys.data.mark_standard_3_progress=0;
     enemys.data.mark_standard_4_progress=0;
     enemys_lock.unlock();
+
     gameStatusT_times_lock.lock();
     gameStatusT.data.game_progress=0;
     gameStatusT_times_lock.unlock();
+
+    vulnerability_times_lock.lock();
+    vulnerability_times.data.dacideing=0;
+    vulnerability_times.data.radar_info=0;
+    vulnerability_times_lock.unlock();
 
     this->node=node;
     this->pub_hp=this->node->create_publisher<interfaces::msg::RobotHP>("/robot_hp",10);
@@ -102,6 +162,12 @@ void Port::updataSentryData(std::vector<STrack> out) {
     radarSentryDataT_lock.lock();
     this->sentry_out.assign(out.begin(),out.end());
     radarSentryDataT_lock.unlock();
+}
+
+void Port::updataDroneData(unsigned int x) {
+    drone_location_lock_.lock();
+    drone_location_x_=x;
+    drone_location_lock_.unlock();
 }
 
 void Port::updateGameTime(double time) {
@@ -184,98 +250,183 @@ void Port::sendOldSTrackData() {
     std::this_thread::sleep_for(std::chrono::milliseconds (5));
 }
 
-void Port::autoDecisionMaking(){
-    vulnerability_times_lock.lock();
-    gameStatusT_times_lock.lock();
-    rclcpp::Time now_time=rclcpp::Clock().now();
-    bool dacision_time_flag = true;
-    std::cout << "dacideing: " << int(vulnerability_times.data.dacideing) << std::endl;
-    std::cout << "stage_remain_time: " << int(gameStatusT.data.stage_remain_time) << std::endl;
-    double game_during_time=0;
+void Port::checkSelfDart() {
+    dartInfo_lock.lock();
+    if (time_init&&dartInfo.data.new_hit_target>0) {
+        if (dartInfo.data.cumulative_hit_time>dart_hit_[dartInfo.data.new_hit_target-1]) {
+            dart_hit_[dartInfo.data.new_hit_target-1]=dartInfo.data.cumulative_hit_time;
+            judgment_condition_[Judgment::self_dart][0]=1;
+            judgment_condition_[Judgment::self_dart][1]=judgment_condition_time_[Judgment::self_dart];
+        }
+    }
+    dartInfo_lock.unlock();
+}
 
-    if(int(gameStatusT.data.game_progress) == 4) {
+void Port::checkRivalDart() {
+    eventDataT_lock.lock();
+    if (time_init&&eventDataT.data.dart_hit_time>rival_dart_) {
+        rival_dart_=eventDataT.data.dart_hit_time;
+        judgment_condition_[Judgment::rival_dart][0]=1;
+        judgment_condition_[Judgment::rival_dart][1]=judgment_condition_time_[Judgment::rival_dart];
+    }
+    eventDataT_lock.unlock();
+}
+
+void Port::checkSelfBuff() {
+    eventDataT_lock.lock();
+    if (time_init&&(eventDataT.data.big_buff==1||eventDataT.data.small_buff==1)) {
+        if (rclcpp::Clock().now().seconds()-buff_time_.seconds()>47){
+            buff_time_=rclcpp::Clock().now();
+            judgment_condition_[Judgment::self_buff][0]=1;
+        }
+    }
+    eventDataT_lock.unlock();
+}
+
+void Port::checkSelfOffense() {
+    int car_num=0;
+    STrack_lock.lock();
+    for (int i=0;i<5;i++) {
+        if (color_index==0&&i!=1&&port_out[mode_num+i].Locate3D.x>14.0&&port_out[mode_num+i].Locate3D.x!=0) {
+            car_num++;
+        }else if (color_index==mode_num&&i!=1&&port_out[i].Locate3D.x<14.0&&port_out[i].Locate3D.x!=0) {
+            car_num++;
+        }
+    }
+    STrack_lock.unlock();
+    if (time_init&&car_num>=3) {
+        if (!is_self_offense_) {
+            is_self_offense_=true;
+            self_offense_time_=rclcpp::Clock().now();
+        }else if (rclcpp::Clock().now().seconds()-self_offense_time_.seconds()>5){
+            judgment_condition_[Judgment::self_offense][0]=1;
+            judgment_condition_[Judgment::self_offense][1]=judgment_condition_time_[Judgment::self_offense];
+        }
+    }else if (rclcpp::Clock().now().seconds()-self_offense_time_.seconds()<=5||judgment_condition_[Judgment::self_offense][0]==0){
+        is_self_offense_=false;
+    }
+}
+
+void Port::checkRivalOffense() {
+    int car_num=0;
+    STrack_lock.lock();
+    for (int i=0;i<5;i++) {
+        if (color_index==0&&i!=1&&port_out[color_index+i].Locate3D.x<14.0&&port_out[color_index+i].Locate3D.x!=0) {
+            car_num++;
+        }else if (color_index==mode_num&&i!=1&&port_out[color_index+i].Locate3D.x>14.0&&port_out[color_index+i].Locate3D.x!=0) {
+            car_num++;
+        }
+    }
+    STrack_lock.unlock();
+    if (time_init&&car_num>=3) {
+        if (!is_rival_offense_) {
+            is_rival_offense_=true;
+            rival_offense_time_=rclcpp::Clock().now();
+        }else if (rclcpp::Clock().now().seconds()-rival_offense_time_.seconds()>5){
+            judgment_condition_[Judgment::rival_offense][0]=1;
+            judgment_condition_[Judgment::rival_offense][1]=judgment_condition_time_[Judgment::rival_offense];
+        }
+    }else if (rclcpp::Clock().now().seconds()-rival_offense_time_.seconds()<=5||judgment_condition_[Judgment::rival_offense][0]==0){
+        is_rival_offense_=false;
+    }
+}
+
+void Port::checkGameTime() {
+    rclcpp::Time now_time=rclcpp::Clock().now();
+    double game_during_time=0;
+    if(time_init) {
         game_during_time=420-(now_time.seconds()-game_start_time.seconds());
         game_time_lock_.lock();
         game_during_time_=now_time.seconds()-game_start_time.seconds();
         game_time_lock_.unlock();
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "stage_remain_time: %f",game_during_time);
     }
+        RCLCPP_ERROR(rclcpp::get_logger("judge"), "stage_remain_time: %f",game_during_time);
 
-    // if(int(gameStatusT.data.game_progress) == 4){
-    //     if(int(gameRobotHpT.data.blue_7_robot_HP > 160 && ourPattern == blue) || (int(gameRobotHpT.data.red_7_robot_HP) > 160 && ourPattern == red)){
-    //         is_self_guard_HP_160 = false;
-    //     }
-    //     if((int(gameRobotHpT.data.red_outpost_HP) > 0 && ourPattern == blue) ||(int(gameRobotHpT.data.blue_outpost_HP) > 0 && ourPattern == red)){
-    //         is_rival_outpost_die = false;
-    //     }
-    //     if((int(gameRobotHpT.data.red_7_robot_HP) > 0 && ourPattern == blue) ||(int(gameRobotHpT.data.blue_7_robot_HP) > 0 && ourPattern == red)){
-    //         is_rival_guard_die = false;
-    //     }
-    // }
+        if(!is_time_3_55_ && int(game_during_time) < (3*60 + 55)&&int(game_during_time) > (3*60 + 40)){
+            judgment_condition_[Judgment::time_3_55][0]=1;
+            is_time_3_55_=true;
+        }
+        else if(!is_time_1_40_ && int(game_during_time) < (1*60 + 40)){
+            judgment_condition_[Judgment::time_1_40][0]=1;
+            is_time_1_40_=true;
+        }
+    }
+}
 
+void Port::checkManual() {
+    dartInfo_lock.lock();
+    if (time_init&&rclcpp::Clock().now().seconds()-outpost_die_time_.seconds()>10&&dartInfo.data.target==0) {
+        judgment_condition_[Judgment::manual][0]=1;
+    }
+    dartInfo_lock.unlock();
+}
+
+void Port::checkTrigger() {
+    vulnerability_times_lock.lock();
+    int dacideing=vulnerability_times.data.dacideing;
+    vulnerability_times_lock.unlock();
+    if (time_init&&dacideing==0&&rclcpp::Clock().now().seconds()-trigger_time_.seconds()>5) {
+        checkSelfDart();
+        checkRivalDart();
+        checkSelfBuff();
+        checkSelfOffense();
+        checkRivalOffense();
+        checkGameTime();
+        checkManual();
+    }
+}
+
+void Port::autoDecisionMaking(){
+    bool dacision_time_flag = false;
+    checkTrigger();
     int number=getRadarMarkNum();
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "number: %d", number);
 
-    //    if(vulnerability_times.data.radar_info > 0  && vulnerability_times.data.dacideing != 1){
-    if(int(gameStatusT.data.game_progress) == 4&&number>=2){
-        if(!is_time_2_55 && int(game_during_time) < (2*60 + 55)){
-            is_time_2_55 = true;
-            std::cout << "is_time_2_55" << std::endl;
-            std::ofstream fout("resource/debug.txt", std::ios::app);
-            if(!fout)
-                std::cout<<"file cant open!!!"<<std::endl;
-            else {
-                fout<<"is_time_2_55";
-                fout<<std::endl;
-                fout<<int(gameStatusT.data.stage_remain_time)<<std::endl;
-                fout<<int(game_during_time)<<std::endl;
-                fout<<"------------------"<<std::endl;
-                fout.close();
-            }
-        }
-        else if(!is_time_1_40 && int(game_during_time) < (1*60 + 40)){
-            is_time_1_40 = true;
-            std::cout << "is_time_1_40" << std::endl;
-            std::ofstream fout("resource/debug.txt", std::ios::app);
-            if(!fout)
-                std::cout<<"file cant open!!!"<<std::endl;
-            else {
-                fout<<"is_time_1_40";
-                fout<<std::endl;
-                fout<<int(gameStatusT.data.stage_remain_time)<<std::endl;
-                fout<<int(game_during_time)<<std::endl;
-                fout<<"------------------"<<std::endl;
-                fout.close();
-            }
-        }
-//        if(!is_self_guard_HP_160 && (((int(gameRobotHpT.data.blue_7_robot_HP) <= 160) && (ourPattern == blue)) ||
-//                                          ((int(gameRobotHpT.data.red_7_robot_HP) <= 160 )&& (ourPattern == red))) ){
-//            is_self_guard_HP_160 = true;
-//            std::cout << "is_self_guard_HP_160: " <<  int(gameRobotHpT.data.blue_7_robot_HP)  << std::endl;
-//        }
-//        else if(!is_rival_outpost_die && ((int(gameRobotHpT.data.red_outpost_HP) == 0 && ourPattern == blue) ||
-//                                          (int(gameRobotHpT.data.blue_outpost_HP) == 0 && ourPattern == red))){
-//            is_rival_outpost_die = true;
-//            std::cout << "is_rival_outpost_die: " << int(gameRobotHpT.data.red_outpost_HP) << std::endl;
-//        }
-//        else if(!is_rival_guard_die && ((int(gameRobotHpT.data.red_7_robot_HP) == 0 && ourPattern == blue) ||
-//                                        (int(gameRobotHpT.data.blue_7_robot_HP) == 0 && ourPattern == red)) ){
-//            is_rival_guard_die = true;
-//            std::cout << "is_rival_guard_die: " << int(gameRobotHpT.data.red_7_robot_HP) <<  std::endl;
-//        }
-        else if(!is_time_1_00 && int(game_during_time)< (1*60 + 00)){
-            is_time_1_00 = true;
-            std::cout << "is_time_1_00" << std::endl;
-            std::ofstream fout("resource/debug.txt", std::ios::app);
-            if(!fout)
-                std::cout<<"file cant open!!!"<<std::endl;
-            else {
-                fout<<"is_time_1_00";
-                fout<<std::endl;
-                fout<<int(gameStatusT.data.stage_remain_time)<<std::endl;
-                fout<<int(game_during_time)<<std::endl;
-                fout<<"------------------"<<std::endl;
-                fout.close();
+    vulnerability_times_lock.lock();
+    int radar_info=vulnerability_times.data.radar_info;
+    vulnerability_times_lock.unlock();
+
+    for (int i=0;i<8;i++) {
+        if (time_init&&judgment_condition_[i][0]==1) {
+            if (number>=3&&radar_info>0) {
+                dacision_time_flag=true;
+                std::ofstream fout("resource/debug.txt", std::ios::app);
+                if(!fout)
+                    std::cout<<"file cant open!!!"<<std::endl;
+                else {
+                    fout<<"dacision_time: "<<int(dacision_time+1)<<std::endl;
+                    fout<<"time: "<<int(gameStatusT.data.stage_remain_time)<<std::endl;
+                    fout<<"reason: "<<string(judgment_condition_string_[i])<<std::endl;
+                    fout<<"wait_time: "<<int(judgment_condition_time_[i]-judgment_condition_[i][1])<<std::endl;
+                    fout<<"------------------"<<std::endl;
+                    fout.close();
+                }
+                for (int j=0;j<8;j++) {
+                    judgment_condition_[j][0]=0;
+                    judgment_condition_[j][1]=judgment_condition_time_[j];
+                }
+                trigger_time_=rclcpp::Clock().now();
+                break;
+            }else if (judgment_condition_[i][1]>0){
+                judgment_condition_[i][1]--;
+            }else {
+                std::ofstream fout("resource/debug.txt", std::ios::app);
+                if(!fout)
+                    std::cout<<"file cant open!!!"<<std::endl;
+                else {
+                    fout<<"decision false!!! "<<std::endl;
+                    fout<<"time: "<<int(gameStatusT.data.stage_remain_time)<<std::endl;
+                    fout<<"reason: "<<string(judgment_condition_string_[i])<<std::endl;
+                    string fail_reason;
+                    if (number<3) fail_reason+="car_num<3 ";
+                    if (radar_info==0) fail_reason+="radar_info=0 ";
+                    fout<<"fail reason: "<<string(fail_reason)<<std::endl;
+                    fout<<"------------------"<<std::endl;
+                    fout.close();
+                }
+                judgment_condition_[i][0]=0;
+                judgment_condition_[i][1]=judgment_condition_time_[i];
             }
         }
 //        else if(!is_dart_hit && eventDataT.data.dart_hit_time > 0){
@@ -289,6 +440,7 @@ void Port::autoDecisionMaking(){
     }else{
         dacision_time_flag = false;//正在触发双倍易伤
         // dacision_time = 0;//TODO是不是有问题？
+    }
     }
     // radarDecisionDataT_times_lock.lock();
     // if (int(gameStatusT.data.game_progress) == 4) {
@@ -306,25 +458,11 @@ void Port::autoDecisionMaking(){
     if(dacision_time_flag){
         radarDecisionDataT_times_lock.lock();
         dacision_time = uint8_t(1) + dacision_time;
-        std::ofstream fout("resource/debug.txt", std::ios::app);
-        if(!fout)
-            std::cout<<"file cant open!!!"<<std::endl;
-        else {
-            fout<<"dacision_time: ";
-            fout<<dacision_time<<std::endl;
-            fout<<"time: ";
-            fout<<int(gameStatusT.data.stage_remain_time)<<std::endl;
-            fout<<"time: "<<int(game_during_time)<<std::endl;
-            fout<<"------------------"<<std::endl;
-            fout.close();
-        }
         std::cout << "---------------------------dacision_time_flag------------------------------: " << int(dacision_time) << std::endl;
         radarDecisionDataT_times_lock.unlock();
     }
 
 }
-
-
 
 void Port::getData() {
     unsigned char buff[5000] = {0};
@@ -394,6 +532,10 @@ void Port::getData() {
                         robotHP.red_robot_hp[2] = gameRobotHpT.data.red_3_robot_HP;
                         robotHP.red_robot_hp[3] = gameRobotHpT.data.red_4_robot_HP;
                         robotHP.red_robot_hp[4] = gameRobotHpT.data.red_7_robot_HP;
+                        if (time_init&&!is_outpost_die_&&((color_index==0&&gameRobotHpT.data.blue_outpost_HP==0)||(color_index==mode_num&&gameRobotHpT.data.red_outpost_HP==0))) {
+                            is_outpost_die_=true;
+                            outpost_die_time_=rclcpp::Clock().now();
+                        }
                         gameRobotHpT_lock.unlock();
                         pub_hp->publish(robotHP);
                     }break;
@@ -431,8 +573,7 @@ void Port::getData() {
                         dartInfo_lock.lock();
                         memcpy(dartInfo.u_char8, buff + ptr, temp_frameHeader.data.data_length);
                         target = dartInfo.data.target;
-                        std::cout << "------------target:  " << std::to_string(target) << std::endl;
-//                        std::cout << "------------data:  " << std::to_string(dartInfo.u_char8[2]) << std::endl;
+                        RCLCPP_ERROR(rclcpp::get_logger("judge"),"dart target: %d", target);
                         dartInfo_lock.unlock();
                     }break;
                     case ROBOT_INTERACTIVE_DATA_ID:
@@ -470,6 +611,10 @@ void Port::makePlaneData() {
     uint8_t  hole_orange = 0;
     uint8_t  windwill = 0;
     uint8_t  dartWarning = 0;
+    drone_location_lock_.lock();
+    uint8_t  drone_location_x=this->drone_location_x_;
+    drone_location_lock_.unlock();
+
     if(this->fly_num>0) {
         fly         = 1;
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect fly");
@@ -493,16 +638,16 @@ void Port::makePlaneData() {
     vulnerability_times_lock.lock();
     this->radarPlaneDataT.data.char_data[0] = fly;//飞坡
     this->radarPlaneDataT.data.char_data[1] = this->vulnerability_times.data.radar_info;//可易伤次数
-    this->radarPlaneDataT.data.char_data[2] = hole_red;//步兵台阶
-    this->radarPlaneDataT.data.char_data[3] = hole_orange;//有车台阶
+    this->radarPlaneDataT.data.char_data[2] = drone_location_x;//无人机归一化位置（0-100）
+    this->radarPlaneDataT.data.char_data[3] = drone_location_x;
     this->radarPlaneDataT.data.char_data[4] = windwill;//打符
     this->radarPlaneDataT.data.char_data[5] = dartWarning;//飞镖
     this->radarPlaneDataT.data.char_data[6] = 9;
 
     this->radarPlaneDataT.data.char_data[7] = fly;
     this->radarPlaneDataT.data.char_data[8] = this->vulnerability_times.data.radar_info;
-    this->radarPlaneDataT.data.char_data[9] = hole_red;
-    this->radarPlaneDataT.data.char_data[10] = hole_orange;
+    this->radarPlaneDataT.data.char_data[9] = drone_location_x;
+    this->radarPlaneDataT.data.char_data[10] = drone_location_x;
     this->radarPlaneDataT.data.char_data[11]= windwill;
     this->radarPlaneDataT.data.char_data[12]= dartWarning;
     vulnerability_times_lock.unlock();

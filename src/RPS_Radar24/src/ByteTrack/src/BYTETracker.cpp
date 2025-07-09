@@ -531,7 +531,7 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                 out[cls_stracks_pool] = *strack_pool[index_stracks_pool];
             }else if(classWithoutCar ==10){
                 // std::cout<<"----armor conf----   "<<strack_pool[index_stracks_pool]->conf_armor<<std::endl;
-                if (cls_stracks_pool<=half_classWithoutCar-1&&lidar_det.blue_x[cls_stracks_pool]!=0&&lidar_det.blue_y[cls_stracks_pool]!=0&&!lidar_enhance.blue_enhance[cls_stracks_pool]) {
+                if (cls_stracks_pool<=half_classWithoutCar-1&&lidar_det.blue_x[cls_stracks_pool]!=0&&lidar_det.blue_y[cls_stracks_pool]!=0&&lidar_enhance.blue_enhance[cls_stracks_pool]==0) {
                     strack_pool[index_stracks_pool]->Locate3D.x=lidar_det.blue_x[cls_stracks_pool];
                     strack_pool[index_stracks_pool]->Locate3D.y=lidar_det.blue_y[cls_stracks_pool];
                     if (strack_pool[index_stracks_pool]->lost_frame_ind_num>3) {
@@ -548,7 +548,7 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                     out[cls_stracks_pool] = *strack_pool[index_stracks_pool];
                     out[cls_stracks_pool].is_det=true;
                 }
-                else if (cls_stracks_pool>half_classWithoutCar-1&&lidar_det.red_x[cls_stracks_pool-half_classWithoutCar]!=0&&lidar_det.red_y[cls_stracks_pool-half_classWithoutCar]!=0&&!lidar_enhance.red_enhance[cls_stracks_pool-half_classWithoutCar]) {
+                else if (cls_stracks_pool>half_classWithoutCar-1&&lidar_det.red_x[cls_stracks_pool-half_classWithoutCar]!=0&&lidar_det.red_y[cls_stracks_pool-half_classWithoutCar]!=0&&lidar_enhance.red_enhance[cls_stracks_pool-half_classWithoutCar]==0) {
                     strack_pool[index_stracks_pool]->Locate3D.x=lidar_det.red_x[cls_stracks_pool-half_classWithoutCar];
                     strack_pool[index_stracks_pool]->Locate3D.y=lidar_det.red_y[cls_stracks_pool-half_classWithoutCar];
                     if (strack_pool[index_stracks_pool]->lost_frame_ind_num>3) {
@@ -618,7 +618,7 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                         }
                         out[cls_stracks_pool] = always_frame_lost_predict_stracks[x];
                     }else if(classWithoutCar ==10){
-                        if (cls_stracks_pool<=half_classWithoutCar-1&&lidar_det.blue_x[cls_stracks_pool]!=0&&lidar_det.blue_y[cls_stracks_pool]!=0&&!lidar_enhance.blue_enhance[cls_stracks_pool]) {
+                        if (cls_stracks_pool<=half_classWithoutCar-1&&lidar_det.blue_x[cls_stracks_pool]!=0&&lidar_det.blue_y[cls_stracks_pool]!=0&&lidar_enhance.blue_enhance[cls_stracks_pool]==0) {
                             always_frame_lost_predict_stracks[x].Locate3D.x=lidar_det.blue_x[cls_stracks_pool];
                             always_frame_lost_predict_stracks[x].Locate3D.y=lidar_det.blue_y[cls_stracks_pool];
                             if (always_frame_lost_predict_stracks[x].lost_frame_ind_num>3) {
@@ -634,7 +634,7 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                             is_lidar_det[0][cls_stracks_pool]=1;
                             out[cls_stracks_pool] = always_frame_lost_predict_stracks[x];
                         }
-                        else if (cls_stracks_pool>half_classWithoutCar-1&&lidar_det.red_x[cls_stracks_pool-half_classWithoutCar]!=0&&lidar_det.red_y[cls_stracks_pool-half_classWithoutCar]!=0&&!lidar_enhance.red_enhance[cls_stracks_pool-half_classWithoutCar]) {
+                        else if (cls_stracks_pool>half_classWithoutCar-1&&lidar_det.red_x[cls_stracks_pool-half_classWithoutCar]!=0&&lidar_det.red_y[cls_stracks_pool-half_classWithoutCar]!=0&&lidar_enhance.red_enhance[cls_stracks_pool-half_classWithoutCar]==0) {
                             always_frame_lost_predict_stracks[x].Locate3D.x=lidar_det.red_x[cls_stracks_pool-half_classWithoutCar];
                             always_frame_lost_predict_stracks[x].Locate3D.y=lidar_det.red_y[cls_stracks_pool-half_classWithoutCar];
                             if (always_frame_lost_predict_stracks[x].lost_frame_ind_num>3) {
@@ -730,11 +730,13 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                 }
             }
             out[i] = *strack_pool[u_strack[max_ut_idx[i]]];
-            out[i].is_det=true;
-            to_sentry[i] = *strack_pool[u_strack[max_ut_idx[i]]];
-            to_sentry[i].vx_3d = lidar_det.v_x[i];
-            to_sentry[i].vy_3d = lidar_det.v_y[i];
-            to_sentry[i].is_det=true;
+            out[i].is_det=enhance==0?true:false;
+            if (enhance==0||enhance==1||enhance==5) {
+                to_sentry[i] = *strack_pool[u_strack[max_ut_idx[i]]];
+                to_sentry[i].vx_3d = lidar_det.v_x[i];
+                to_sentry[i].vy_3d = lidar_det.v_y[i];
+                to_sentry[i].is_det=enhance==0?true:false;
+            }
         }
         for (int i=half_classWithoutCar;i<classWithoutCar;i++) {
             if (max_ut_idx[i]==-1||lidar_det.red_x[i-half_classWithoutCar]==0||lidar_det.red_y[i-half_classWithoutCar]==0) continue;
@@ -783,11 +785,13 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                 }
             }
             out[i] = *strack_pool[u_strack[max_ut_idx[i]]];
-            out[i].is_det=true;
-            to_sentry[i] = *strack_pool[u_strack[max_ut_idx[i]]];
-            to_sentry[i].vx_3d = lidar_det.v_x[i-half_classWithoutCar];
-            to_sentry[i].vy_3d = lidar_det.v_y[i-half_classWithoutCar];
-            to_sentry[i].is_det=true;
+            out[i].is_det=enhance==0?true:false;
+            if (enhance==0||enhance==1||enhance==5) {
+                to_sentry[i] = *strack_pool[u_strack[max_ut_idx[i]]];
+                to_sentry[i].vx_3d = lidar_det.v_x[i-half_classWithoutCar];
+                to_sentry[i].vy_3d = lidar_det.v_y[i-half_classWithoutCar];
+                to_sentry[i].is_det=enhance==0?true:false;
+            }
         }
         //没有匹配上的
         for(int i=0; i < u_strack.size();i++){
@@ -813,36 +817,42 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
         }
         for (int i=0;i<half_classWithoutCar;i++) {
             if (is_lidar_det[0][i]==0&&lidar_det.blue_x[i]!=0&&lidar_det.blue_y[i]!=0&&!cam_accurate_[0][i]) {
+                int enhance=lidar_enhance.blue_enhance[i];
                 out[i].Locate3D.x=lidar_det.blue_x[i];
                 out[i].Locate3D.y=lidar_det.blue_y[i];
                 out[i].cls = i;
-                out[i].is_det=true;
+                out[i].is_det=enhance==0?true:false;
                 if (out[i].lost_frame_ind_num>3)
                     out[i].lost_frame_ind_num-=4;
                 if (to_sentry[i].lost_frame_ind_num>3)
                     to_sentry[i].lost_frame_ind_num-=4;
-                to_sentry[i].Locate3D.x=lidar_det.blue_x[i];
-                to_sentry[i].Locate3D.y=lidar_det.blue_y[i];
-                to_sentry[i].cls = i;
-                to_sentry[i].vx_3d = lidar_det.v_x[i];
-                to_sentry[i].vy_3d = lidar_det.v_y[i];
-                to_sentry[i].is_det=true;
+                if (enhance==0||enhance==1||enhance==5) {
+                    to_sentry[i].Locate3D.x=lidar_det.blue_x[i];
+                    to_sentry[i].Locate3D.y=lidar_det.blue_y[i];
+                    to_sentry[i].cls = i;
+                    to_sentry[i].vx_3d = lidar_det.v_x[i];
+                    to_sentry[i].vy_3d = lidar_det.v_y[i];
+                    to_sentry[i].is_det=enhance==0?true:false;
+                }
             }
             if (is_lidar_det[1][i]==0&&lidar_det.red_x[i]!=0&&lidar_det.red_y[i]!=0&&!cam_accurate_[1][i]) {
+                int enhance=lidar_enhance.red_enhance[i];
                 out[i+half_classWithoutCar].Locate3D.x=lidar_det.red_x[i];
                 out[i+half_classWithoutCar].Locate3D.y=lidar_det.red_y[i];
                 out[i+half_classWithoutCar].cls = i+half_classWithoutCar;
-                out[i+half_classWithoutCar].is_det=true;
+                out[i+half_classWithoutCar].is_det=enhance==0?true:false;
                 if (out[i+half_classWithoutCar].lost_frame_ind_num>3)
                     out[i+half_classWithoutCar].lost_frame_ind_num-=4;
                 if (to_sentry[i+half_classWithoutCar].lost_frame_ind_num>3)
                     to_sentry[i+half_classWithoutCar].lost_frame_ind_num-=4;
-                to_sentry[i+half_classWithoutCar].Locate3D.x=lidar_det.red_x[i];
-                to_sentry[i+half_classWithoutCar].Locate3D.y=lidar_det.red_y[i];
-                to_sentry[i+half_classWithoutCar].cls = i+half_classWithoutCar;
-                to_sentry[i+half_classWithoutCar].vx_3d = lidar_det.v_x[i];
-                to_sentry[i+half_classWithoutCar].vy_3d = lidar_det.v_y[i];
-                to_sentry[i+half_classWithoutCar].is_det=true;
+                if (enhance==0||enhance==1||enhance==5) {
+                    to_sentry[i+half_classWithoutCar].Locate3D.x=lidar_det.red_x[i];
+                    to_sentry[i+half_classWithoutCar].Locate3D.y=lidar_det.red_y[i];
+                    to_sentry[i+half_classWithoutCar].cls = i+half_classWithoutCar;
+                    to_sentry[i+half_classWithoutCar].vx_3d = lidar_det.v_x[i];
+                    to_sentry[i+half_classWithoutCar].vy_3d = lidar_det.v_y[i];
+                    to_sentry[i+half_classWithoutCar].is_det=enhance==0?true:false;
+                }
             }
         }
 

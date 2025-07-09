@@ -66,6 +66,14 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
     //串口
     this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort,node.get()));
 
+    hero_location1_= Modes_ptr->ourPattern == red? cv::Point3d(17.5392,4.1475,0.0):cv::Point3d(10.4608,10.8525,0.0);
+    hero_location2_= Modes_ptr->ourPattern == red? cv::Point3d(18.132,11.349,0.0):cv::Point3d(9.868,3.651,0.0);
+    hero_location3_= Modes_ptr->ourPattern == red? cv::Point3d(21.29,3.31,0.0):cv::Point3d(6.71,11.69,0.0);
+    buff_location_= Modes_ptr->ourPattern == red? cv::Point3d(20.649,1.657,0.0):cv::Point3d(7.351,13.343,0.0);
+    engineer_location1_= Modes_ptr->ourPattern == red? cv::Point3d(19.1,8.7,0.0):cv::Point3d(8.9,6.3,0.0);
+    engineer_location2_= Modes_ptr->ourPattern == red? cv::Point3d(19.1,6.3,0.0):cv::Point3d(8.9,8.7,0.0);
+    fortress_location_= Modes_ptr->ourPattern == red? cv::Point3d(21.4,7.5,0.0):cv::Point3d(6.6,7.5,0.0);
+    supply_location_= Modes_ptr->ourPattern == red? cv::Point3d(25.6,13.2,0.0):cv::Point3d(2.4,1.8,0.0);
 
     //test
     YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
@@ -177,7 +185,7 @@ void MyRadar::STrackGuess(int classWithoutCar){
     //         }
     //     }
     // }
-    bool lidar_enhance[5];
+    int lidar_enhance[5];
     for (int i=0;i<5;i++) {
         if (ourPattern==red) {
             lidar_enhance[i]=lidar_enhance_.blue_enhance[i];
@@ -185,50 +193,52 @@ void MyRadar::STrackGuess(int classWithoutCar){
             lidar_enhance[i]=lidar_enhance_.red_enhance[i];
         }
     }
-
-    if(this->out[color_index].lost_frame_ind_num > 16&&!lidar_enhance[0]) {
+    //猜英雄
+    if(this->out[color_index].lost_frame_ind_num > 16&&lidar_enhance[0]!=1&&lidar_enhance[0]!=5&&lidar_enhance[0]!=6) {
         //裁判系统标记进度为0
         if (this->out[color_index].judge_radar_mark_data == 0) {
             if (hero_guess_1_==false&&hero_guess_2_==false) {
                 hero_guess_1_=true;
-                this->out[color_index].Locate3D = ourPattern == red? cv::Point3d(17.5392,4.1475,0.0):cv::Point3d(10.4608,10.8525,0.0);
+                this->out[color_index].Locate3D = hero_location1_;
                 hero_time_1_++;
             }else if (hero_guess_1_==true) {
                 if (hero_time_1_>0&&hero_time_1_<40) {
                     hero_time_1_++;
-                    this->out[color_index].Locate3D = ourPattern == red? cv::Point3d(17.5392,4.1475,0.0):cv::Point3d(10.4608,10.8525,0.0);
+                    this->out[color_index].Locate3D = hero_location1_;
                 }else if (hero_time_1_==40) {//换吊射点2猜
                     hero_time_1_=0;
                     hero_time_2_++;
                     hero_guess_2_=true;
                     hero_guess_1_=false;
-                    this->out[color_index].Locate3D = ourPattern == red? cv::Point3d(18.132,11.349,0.0):cv::Point3d(9.868,3.651,0.0);
+                    this->out[color_index].Locate3D = hero_location2_;
                 }
             }else if (hero_guess_2_==true) {
                 if (hero_time_2_>0&&hero_time_2_<40) {
                     hero_time_2_++;
-                    this->out[color_index].Locate3D = ourPattern == red? cv::Point3d(18.132,11.349,0.0):cv::Point3d(9.868,3.651,0.0);
+                    this->out[color_index].Locate3D = hero_location2_;
                 }else if (hero_time_2_==40) {//换吊射点1猜
                     hero_time_2_=0;
                     hero_time_1_++;
                     hero_guess_1_=true;
                     hero_guess_2_=false;
-                    this->out[color_index].Locate3D = ourPattern == red? cv::Point3d(17.5392,4.1475,0.0):cv::Point3d(10.4608,10.8525,0.0);
+                    this->out[color_index].Locate3D = hero_location1_;
                 }
             }
         }else {//裁判系统标记进度为1
-            cv::Point3d hero_location1=ourPattern == red? cv::Point3d(17.5392,4.1475,0.0):cv::Point3d(10.4608,10.8525,0.0);
-            cv::Point3d hero_location2=ourPattern == red? cv::Point3d(18.132,11.349,0.0):cv::Point3d(9.868,3.651,0.0);
-            double distance1 =get2Ddistance(this->out[color_index].Locate3D.x,this->out[color_index].Locate3D.y,hero_location1.x,hero_location1.y);
-            double distance2 =get2Ddistance(this->out[color_index].Locate3D.x,this->out[color_index].Locate3D.y,hero_location2.x,hero_location2.y);
+            double distance1 =get2Ddistance(this->out[color_index].Locate3D.x,this->out[color_index].Locate3D.y,hero_location1_.x,hero_location1_.y);
+            double distance2 =get2Ddistance(this->out[color_index].Locate3D.x,this->out[color_index].Locate3D.y,hero_location2_.x,hero_location2_.y);
             if (distance1<distance2) {
                 hero_guess_1_=true;
                 hero_time_1_=30;
-                this->out[color_index].Locate3D = hero_location1;
+                hero_guess_2_=false;
+                hero_time_2_=0;
+                this->out[color_index].Locate3D = hero_location1_;
             }else {
                 hero_guess_2_=true;
                 hero_time_2_=30;
-                this->out[color_index].Locate3D = hero_location2;
+                hero_guess_1_=false;
+                hero_time_1_=0;
+                this->out[color_index].Locate3D = hero_location2_;
             }
         }
     }else {
@@ -261,56 +271,111 @@ void MyRadar::STrackGuess(int classWithoutCar){
     //     }
     // }
 
-    if(this->out[color_index+1].lost_frame_ind_num > 46&&!lidar_enhance[1]){
-        if(ourPattern == red)
-            this->out[1+color_index].Locate3D = {19.1,8.7,0.0};//小资源岛
-        else if(ourPattern == blue)
-            this->out[1+color_index].Locate3D = {8.9,6.3,0.0};
-
+    //猜工程
+    if(this->out[color_index+1].lost_frame_ind_num > 46&&lidar_enhance[1]!=1&&lidar_enhance[1]!=5) {
+        //裁判系统标记进度为0
+        if (this->out[color_index+1].judge_radar_mark_data == 0) {
+            if (engineer_guess_1_==false&&engineer_guess_2_==false) {
+                engineer_guess_1_=true;
+                this->out[color_index+1].Locate3D = engineer_location1_;
+                engineer_time_1_++;
+            }else if (engineer_guess_1_==true) {
+                if (engineer_time_1_>0&&engineer_time_1_<40) {
+                    engineer_time_1_++;
+                    this->out[color_index+1].Locate3D = engineer_location1_;
+                }else if (engineer_time_1_==40) {//换点2猜
+                    engineer_time_1_=0;
+                    engineer_time_2_++;
+                    engineer_guess_2_=true;
+                    engineer_guess_1_=false;
+                    this->out[color_index+1].Locate3D = engineer_location2_;
+                }
+            }else if (engineer_guess_2_==true) {
+                if (engineer_time_2_>0&&engineer_time_2_<40) {
+                    engineer_time_2_++;
+                    this->out[color_index+1].Locate3D = engineer_location2_;
+                }else if (engineer_time_2_==40) {//换点1猜
+                    engineer_time_2_=0;
+                    engineer_time_1_++;
+                    engineer_guess_1_=true;
+                    engineer_guess_2_=false;
+                    this->out[color_index+1].Locate3D = engineer_location1_;
+                }
+            }
+        }else {//裁判系统标记进度为1
+            double distance1 =get2Ddistance(this->out[color_index+1].Locate3D.x,this->out[color_index+1].Locate3D.y,engineer_location1_.x,hero_location1_.y);
+            double distance2 =get2Ddistance(this->out[color_index+1].Locate3D.x,this->out[color_index+1].Locate3D.y,engineer_location2_.x,hero_location2_.y);
+            if (distance1<distance2) {
+                engineer_guess_1_=true;
+                engineer_time_1_=30;
+                engineer_guess_2_=false;
+                engineer_time_2_=0;
+                this->out[color_index+1].Locate3D = engineer_location1_;
+            }else {
+                engineer_guess_2_=true;
+                engineer_time_2_=30;
+                engineer_guess_1_=false;
+                engineer_time_1_=0;
+                this->out[color_index+1].Locate3D = engineer_location2_;
+            }
+        }
+    }else {
+        engineer_guess_1_=false;
+        engineer_guess_2_=false;
+        engineer_time_1_=0;
+        engineer_time_2_=0;
     }
 
+    //猜哨兵
     int sentry_index=classWithoutCar/2-1;
-    if(this->out[sentry_index+color_index].cls == -1)     // 哨兵
-    {
-        if(this->out[sentry_index+color_index].judge_radar_mark_data == 0 && this->out[sentry_index+color_index].lost_frame_ind_num > 46){
-            if(ourPattern == red)
-                this->out[sentry_index+color_index].Locate3D = {21.4,7.5,0.15};//堡垒
-            else if(ourPattern == blue)
-                this->out[sentry_index+color_index].Locate3D = {6.6,7.5,0.15};
-
+    if(this->out[sentry_index+color_index].lost_frame_ind_num >46&&lidar_enhance[4]!=1){
+        if (game_time_>=3&&game_time_<=15) {
+            this->out[color_index+sentry_index].Locate3D = buff_location_;
+        }else {
+            this->out[color_index+sentry_index].Locate3D = fortress_location_;
         }
     }
-    if(this->out[2+color_index].cls == -1)     // 3
-    {
-        if(this->out[2+color_index].judge_radar_mark_data == 0 && this->out[5+color_index].lost_frame_ind_num > 46){
-            if(ourPattern == red)
-                this->out[2+color_index].Locate3D = {25.7157,13.5559,0.0};//补给区
-            else if(ourPattern == blue)
-                this->out[2+color_index].Locate3D = {2.2843,1.4441,0.0};
 
+    //猜3号
+    if(this->out[color_index+2].lost_frame_ind_num > 46&&lidar_enhance[2]!=1) {
+        //裁判系统标记进度为0
+        if (game_time_>=7&&game_time_<=20) {
+            this->out[color_index+2].Locate3D = buff_location_;
+        }else {
+            this->out[color_index+2].Locate3D = supply_location_;
         }
     }
-    if(this->out[3+color_index].cls == -1)     // 4
-    {
-        if(this->out[3+color_index].judge_radar_mark_data == 0 && this->out[5+color_index].lost_frame_ind_num > 46){
-            if(ourPattern == red)
-                this->out[3+color_index].Locate3D = {25.7157,13.5559,0.0};//补给区
-            else if(ourPattern == blue)
-                this->out[3+color_index].Locate3D = {2.2843,1.4441,0.0};
 
+    //猜4号
+    if(this->out[color_index+3].lost_frame_ind_num > 46&&lidar_enhance[3]!=1) {
+        //裁判系统标记进度为0
+        if (game_time_>=7&&game_time_<=20) {
+            this->out[color_index+3].Locate3D = buff_location_;
+        }else {
+            this->out[color_index+3].Locate3D = supply_location_;
         }
     }
-//    bool windmill_flag = false;
-//    for(auto cls: windmill_car){
-//        if(this->out[cls+color_index].placeType == windmill && this->out[cls+color_index].cls != -1){
-//            windmill_flag = true;
-//            break;
-//        }
-//    }
-//    if(!windmill_flag)                           // windmill(bigbuff)
-//    {
-//
-//    }
+
+    // if(this->out[2+color_index].cls == -1&&lidar_enhance[2]!=1)     // 3
+    // {
+    //     if(this->out[2+color_index].judge_radar_mark_data == 0 && this->out[5+color_index].lost_frame_ind_num > 46){
+    //         if(ourPattern == red)
+    //             this->out[2+color_index].Locate3D = {25.7157,13.5559,0.0};//补给区
+    //         else if(ourPattern == blue)
+    //             this->out[2+color_index].Locate3D = {2.2843,1.4441,0.0};
+    //
+    //     }
+    // }
+    // if(this->out[3+color_index].cls == -1&&lidar_enhance[3]!=1)     // 4
+    // {
+    //     if(this->out[3+color_index].judge_radar_mark_data == 0 && this->out[5+color_index].lost_frame_ind_num > 46){
+    //         if(ourPattern == red)
+    //             this->out[3+color_index].Locate3D = {25.7157,13.5559,0.0};//补给区
+    //         else if(ourPattern == blue)
+    //             this->out[3+color_index].Locate3D = {2.2843,1.4441,0.0};
+    //
+    //     }
+    // }
 }
 
 void MyRadar::STrackClear(){
@@ -318,16 +383,14 @@ void MyRadar::STrackClear(){
         if(track.cls == -1){
             track.lost_frame_ind_num++;//对没跟踪的车辆进行丢失帧数加1
         }else{
-            // track.cls = -1;
+            track.cls = -1;
         }
-        // track.Locate3D = {0.0,0.0,0.0};
+        track.Locate3D = {0.0,0.0,0.0};
         track.is_det=false;
     }
     for(auto &track: to_sentry){
         if(track.cls == -1){
             track.lost_frame_ind_num++;//对没跟踪的车辆进行丢失帧数加1
-        }else{
-            // track.cls = -1;
         }
         track.Locate3D = {0.0,0.0,0.0};
         track.vx_3d = 0.0;
@@ -1095,6 +1158,7 @@ void MyRadar::Spin(int argc, char **argv){
                 if(Port_ptr->is_openPort){
                     Port_ptr->updataSTrackData(this->out);
                     Port_ptr->updataSentryData(this->to_sentry);
+                    Port_ptr->updataDroneData(this->drone_location_.x);
                 }
 
 
@@ -1602,6 +1666,7 @@ void MyRadar::Spin(int argc, char **argv){
                 if(Port_ptr->is_openPort){
                     Port_ptr->updataSTrackData(this->out);
                     Port_ptr->updataSentryData(this->to_sentry);
+                    Port_ptr->updataDroneData(this->drone_location_.x);
                 }
 
 

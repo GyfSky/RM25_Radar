@@ -15,7 +15,7 @@
 bool SerialPort::initSerialPort(const char *port_path)
 {
 
-    YAML::Node config = YAML::LoadFile("/home/thesky/RM25_Radar/src/radar_bringup/src/Port/doc/Port_config.yaml");
+    YAML::Node config = YAML::LoadFile("/home/thesky/RM25_Radar/src/radar_bringup/config/Port_config.yaml");
 //    this->port_path = port_path;
 //    const char *cmd_system = "sudo chmod 777 " + port_path;
     std::cout << "give sudo to port" << std::endl;

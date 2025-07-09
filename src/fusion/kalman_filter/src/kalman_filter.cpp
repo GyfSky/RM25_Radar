@@ -18,6 +18,12 @@ namespace upc_radar{
             sync=std::make_shared<message_filters::Synchronizer<MySyncPolicy>>(std::ref(sync_policy),avia_sub,mid70_sub);
             sync->registerCallback(&KalmanFilter::PCTimeSynC, this);
         }
+        drone1_sub_.subscribe(this, "/livox/avia/drone");
+        drone2_sub_.subscribe(this, "/livox/mid70/drone");
+        MySyncPolicy drone_sync_policy(5);
+        drone_sync_policy.setMaxIntervalDuration(rclcpp::Duration(0,100000000));
+        drone_sync_=std::make_shared<message_filters::Synchronizer<MySyncPolicy>>(std::ref(drone_sync_policy),drone1_sub_,drone2_sub_);
+        drone_sync_->registerCallback(&KalmanFilter::droneTimeSynC, this);
 
         // sub_detect= this->create_subscription<interfaces::msg::DetectFrame>("/resolve_result", 10, std::bind(&KalmanFilter::detectCallback, this, std::placeholders::_1));
 
@@ -27,6 +33,7 @@ namespace upc_radar{
         pub_kmeans = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/lidar_kmeans", 10);
         pub_vis = this->create_publisher<visualization_msgs::msg::MarkerArray>("/vis_point", 10);
         lidar_detect_pub = this->create_publisher<interfaces::msg::DetectResult>("/lidar_detect", 1);
+        pub_drone_=this->create_publisher<interfaces::msg::DroneLocation>("/drone_location", 1);
 
         sub_cam=this->create_subscription<interfaces::msg::DetectRes>("/cam_result", 3, std::bind(&KalmanFilter::camCallback, this, std::placeholders::_1));
         // sub_robot_hp=this->create_subscription<interfaces::msg::RobotHP>("/robot_hp", 10, std::bind(&KalmanFilter::robotHPCallback, this, std::placeholders::_1));
@@ -809,22 +816,26 @@ namespace upc_radar{
             if (initornot(tunnel_slanted_,point,5)==1) {
                 //self_color==1为自己为蓝方
                 if (self_color==1) {
-                    if (detect_res.red_x[0]==0&&detect_res.red_y[0]==0) {
+                    if (lidar_enhance_[0][0]==2||lidar_enhance_[0][0]==3||lidar_enhance_[0][0]==4||
+                        (detect_res.red_x[0]==0&&detect_res.red_y[0]==0&&(lidar_enhance_[0][0]==0||
+                            lidar_enhance_[0][0]==5||lidar_enhance_[0][0]==6))) {
                         detect_res.red_x[0]= point.x;
                         detect_res.red_y[0]= point.y;
                         detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,0,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][0]);
-                        lidar_enhance_[0][0]=0;
+                        lidar_enhance_[0][0]=6;
                     }
                 }else if (self_color==0) {
-                    if (detect_res.blue_x[0]==0&&detect_res.blue_y[0]==0) {
+                    if (lidar_enhance_[1][0]==2||lidar_enhance_[1][0]==3||lidar_enhance_[1][0]==4||
+                        (detect_res.blue_x[0]==0&&detect_res.blue_y[0]==0&&(lidar_enhance_[1][0]==0||
+                            lidar_enhance_[1][0]==5||lidar_enhance_[1][0]==6))) {
                         detect_res.blue_x[0]= point.x;
                         detect_res.blue_y[0]= point.y;
                         detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,1,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][0]);
-                        lidar_enhance_[1][0]=0;
+                        lidar_enhance_[1][0]=6;
                     }
                 }
                 continue;
@@ -833,22 +844,26 @@ namespace upc_radar{
             if (initornot(outpost_,point,4)==1) {
                 //self_color==1为自己为蓝方
                 if (self_color==1) {
-                    if (detect_res.red_x[0]==0&&detect_res.red_y[0]==0) {
+                    if (lidar_enhance_[0][0]==2||lidar_enhance_[0][0]==3||lidar_enhance_[0][0]==4||
+                        (detect_res.red_x[0]==0&&detect_res.red_y[0]==0&&(lidar_enhance_[0][0]==0||
+                            lidar_enhance_[0][0]==5||lidar_enhance_[0][0]==6))) {
                         detect_res.red_x[0]= point.x;
                         detect_res.red_y[0]= point.y;
                         detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,0,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][0]);
-                        lidar_enhance_[0][0]=0;
+                        lidar_enhance_[0][0]=5;
                     }
                 }else if (self_color==0) {
-                    if (detect_res.blue_x[0]==0&&detect_res.blue_y[0]==0) {
+                    if (lidar_enhance_[1][0]==2||lidar_enhance_[1][0]==3||lidar_enhance_[1][0]==4||
+                        (detect_res.blue_x[0]==0&&detect_res.blue_y[0]==0&&(lidar_enhance_[1][0]==0||
+                            lidar_enhance_[1][0]==5||lidar_enhance_[1][0]==6))) {
                         detect_res.blue_x[0]= point.x;
                         detect_res.blue_y[0]= point.y;
                         detect_res.v_x[0] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[0] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,1,0,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][0]);
-                        lidar_enhance_[1][0]=0;
+                        lidar_enhance_[1][0]=5;
                     }
                 }
                 continue;
@@ -857,22 +872,26 @@ namespace upc_radar{
             if (initornot(little_engine_l_,point,4)==1) {
                 //self_color==1为自己为蓝方
                 if (self_color==1) {
-                    if (detect_res.red_x[1]==0&&detect_res.red_y[1]==0) {
+                    if (lidar_enhance_[0][1]==2||lidar_enhance_[0][1]==3||lidar_enhance_[0][1]==4||
+                        (detect_res.red_x[1]==0&&detect_res.red_y[1]==0&&(lidar_enhance_[0][1]==0||
+                            lidar_enhance_[0][1]==5))) {
                         detect_res.red_x[1]= point.x;
                         detect_res.red_y[1]= point.y;
                         detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,0,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][1]);
-                        lidar_enhance_[0][1]=0;
+                        lidar_enhance_[0][1]=5;
                     }
                 }else if (self_color==0) {
-                    if (detect_res.blue_x[1]==0&&detect_res.blue_y[1]==0) {
+                    if (lidar_enhance_[1][1]==2||lidar_enhance_[1][1]==3||lidar_enhance_[1][1]==4||
+                        (detect_res.blue_x[1]==0&&detect_res.blue_y[1]==0&&(lidar_enhance_[1][1]==0||
+                            lidar_enhance_[1][1]==5))) {
                         detect_res.blue_x[1]= point.x;
                         detect_res.blue_y[1]= point.y;
                         detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,1,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][1]);
-                        lidar_enhance_[1][1]=0;
+                        lidar_enhance_[1][1]=5;
                     }
                 }
                 continue;
@@ -881,22 +900,26 @@ namespace upc_radar{
             if (initornot(little_engine_r_,point,4)==1) {
                 //self_color==1为自己为蓝方
                 if (self_color==1) {
-                    if (detect_res.red_x[1]==0&&detect_res.red_y[1]==0) {
+                    if (lidar_enhance_[0][1]==2||lidar_enhance_[0][1]==3||lidar_enhance_[0][1]==4||
+                        (detect_res.red_x[1]==0&&detect_res.red_y[1]==0&&(lidar_enhance_[0][1]==0||
+                            lidar_enhance_[0][1]==5))) {
                         detect_res.red_x[1]= point.x;
                         detect_res.red_y[1]= point.y;
                         detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,0,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[1][1]);
-                        lidar_enhance_[0][1]=0;
+                        lidar_enhance_[0][1]=5;
                     }
                 }else if (self_color==0) {
-                    if (detect_res.blue_x[1]==0&&detect_res.blue_y[1]==0) {
+                    if (lidar_enhance_[1][1]==2||lidar_enhance_[1][1]==3||lidar_enhance_[1][1]==4||
+                        (detect_res.blue_x[1]==0&&detect_res.blue_y[1]==0&&(lidar_enhance_[1][1]==0||
+                            lidar_enhance_[1][1]==5))) {
                         detect_res.blue_x[1]= point.x;
                         detect_res.blue_y[1]= point.y;
                         detect_res.v_x[1] = KFs_[index].KF.statePost.at<float>(1);
                         detect_res.v_y[1] = KFs_[index].KF.statePost.at<float>(3);
                         vis_kal_maker(1,vis_array,1,1,point.x,point.y,KFs_[index].detect_history.size(),history_cost[0][1]);
-                        lidar_enhance_[1][1]=0;
+                        lidar_enhance_[1][1]=5;
                     }
                 }
             }
@@ -950,7 +973,7 @@ namespace upc_radar{
                 if (self_color==0&&match[1]==5) {
                     KFs_[match[0]].output_point.x=17.5392;
                     KFs_[match[0]].output_point.y=4.1475;
-                    lidar_enhance_[1][match[1]-5]=1;
+                    lidar_enhance_[1][match[1]-5]=4;
                     detect_res.blue_x[match[1]-5]=KFs_[match[0]].output_point.x;
                     detect_res.blue_y[match[1]-5]=KFs_[match[0]].output_point.y;
                     detect_res.v_x[match[1]-5] = 0;
@@ -959,7 +982,7 @@ namespace upc_radar{
                 }else if (self_color==1&&match[1]==0) {
                     KFs_[match[0]].output_point.x=10.4608;
                     KFs_[match[0]].output_point.y=10.8525;
-                    lidar_enhance_[0][match[1]]=1;
+                    lidar_enhance_[0][match[1]]=4;
                     detect_res.red_x[match[1]]=KFs_[match[0]].output_point.x;
                     detect_res.red_y[match[1]]=KFs_[match[0]].output_point.y;
                     detect_res.v_x[match[1]] = 0;
@@ -1072,6 +1095,8 @@ namespace upc_radar{
                         fake_kfs[0][i].v_x=speed;
                         fake_kfs[0][i].v_y=0;
                         lidar_enhance_[0][i]=3;
+                    }else {
+                        lidar_enhance_[0][i]=4;
                     }
                     detect_res.red_x[i]=fake_kfs[0][i].location.x;
                     detect_res.red_y[i]=fake_kfs[0][i].location.y;
@@ -1095,6 +1120,8 @@ namespace upc_radar{
                         fake_kfs[0][i].v_x=-speed*sin(35*M_PI/180)*2.0;
                         fake_kfs[0][i].v_y=-speed*cos(35*M_PI/180)*2.0;
                         lidar_enhance_[0][i]=2;
+                    }else {
+                        lidar_enhance_[0][i]=4;
                     }
                     detect_res.red_x[i]=fake_kfs[0][i].location.x;
                     detect_res.red_y[i]=fake_kfs[0][i].location.y;
@@ -1119,6 +1146,8 @@ namespace upc_radar{
                         fake_kfs[1][i].v_x=speed;
                         fake_kfs[1][i].v_y=0;
                         lidar_enhance_[1][i]=3;
+                    }else {
+                        lidar_enhance_[1][i]=4;
                     }
                     detect_res.blue_x[i]=fake_kfs[1][i].location.x;
                     detect_res.blue_y[i]=fake_kfs[1][i].location.y;
@@ -1142,6 +1171,8 @@ namespace upc_radar{
                         fake_kfs[1][i].v_x=-speed*sin(35*M_PI/180)*2.0;
                         fake_kfs[1][i].v_y=-speed*cos(35*M_PI/180)*2.0;
                         lidar_enhance_[1][i]=2;
+                    }else {
+                        lidar_enhance_[1][i]=4;
                     }
                     detect_res.blue_x[i]=fake_kfs[1][i].location.x;
                     detect_res.blue_y[i]=fake_kfs[1][i].location.y;
@@ -1462,19 +1493,23 @@ namespace upc_radar{
 
     void KalmanFilter::clearOutPut() {
         for (int i=0;i<5;i++) {
-            if (lidar_enhance_[0][i]==0) {
+            if (lidar_enhance_[0][i]==0||lidar_enhance_[0][i]==5||lidar_enhance_[0][i]==6) {
                 if (self_color==1) {
                     detect_res.v_x[i]=0;
                     detect_res.v_y[i]=0;
                 }
+                if (lidar_enhance_[0][i]==5||lidar_enhance_[0][i]==6)
+                    lidar_enhance_[0][i]=0;
                 detect_res.red_x[i]=0;
                 detect_res.red_y[i]=0;
             }
-            if (lidar_enhance_[1][i]==0) {
+            if (lidar_enhance_[1][i]==0||lidar_enhance_[1][i]==5||lidar_enhance_[1][i]==6) {
                 if (self_color==0) {
                     detect_res.v_x[i]=0;
                     detect_res.v_y[i]=0;
                 }
+                if (lidar_enhance_[1][i]==5||lidar_enhance_[1][i]==6)
+                    lidar_enhance_[1][i]=0;
                 detect_res.blue_x[i]=0;
                 detect_res.blue_y[i]=0;
             }
@@ -2044,11 +2079,8 @@ namespace upc_radar{
         }
         interfaces::msg::LidarEnhance lidar_enhance;
         for (int i=0;i<5;i++) {
-            if (lidar_enhance_[1][i]>0)
-                lidar_enhance.blue_enhance[i]=true;
-
-            if (lidar_enhance_[0][i]>0)
-                lidar_enhance.red_enhance[i]=true;
+            lidar_enhance.blue_enhance[i]=lidar_enhance_[1][i];
+            lidar_enhance.red_enhance[i]=lidar_enhance_[0][i];
         }
         detect_res.header.stamp = rclcpp::Clock().now();
         lidar_enhance.header.stamp = rclcpp::Clock().now();

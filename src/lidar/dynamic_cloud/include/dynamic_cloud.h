@@ -73,7 +73,7 @@ namespace upc_radar{
     }
 
     //rm25
-    void get_filtered_cloud25(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud){
+    void get_filtered_cloud25(pcl::PointCloud<pcl::PointXYZ> origin_cloud,pcl::PointCloud<pcl::PointXYZ> &filtered_cloud,pcl::PointCloud<pcl::PointXYZ> &drone_cloud){
         std::vector<pcl::PointXY> location;
         location.push_back(pcl::PointXY(15.3002,1.8819));
         location.push_back(pcl::PointXY(16.0,1.1925));
@@ -84,6 +84,8 @@ namespace upc_radar{
         //             if (strack_pool[u_strack[max_ut_idx[i]]]->state!=TrackState::Tracked&&strack_pool[u_strack[max_ut_idx[i]]]->state!=TrackState::New) {
         for (size_t i = 0; i < origin_cloud.size(); i++){
             auto &point = origin_cloud.points[i];
+            if (point.x<=26.1&&point.x>=11.0&&point.y<=3.887&&point.y>=0.2&&point.z>=1.6&&point.z<=3.5)
+                drone_cloud.push_back(point);
             //point.z > 1.4
             if (point.x > 27.9 || point.y < 0.1 || point.y > 14.9 || point.z < 0 || point.z > 1.35 ||
                 //己方停机坪和飞镖
@@ -94,6 +96,8 @@ namespace upc_radar{
                 (point.y>=15-8.45&&point.y<=15-6.55&&point.x<=28-24.93&&point.x>=28-26.55)||
                 //敌方停机坪和飞镖
                 (point.y > 0 && point.y < 5 && point.x > 25) ||
+                //敌方补给区
+                (point.y>=10.95&&point.x>24.25)||
                 //敌方基地
                 (point.y<=8.45&&point.y>=6.55&&point.x>=24.93&&point.x<=26.55)||
                 //画四个直线切割大资源岛
@@ -233,6 +237,7 @@ namespace upc_radar{
         rclcpp::Subscription<interfaces::msg::GameState>::SharedPtr sub_game_state;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_raw;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_drone_;
     };
 }
 
