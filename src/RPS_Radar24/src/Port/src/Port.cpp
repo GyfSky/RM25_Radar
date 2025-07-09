@@ -429,7 +429,6 @@ void Port::autoDecisionMaking(){
         }
     }
 
-
     if(dacision_time_flag){
         radarDecisionDataT_times_lock.lock();
         dacision_time = uint8_t(1) + dacision_time;
