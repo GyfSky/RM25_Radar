@@ -128,8 +128,7 @@ void Port::clearBuff() {
     tcflush(fd, TCIFLUSH);
 }
 
-void Port::start() { //TODO:
-
+void Port::start() {
     std::function<void()> getData_ = std::bind(&Port::getData, this);
     std::function<void()> sendIVCData_ = std::bind(&Port::sendIVCData, this);  // IVC 定义: 车辆间通信 - Inter-Vehicle Communications
     std::function<void()> sendSTrackData_ = std::bind(&Port::sendSTrackData, this);
