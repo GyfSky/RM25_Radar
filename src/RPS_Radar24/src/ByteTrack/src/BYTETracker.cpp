@@ -729,6 +729,7 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                     }
                 }
             }
+            int enhance=lidar_enhance.blue_enhance[i];
             out[i] = *strack_pool[u_strack[max_ut_idx[i]]];
             out[i].is_det=enhance==0?true:false;
             if (enhance==0||enhance==1||enhance==5) {
@@ -784,6 +785,7 @@ void BYTETracker::update(vector<STrack> &tracked_stracks, vector<STrack> &lost_s
                     }
                 }
             }
+            int enhance=lidar_enhance.red_enhance[i];
             out[i] = *strack_pool[u_strack[max_ut_idx[i]]];
             out[i].is_det=enhance==0?true:false;
             if (enhance==0||enhance==1||enhance==5) {
