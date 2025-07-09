@@ -109,8 +109,6 @@ public:
     interfaces::msg::NetDetect car_det;
     interfaces::msg::NetDetect armor_det;
     interfaces::msg::LidarEnhance lidar_enhance_;
-    bool hero_guess_1_=false,hero_guess_2_=false;
-    int hero_time_1_=0,hero_time_2_=0;
     interfaces::msg::DroneLocation drone_location_;
 
     bool hero_guess_1_=false,hero_guess_2_=false,engineer_guess_1_=false,engineer_guess_2_=false;
