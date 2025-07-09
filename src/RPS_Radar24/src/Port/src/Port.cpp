@@ -339,8 +339,6 @@ void Port::checkGameTime() {
         game_time_lock_.lock();
         game_during_time_=now_time.seconds()-game_start_time.seconds();
         game_time_lock_.unlock();
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "stage_remain_time: %f",game_during_time);
-    }
         RCLCPP_ERROR(rclcpp::get_logger("judge"), "stage_remain_time: %f",game_during_time);
 
         if(!is_time_3_55_ && int(game_during_time) < (3*60 + 55)&&int(game_during_time) > (3*60 + 40)){
@@ -429,17 +427,12 @@ void Port::autoDecisionMaking(){
                 judgment_condition_[i][1]=judgment_condition_time_[i];
             }
         }
-//        else if(!is_dart_hit && eventDataT.data.dart_hit_time > 0){
-//            is_dart_hit = true;
-//            std::cout << "is_dart_hit: " << eventDataT.data.dart_hit_time  << std::endl;
-//        }
-        else{
-            dacision_time_flag = false;//不在时间范围内
-        }
+    }
+    interfaces::msg::JudgeDebug debug_msg;
+    for (int i=0;i<8;i++) {
+        debug_msg.state[i]=judgment_condition_[i][0];
+        debug_msg.wait_time[i]=judgment_condition_[i][1];
 
-    }else{
-        dacision_time_flag = false;//正在触发双倍易伤
-        // dacision_time = 0;//TODO是不是有问题？
     }
     }
     // radarDecisionDataT_times_lock.lock();
@@ -455,6 +448,7 @@ void Port::autoDecisionMaking(){
     vulnerability_times_lock.unlock();
     gameStatusT_times_lock.unlock();
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"--------------------decision time: %d",dacision_time);
+
     if(dacision_time_flag){
         radarDecisionDataT_times_lock.lock();
         dacision_time = uint8_t(1) + dacision_time;
