@@ -229,6 +229,12 @@ void Port::sendSTrackData() {
             uint16_t (0), uint16_t (0),
             uint16_t (port_out[color_index+4].Locate3D.x*100), uint16_t (port_out[color_index+4].Locate3D.y*100),
     };
+    for (int i=0;i<4;i++) {
+        if (checkPosition(this->port_out[color_index+i].Locate3D))
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"port_out %d location: %d,%d",i+1,uint16_t(this->port_out[color_index+i].Locate3D.x*100),uint16_t(this->port_out[color_index+i].Locate3D.y*100));
+    }
+    if (checkPosition(this->port_out[color_index+4].Locate3D))
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"port_out 7 location: %d,%d",uint16_t(this->port_out[color_index+4].Locate3D.x*100),uint16_t(this->port_out[color_index+4].Locate3D.y*100));
     map_robot_ptr->OutputData(mapRobotDataT);
     STrack_lock.unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds (5));
@@ -365,7 +371,7 @@ void Port::autoDecisionMaking(){
     bool dacision_time_flag = false;
     checkTrigger();
     int number=getRadarMarkNum();
-    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "number: %d", number);
+    RCLCPP_ERROR(rclcpp::get_logger("judge"), "number: %d", number);
 
     vulnerability_times_lock.lock();
     int radar_info=vulnerability_times.data.radar_info;
