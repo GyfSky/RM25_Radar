@@ -1808,13 +1808,6 @@ namespace upc_radar{
                     KFs_[match[1]].rect_2d2.erase(KFs_[match[1]].rect_2d2.begin());
             }
         }
-        if (matches.size()==0) {
-            for (int index=0;index<cloud_xy->size();index++) {
-                Kalman_filter_plus kf(cloud_xy->points[index], time,reinterpret_cast<rclcpp::Node*>(this),rects1[index]);//time为最后更新时间
-                kf.rect_2d2.push_back(rects2[index]);
-                KFs_.push_back(kf);
-            }
-        }
 
         //TODO：没有更新的kalman 用距离找符合阈值的最近的聚类去更新
 

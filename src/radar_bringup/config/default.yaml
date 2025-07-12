@@ -116,10 +116,10 @@
     kalman.detect_r: 3.0
     kalman.car_max_speed: 2.0
     kalman.dt_: 0.1
-    kalman.sigma_q_x: 0.4
-    kalman.sigma_q_y: 0.4
-    kalman.sigma_r_x: 1.0
-    kalman.sigma_r_y: 1.0
+    kalman.sigma_q_x: 2.5
+    kalman.sigma_q_y: 2.5
+    kalman.sigma_r_x: 0.4
+    kalman.sigma_r_y: 0.4
 
     cost.distance_weight: 1.0
     cost.distance_thres: 6.0
