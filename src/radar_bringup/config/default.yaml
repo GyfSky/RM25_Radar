@@ -2,7 +2,7 @@
   ros__parameters:
     situation: "rm25"
     cost_thres: 2.5
-    map_path: "resource/RM2025.pcd"
+    map_path: "resource/RM2025_national.pcd"
     pub_map_grid_size: 0.05
     #RM2025
     al_map_grid_size: 0.27
@@ -28,7 +28,7 @@
       sor.MeanK: 10
       sor.remove_outlier: true
 
-      pc.map_path: "resource/RM2025.pcd"
+      pc.map_path: "resource/RM2025_national.pcd"
       pc.dis_thres: 0.02
       pc.thread: 12
       mesh.mesh_ori: "resource/24_bg2align_fix1.stl"
@@ -54,7 +54,7 @@
       sor.MeanK: 10
       sor.remove_outlier: true
 
-      pc.map_path: "resource/RM2025.pcd"
+      pc.map_path: "resource/RM2025_national.pcd"
       pc.dis_thres: 0.02
       pc.thread: 12
       mesh.mesh_ori: "resource/24_bg2align_fix1.stl"
