@@ -116,7 +116,7 @@ def generate_launch_description():
                                     kalman_filter_node,
                                     mid70_dynamic_cloud_node,
                                     avia_dynamic_cloud_node,
-                                    foxglove_node
+                                    # foxglove_node
                                    )
     camera_detector = Node(
         package="rps_radar24",

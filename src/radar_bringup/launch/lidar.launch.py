@@ -165,7 +165,7 @@ def generate_launch_description():
                                     # depth_fusion_node,
                                     # depth_kalman_node,
                                     #convert_img_node,
-                                    foxglove_node
+                                    # foxglove_node
                                    )
     camera_detector = Node(
         package="rps_radar24",
