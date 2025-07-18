@@ -22,28 +22,14 @@ namespace Camera_hk
                     target->m_time=rclcpp::Clock().now();
                     target->mRawImage = cv::Mat(pFrameInfo->nHeight,pFrameInfo->nWidth,CV_8UC1,data);
 
-                    // save
-                    if(target->is_always_save){
-                        target->pic_num++;
-                        if(target->pic_num%target->num_frame == 0){
-                            cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                        }
-                    }
-                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage))).toCompressedImageMsg();
                     msg->header.stamp = rclcpp::Clock().now();
                     target->img_pub->publish(*msg);
                 }else if(target->pixelFormat==BGR8Packed){
                     target->m_time=rclcpp::Clock().now();
                     target->mRawImage = cv::Mat(pFrameInfo->nHeight,pFrameInfo->nWidth,CV_8UC3,data);
 
-                    // save
-                    if(target->is_always_save){
-                        target->pic_num++;
-                        if(target->pic_num%target->num_frame == 0){
-                            cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                        }
-                    }
-                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage))).toCompressedImageMsg();
                     msg->header.stamp = rclcpp::Clock().now();
                     target->img_pub->publish(*msg);
                 } else{
@@ -106,28 +92,15 @@ namespace Camera_hk
 
                 if(target->pixelFormat==BayerRG8 || target->pixelFormat==BayerGR8){
                     target->mRawImage = cv::Mat(stImageInfo.nHeight,stImageInfo.nWidth,CV_8UC1,pData);
-                    // save
-                    if(target->is_always_save){
-                        target->pic_num++;
-                        if(target->pic_num%target->num_frame == 0){
-                            cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                        }
-                    }
-                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage))).toCompressedImageMsg();
                     msg->header.stamp = rclcpp::Clock().now();
                     target->img_pub->publish(*msg);
                 }
                 else if(target->pixelFormat==BGR8Packed){
                     target->mRawImage = cv::Mat(stImageInfo.nHeight,stImageInfo.nWidth,CV_8UC3,pData);
 
-                    // save
-                    if(target->is_always_save){
-                        target->pic_num++;
-                        if(target->pic_num%target->num_frame == 0){
-                            cv::imwrite((target->save_dir + "/" +std::to_string(target->pic_num/target->num_frame)+ ".jpg"),target->convertToBGR((target->mRawImage).clone()));
-                        }
-                    }
-                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage).clone())).toCompressedImageMsg();
+                    auto msg=cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", target->convertToBGR((target->mRawImage))).toCompressedImageMsg();
                     msg->header.stamp = rclcpp::Clock().now();
                     target->img_pub->publish(*msg);
                 } else{

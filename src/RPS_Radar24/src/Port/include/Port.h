@@ -98,6 +98,7 @@ public:
     int hole_orange_num = 0;
     int dart_num = 0;
     int windmill_num = 0;
+    int rival_offense_num = 0;
     int IVC_num = 3;
     int IVC_out_init = 0;
 

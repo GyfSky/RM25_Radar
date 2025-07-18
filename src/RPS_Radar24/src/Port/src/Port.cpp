@@ -569,6 +569,7 @@ void Port::makePlaneData() {
     uint8_t  hole_orange = 0;
     uint8_t  windwill = 0;
     uint8_t  dartWarning = 0;
+    uint8_t  rival_offense = 0;
     drone_location_lock_.lock();
     uint8_t  drone_location_x=this->drone_location_x_;
     drone_location_lock_.unlock();
@@ -593,11 +594,15 @@ void Port::makePlaneData() {
         dartWarning    = 1;
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect dartWarning");
     }
+    if (this->rival_offense_num>0) {
+        rival_offense  = 1;
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect rival_offense");
+    }
     vulnerability_times_lock.lock();
     this->radarPlaneDataT.data.char_data[0] = fly;//飞坡
     this->radarPlaneDataT.data.char_data[1] = this->vulnerability_times.data.radar_info;//可易伤次数
     this->radarPlaneDataT.data.char_data[2] = drone_location_x;//无人机归一化位置（0-100）
-    this->radarPlaneDataT.data.char_data[3] = drone_location_x;
+    this->radarPlaneDataT.data.char_data[3] = rival_offense;//敌方到己方半场
     this->radarPlaneDataT.data.char_data[4] = windwill;//打符
     this->radarPlaneDataT.data.char_data[5] = dartWarning;//飞镖
     this->radarPlaneDataT.data.char_data[6] = 9;
@@ -605,7 +610,7 @@ void Port::makePlaneData() {
     this->radarPlaneDataT.data.char_data[7] = fly;
     this->radarPlaneDataT.data.char_data[8] = this->vulnerability_times.data.radar_info;
     this->radarPlaneDataT.data.char_data[9] = drone_location_x;
-    this->radarPlaneDataT.data.char_data[10] = drone_location_x;
+    this->radarPlaneDataT.data.char_data[10] = rival_offense;
     this->radarPlaneDataT.data.char_data[11]= windwill;
     this->radarPlaneDataT.data.char_data[12]= dartWarning;
     vulnerability_times_lock.unlock();
@@ -630,6 +635,9 @@ void Port::sendPlaneData() {
     }
     if(dart_num > 0) {
         dart_num--;
+    }
+    if(rival_offense_num > 0) {
+        rival_offense_num--;
     }
     radarPlaneDataT_times_lock.unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds (3));
@@ -805,6 +813,7 @@ void Port::setWarring(std::vector<bool> isWarring) {
     if(isWarring[2])  hole_orange_num = 21;
     if(isWarring[3])  windmill_num = 21;
     if(isWarring[4])  dart_num = 9;
+    if(isWarring[5])  rival_offense_num = 9;
     radarPlaneDataT_times_lock.unlock();
 }
 
