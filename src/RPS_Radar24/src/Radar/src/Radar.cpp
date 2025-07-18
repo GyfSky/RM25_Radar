@@ -442,6 +442,26 @@ void MyRadar::getDartWarning(cv::Mat img,int value) {
     cv::imshow("Dart1", contourImage);
 }
 
+void MyRadar::getRivalOffenseWarning(vector<bool> &isWarring) {
+    for (int i=0;i<5;i++) {
+        cv::Point2d location=cv::Point2d(this->out[i+color_index].Locate3D.x,this->out[i+color_index].Locate3D.y);
+        if (location.x<=0.0||location.x>=28.0||location.y<=0.0||location.y>=15.0) continue;
+        if (Modes_ptr->ourPattern==red&&location.x<13.65&&initornot(self_central_heights_, location,8)==-1) {
+            rival_offense_time[i]=rival_offense_time[i]<10?rival_offense_time[i]+1:12;
+        }else if (Modes_ptr->ourPattern==blue&&location.x>14.35&&initornot(self_central_heights_, location,8)==-1) {
+            rival_offense_time[i]=rival_offense_time[i]<10?rival_offense_time[i]+1:12;
+        }else {
+            if (rival_offense_time[i]>0)
+                rival_offense_time[i]=rival_offense_time[i]-1;
+        }
+    }
+    for (int i=0;i<5;i++) {
+        if (rival_offense_time[i]>=10) {
+            isWarring[5]=true;
+            break;
+        }
+    }
+}
 
 void MyRadar::Init(int argc, char **argv){
     if(is_init) return;

@@ -126,6 +126,7 @@ public:
     void STrackGuess(int classWithoutCar);
     void STrackClear();
     void getDartWarning(cv::Mat img,int value);
+    void getRivalOffenseWarning(vector<bool> &isWarring);
     PictureSource getPictureSource();
     void Save();
     void Spin(int argc, char **argv);

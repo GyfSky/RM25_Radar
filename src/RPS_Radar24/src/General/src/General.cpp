@@ -50,7 +50,7 @@
 //     }
 // }
 
-int initornot(const std::array<cv::Point2f, 25> polygon,cv::Point point,int polygonSize) {
+int initornot(const std::array<cv::Point2f, 25> polygon,cv::Point2d point,int polygonSize) {
     // 手动闭合多边形：如果多边形的第一个点和最后一个点不同，则复制第一个点到最后一个位置
     std::array<cv::Point2f, 26> closedPolygon; // 为闭合多边形预留额外空间
     for (size_t i = 0; i < polygonSize; ++i) {

@@ -144,7 +144,7 @@ public:
 //double min_(double a,double b);
 //double max_(double a,double b);
 //double get2Ddistance(double x1,double y1, double x2, double y2);
-int initornot(std::array<cv::Point2f,25> predict2d ,cv::Point xy, int pointNum);
+int initornot(std::array<cv::Point2f,25> predict2d ,cv::Point2d xy, int pointNum);
 int initornot3D(std::array<Eigen::Matrix<double, 3, 1>,25>  points_reality_3d ,cv::Point3d &xyz, int pointNum);
 
 double getAngle180(double x, double y);
