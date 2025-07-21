@@ -74,6 +74,15 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
     engineer_location2_= Modes_ptr->ourPattern == red? cv::Point3d(19.1,6.3,0.0):cv::Point3d(8.9,8.7,0.0);
     fortress_location_= Modes_ptr->ourPattern == red? cv::Point3d(21.4,7.5,0.0):cv::Point3d(6.6,7.5,0.0);
     supply_location_= Modes_ptr->ourPattern == red? cv::Point3d(25.6,13.2,0.0):cv::Point3d(2.4,1.8,0.0);
+    self_central_heights_[0]= Modes_ptr->ourPattern == red? cv::Point2f(13.65,2.0):cv::Point2f(14.35,13.0);
+    self_central_heights_[1]= Modes_ptr->ourPattern == red? cv::Point2f(9.5655,2.0):cv::Point2f(28-9.5655,13.0);
+    self_central_heights_[2]= Modes_ptr->ourPattern == red? cv::Point2f(10.4689,3.2902):cv::Point2f(28-10.4689,15-3.2902);
+    self_central_heights_[3]= Modes_ptr->ourPattern == red? cv::Point2f(10.4689,4.0118):cv::Point2f(28-10.4689,15-4.0118);
+    self_central_heights_[4]= Modes_ptr->ourPattern == red? cv::Point2f(9.535,6.0641):cv::Point2f(28-9.535,8.9359);
+    self_central_heights_[5]= Modes_ptr->ourPattern == red? cv::Point2f(9.535,8.9359):cv::Point2f(28-9.535,6.0641);
+    self_central_heights_[6]= Modes_ptr->ourPattern == red? cv::Point2f(12.043,12.759):cv::Point2f(28-12.043,15-12.759);
+    self_central_heights_[7]= Modes_ptr->ourPattern == red? cv::Point2f(13.65,13.0):cv::Point2f(14.35,2.0);
+
 
     //test
     YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);

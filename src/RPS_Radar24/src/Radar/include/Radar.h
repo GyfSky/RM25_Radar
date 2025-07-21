@@ -116,6 +116,8 @@ public:
 
     cv::Point3d hero_location1_,hero_location2_,hero_location3_,buff_location_,
     engineer_location1_,engineer_location2_,fortress_location_,supply_location_;
+    std::array<cv::Point2f, 25> self_central_heights_;
+    std::array<int,5> rival_offense_time={0};
 
     MyRadar(/* args */rclcpp::Node::SharedPtr node);
     ~MyRadar();
