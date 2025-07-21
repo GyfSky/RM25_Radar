@@ -983,14 +983,13 @@ void MyRadar::Spin(int argc, char **argv){
 
                 auto e1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 // std::cout << "setRectInPrimaryCam: " << e1 - trackStartTime<< std::endl;
-                std::vector<bool> isWarring(5, false) ;
+                std::vector<bool> isWarring(6, false) ;
                 if(dart_flag)
                     isWarring[4]=true;
                 //此处解算得到的坐标为机器人在官方小地图中的坐标
                 CooSystem_ptr->solve_reality_3d(MainCam_ptr->T_2world, MainCam_ptr->fx, MainCam_ptr->fy,
                                                 MainCam_ptr->cx, MainCam_ptr->cy, MainMapGraph_ptr->vexs,MainMapGraph_ptr->arcs,stracks[0], Modes_ptr->ourPattern, isWarring);
                 if(Port_ptr->is_openPort) {
-                    Port_ptr->setWarring(isWarring);
                     Port_ptr->updateGameTime(this->game_time_);
                     Port_ptr->updataRadarMarkData(tracked_stracks);
                     Port_ptr->updataRadarMarkData(lost_stracks);
@@ -1184,7 +1183,9 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "lost_predict_stracks  " << lost_predict_stracks.size() << std::endl;
 
 
+                getRivalOffenseWarning(isWarring);
                 if(Port_ptr->is_openPort){
+                    Port_ptr->setWarring(isWarring);
                     Port_ptr->updataSTrackData(this->out);
                     Port_ptr->updataSentryData(this->to_sentry);
                     Port_ptr->updataDroneData(this->drone_location_.x);
@@ -1461,7 +1462,7 @@ void MyRadar::Spin(int argc, char **argv){
                     car_num += cam_cars_num;
                 }
 
-                std::vector<bool> isWarring(5, false) ;
+                std::vector<bool> isWarring(6, false) ;
                 if(dart_flag)
                     isWarring[4]=true;
                 CooSystem_ptr->solve_reality_3d(MainCam_ptr->T_2world, MainCam_ptr->fx, MainCam_ptr->fy,
@@ -1471,7 +1472,6 @@ void MyRadar::Spin(int argc, char **argv){
                 // CooSystem_ptr->solve_reality_3d(SecCam_ptr->T_2world, SecCam_ptr->fx, SecCam_ptr->fy,
                 //                                 SecCam_ptr->cx, SecCam_ptr->cy, SecMapGraph_ptr->vexs,SecMapGraph_ptr->arcs,cars, Modes_ptr->ourPattern);
                 if(Port_ptr->is_openPort) {
-                    Port_ptr->setWarring(isWarring);
                     Port_ptr->updateGameTime(this->game_time_);
                     Port_ptr->updataRadarMarkData(tracked_stracks);
                     Port_ptr->updataRadarMarkData(lost_stracks);
@@ -1692,7 +1692,9 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "lost_stracks  " << lost_stracks.size() << std::endl;
                 std::cout << "lost_predict_stracks  " << lost_predict_stracks.size() << std::endl;
 
+                getRivalOffenseWarning(isWarring);
                 if(Port_ptr->is_openPort){
+                    Port_ptr->setWarring(isWarring);
                     Port_ptr->updataSTrackData(this->out);
                     Port_ptr->updataSentryData(this->to_sentry);
                     Port_ptr->updataDroneData(this->drone_location_.x);
