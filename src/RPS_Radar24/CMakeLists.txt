@@ -92,7 +92,7 @@ find_package(OpenCV 4.8.0 REQUIRED)
 target_link_libraries(General PUBLIC ${OpenCV_LIBRARIES})
 
 # HikCamera
-target_link_libraries(General PUBLIC /opt/MVS/lib/64/libMvCameraControl.so.4.4.1.3)
+target_link_libraries(General PUBLIC /opt/MVS/lib/64/libMvCameraControl.so.4.5.0.3)
 
 ## GalaxyCamera
 #add_subdirectory(GalaxyCameraReader)
@@ -146,7 +146,7 @@ target_link_libraries(General PUBLIC nvinfer)
 # target_link_libraries(General PUBLIC cudart)
 target_link_libraries(General PUBLIC /usr/local/cuda-12.6/targets/x86_64-linux/lib/libcudart.so)
 target_link_libraries(General PUBLIC nvonnxparser)
-target_link_libraries(General PUBLIC cuda)
+target_link_libraries(General PUBLIC cudart)
 target_link_libraries(General PUBLIC ${TensorRT_LIBS})
 
 #############
