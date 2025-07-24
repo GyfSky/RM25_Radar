@@ -10,6 +10,7 @@
 #include "interfaces/msg/robot_hp.hpp"
 #include "interfaces/msg/game_state.hpp"
 #include "../../ByteTrack//include/STrack.h"
+#include "interfaces/msg/to_plane.hpp"
 enum Judgment    {self_dart,rival_dart,self_buff,self_offense,rival_offense,time_3_55,time_1_40};
 
 //enum UsePort       {USB0 = 0,USB1 = 1, USB2 = 2};
@@ -65,6 +66,7 @@ public:
     rclcpp::Node* node;
     rclcpp::Publisher<interfaces::msg::RobotHP>::SharedPtr pub_hp;
     rclcpp::Publisher<interfaces::msg::GameState>::SharedPtr pub_game_state;
+    rclcpp::Publisher<interfaces::msg::ToPlane>::SharedPtr pub_to_plane_;
 
     std::mutex STrack_lock;
     std::vector<STrack> port_out;

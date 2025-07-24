@@ -83,6 +83,7 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
     this->node=node;
     this->pub_hp=this->node->create_publisher<interfaces::msg::RobotHP>("/robot_hp",10);
     this->pub_game_state=this->node->create_publisher<interfaces::msg::GameState>("/game_state",10);
+    this->pub_to_plane_=this->node->create_publisher<interfaces::msg::ToPlane>("/to_plane_infor",10);
     if(ourPattern == red){
         this->sender_id = 9;
         this->plane_id  = 6;
@@ -574,8 +575,10 @@ void Port::makePlaneData() {
     uint8_t  drone_location_x=this->drone_location_x_;
     drone_location_lock_.unlock();
 
+    interfaces::msg::ToPlane to_plane_msg;
     if(this->fly_num>0) {
         fly         = 1;
+        to_plane_msg.information[0]=1;
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect fly");
     }
     if(this->hole_red_num>0) {
@@ -592,12 +595,15 @@ void Port::makePlaneData() {
     }
     if(this->dart_num>0) {
         dartWarning    = 1;
+        to_plane_msg.information[5]=1;
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect dartWarning");
     }
     if (this->rival_offense_num>0) {
         rival_offense  = 1;
+        to_plane_msg.information[3]=1;
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"detect rival_offense");
     }
+    this->pub_to_plane_->publish(to_plane_msg);
     vulnerability_times_lock.lock();
     this->radarPlaneDataT.data.char_data[0] = fly;//飞坡
     this->radarPlaneDataT.data.char_data[1] = this->vulnerability_times.data.radar_info;//可易伤次数

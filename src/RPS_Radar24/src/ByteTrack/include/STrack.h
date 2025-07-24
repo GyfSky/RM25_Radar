@@ -79,7 +79,7 @@ public:
 	vector<float> tlbr; 	// 对角x , y
 
 	int frame_id;
-    int lost_frame_ind_num;//丢失帧数 ,影响置信度（降低）与位置猜测
+    int lost_frame_ind_num=0;//丢失帧数 ,影响置信度（降低）与位置猜测
 	int tracklet_len;//跟踪次数
 	int start_frame;
     int cls_len_time = 0;//识别为同一类的次数

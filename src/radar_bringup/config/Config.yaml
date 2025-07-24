@@ -68,7 +68,7 @@ net_60:
 
   # 神经网络相关参数
   obj_thres: 0.25        #
-  conf_thres: 0.25       #
+  conf_thres: 0.5       #
   nms_thres: 0.3        #
   batch_size: 1         #
   num_class: 1         #
@@ -214,7 +214,7 @@ Hik31:
 
 # DA1521302
 Hik60:
-  gain: 20
+  gain: 22
   camNum: 1
 #  save_root_dir: "/media/plusseven/KESU/img_DATA/test_dir"
   save_root_dir: "/media/thesky/娱乐/camera/3C05-B1C5/record"
