@@ -2093,11 +2093,13 @@ namespace upc_radar{
         if(self_color==1){
             //地图默认以红方的角点为原点，因此己方为蓝方时需要转换坐标系
             for(int i=0;i<6;i++){
-                if(detect_res.blue_x[i]!=0&&detect_res.blue_y[i]!=0&&lidar_enhance_[1][i]==0){
+                if(detect_res.blue_x[i]!=0&&detect_res.blue_y[i]!=0&&
+                (lidar_enhance_[1][i]==0||lidar_enhance_[1][i]==5||lidar_enhance_[1][i]==6)){
                     detect_res.blue_x[i]=28-detect_res.blue_x[i];
                     detect_res.blue_y[i]=15-detect_res.blue_y[i];
                 }
-                if(detect_res.red_x[i]!=0&&detect_res.red_y[i]!=0&&lidar_enhance_[0][i]==0){
+                if(detect_res.red_x[i]!=0&&detect_res.red_y[i]!=0&&
+                (lidar_enhance_[0][i]==0||lidar_enhance_[0][i]==5||lidar_enhance_[0][i]==6)){
                     detect_res.red_x[i]=28-detect_res.red_x[i];
                     detect_res.red_y[i]=15-detect_res.red_y[i];
                     detect_res.v_x[i]=-detect_res.v_x[i];
