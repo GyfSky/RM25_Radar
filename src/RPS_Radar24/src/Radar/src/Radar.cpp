@@ -453,6 +453,7 @@ void MyRadar::getDartWarning(cv::Mat img,int value) {
 
 void MyRadar::getRivalOffenseWarning(vector<bool> &isWarring) {
     for (int i=0;i<5;i++) {
+        if (this->out[i+color_index].lost_frame_ind_num>9) continue;
         cv::Point2d location=cv::Point2d(this->out[i+color_index].Locate3D.x,this->out[i+color_index].Locate3D.y);
         if (location.x<=0.0||location.x>=28.0||location.y<=0.0||location.y>=15.0) continue;
         if (Modes_ptr->ourPattern==red&&location.x<13.65&&initornot(self_central_heights_, location,8)==-1) {
