@@ -59,7 +59,7 @@ namespace upc_radar{
         double eps=0.25;
         std::vector<pcl::PointCloud<pcl::PointXYZ>> acc_clouds;
         int span=0;
-        std::array<cv::Point2f,5> tunnel_slanted_,tunnel_horizontal_,supply_,outpost_,little_engine_l_,little_engine_r_,high_way_;
+        std::array<cv::Point2f,5> tunnel_slanted_,tunnel_horizontal_,supply_,outpost_,little_engine_l_,little_engine_r_,high_way_,hero_location_;
 
         cv::Mat show_img1,show_img2;
         cv::Matx33d camera_matrix1,camera_matrix2;

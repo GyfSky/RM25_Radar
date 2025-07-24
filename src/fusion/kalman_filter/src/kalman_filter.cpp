@@ -124,6 +124,11 @@ namespace upc_radar{
         tunnel_slanted_[3]=cv::Point2f(20.658,4.548);
         tunnel_slanted_[4]=cv::Point2f(16.3,1.003);
 
+        hero_location_[0]=cv::Point2f(16.9,2.193);
+        hero_location_[1]=cv::Point2f(16.5,2.97);
+        hero_location_[2]=cv::Point2f(18.0,5.50);
+        hero_location_[3]=cv::Point2f(20.658,4.548);
+
         tunnel_horizontal_[0]=cv::Point2f(16.0,1.293);
         tunnel_horizontal_[1]=cv::Point2f(15.6,2.07);
         tunnel_horizontal_[2]=cv::Point2f(13.901,1.844);
@@ -813,7 +818,7 @@ namespace upc_radar{
             // }
             auto point=KFs_[index].predict_point;
             // 打符点下位置 英雄
-            if (initornot(tunnel_slanted_,point,5)==1) {
+            if (initornot(hero_location_,point,4)==1) {
                 //self_color==1为自己为蓝方
                 if (self_color==1) {
                     if (lidar_enhance_[0][0]==2||lidar_enhance_[0][0]==3||lidar_enhance_[0][0]==4||
@@ -929,7 +934,7 @@ namespace upc_radar{
     void KalmanFilter::guessWithClass(std::vector<Kalman_filter_plus> &KFs_,std::vector<std::vector<int>> matches_cls,std::vector<int> &remove_KFs_) {
         for (auto match:matches_cls) {
             //补给区
-            if(KFs_[match[0]].output_point.x>=24.5&&KFs_[match[0]].output_point.y>=10.95&&KFs_[match[0]].last_time>0.3&&
+            if(KFs_[match[0]].output_point.x>=24.5&&KFs_[match[0]].output_point.y>=10.6&&KFs_[match[0]].last_time>0.3&&
                !(KFs_[match[0]].history.back().second.y>11.65&&KFs_[match[0]].history.back().second.x<24.3)){
                 //自己是红方
                 if (self_color==0&&match[1]>=5) {
