@@ -202,9 +202,9 @@ namespace upc_radar{
             }
             *map_pc=map_clouds;
             kd_Tree.setInputCloud(map_pc);
-            std::string path= frame_id+"1.pcd";
-            pcl::io::savePCDFileASCII(path,map_clouds);
-            RCLCPP_ERROR(this->get_logger(),path.c_str());
+            // std::string path= frame_id+"1.pcd";
+            // pcl::io::savePCDFileASCII(path,map_clouds);
+            // RCLCPP_ERROR(this->get_logger(),path.c_str());
             pre_map=false;
             map_clouds_.clear();
         }
