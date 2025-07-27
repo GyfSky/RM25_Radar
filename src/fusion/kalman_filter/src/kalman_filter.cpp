@@ -158,6 +158,16 @@ namespace upc_radar{
         high_way_[1]=cv::Point2f(20.932,11.65);
         high_way_[2]=cv::Point2f(24.5,11.65);
         high_way_[3]=cv::Point2f(24.5,15.0);
+
+        self_trapezoidal_[0]=cv::Point2f(5.0,15.0);
+        self_trapezoidal_[1]=cv::Point2f(5.0,15.0);
+        self_trapezoidal_[2]=cv::Point2f(8.7,15.0);
+        self_trapezoidal_[3]=cv::Point2f(9.15,15.0);
+
+        fortress_[0]=cv::Point2f(22,8.3);
+        fortress_[1]=cv::Point2f(22,6.7);
+        fortress_[2]=cv::Point2f(20.5,6.7);
+        fortress_[3]=cv::Point2f(20.5,8.3);
     }
 
     void KalmanFilter::checkLocation(std::vector<Kalman_filter_plus> &KFs) {
@@ -1085,6 +1095,25 @@ namespace upc_radar{
                         fake_kfs[1][match[1]-5].v_y=-fake_kfs[1][match[1]-5].v_y;
                     }
                     remove_KFs_.push_back(match[0]);
+                    continue;
+                }
+            }
+            if(initornot(self_trapezoidal_,KFs_[match[0]].output_point,4)==1&&KFs_[match[0]].last_time>1.0){
+                //自己是红方
+                if (self_color==0&&match[1]>=5) {
+                    lidar_enhance_[1][match[1]-5]=1;
+                    detect_res.blue_x[match[1]-5]=6.513;
+                    detect_res.blue_y[match[1]-5]=12.928;
+                    detect_res.v_x[match[1]-5] = 0;
+                    detect_res.v_y[match[1]-5] = 0;
+                    remove_KFs_.push_back(match[0]);
+                }else if (self_color==1&&match[1]<5) {
+                    lidar_enhance_[0][match[1]]=1;
+                    detect_res.red_x[match[1]]=21.487;
+                    detect_res.red_y[match[1]]=2.072;
+                    detect_res.v_x[match[1]] = 0;
+                    detect_res.v_y[match[1]] = 0;
+                    remove_KFs_.push_back(match[0]);
                 }
             }
         }
@@ -1980,8 +2009,13 @@ namespace upc_radar{
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
         for(int i = KFs_.size() - 1; i >= 0; i--){
             KFs_[i].forword_predict();
-            if(KFs_[i].last_time>3.5)
-                remove_KFs_.push_back(i);
+            if (initornot(fortress_,KFs_[i].predict_point,4)==1) {
+                if(KFs_[i].last_time>5.0)
+                    remove_KFs_.push_back(i);
+            }else {
+                if(KFs_[i].last_time>2.5)
+                    remove_KFs_.push_back(i);
+            }
         }
         sort(remove_KFs_.begin(),remove_KFs_.end(),std::greater<>());
         for (auto index:remove_KFs_)

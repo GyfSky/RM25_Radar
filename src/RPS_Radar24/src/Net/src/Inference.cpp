@@ -97,7 +97,7 @@ namespace TRTInferV1
                 //     float y1 = (pdata[i*(num_classes+12)+num_classes+4+k+1]-padh)*ratioh;
                 //     keypoints.emplace_back(x1, y1);
                 // }
-                if (xmin >= 0. && ymin >= 0. && xmax <= float(frame.cols) && ymax <= float(frame.rows))
+                if (xmin >= 0. && ymin >= 0. && xmax <= float(frame.cols) && ymax <= float(frame.rows) && int(xmax-xmin) != 0 && int(ymax-ymin) != 0)
                     res.emplace_back(DetectionObj{cls,max,xmin,ymin,xmax,ymax});
             }
         }
