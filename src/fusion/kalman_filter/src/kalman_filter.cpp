@@ -983,121 +983,122 @@ namespace upc_radar{
                 continue;
             }
             //倾斜隧道
-            if(initornot(tunnel_slanted_,KFs_[match[0]].output_point,5)==1&&KFs_[match[0]].last_time>1.3) {
-                //自己是红方
-                if (self_color==0&&match[1]==5) {
-                    KFs_[match[0]].output_point.x=17.5392;
-                    KFs_[match[0]].output_point.y=4.1475;
-                    lidar_enhance_[1][match[1]-5]=4;
-                    detect_res.blue_x[match[1]-5]=KFs_[match[0]].output_point.x;
-                    detect_res.blue_y[match[1]-5]=KFs_[match[0]].output_point.y;
-                    detect_res.v_x[match[1]-5] = 0;
-                    detect_res.v_y[match[1]-5] = 0;
-                    remove_KFs_.push_back(match[0]);
-                }else if (self_color==1&&match[1]==0) {
-                    KFs_[match[0]].output_point.x=10.4608;
-                    KFs_[match[0]].output_point.y=10.8525;
-                    lidar_enhance_[0][match[1]]=4;
-                    detect_res.red_x[match[1]]=KFs_[match[0]].output_point.x;
-                    detect_res.red_y[match[1]]=KFs_[match[0]].output_point.y;
-                    detect_res.v_x[match[1]] = 0;
-                    detect_res.v_y[match[1]] = 0;
-                    remove_KFs_.push_back(match[0]);
-                }else if (match[1]<5){
-                    fake_kfs[0][match[1]].location=KFs_[match[0]].output_point;
-                    fake_kfs[0][match[1]].is_first=true;
-                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
-                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
-                        fake_kfs[0][match[1]].v_x=speed*sin(35*M_PI/180);
-                        fake_kfs[0][match[1]].v_y=speed*cos(35*M_PI/180);
-                    }else {
-                        fake_kfs[0][match[1]].v_x=-speed*sin(35*M_PI/180);
-                        fake_kfs[0][match[1]].v_y=-speed*cos(35*M_PI/180);
-                    }
-                    lidar_enhance_[0][match[1]]=2;
-                    if (self_color==1) {
-                        fake_kfs[0][match[1]].location.x=28-fake_kfs[0][match[1]].location.x;
-                        fake_kfs[0][match[1]].location.y=15-fake_kfs[0][match[1]].location.y;
-                        fake_kfs[0][match[1]].v_x=-fake_kfs[0][match[1]].v_x;
-                        fake_kfs[0][match[1]].v_y=-fake_kfs[0][match[1]].v_y;
-                        detect_res.v_x[match[1]]=fake_kfs[0][match[1]].v_x;
-                        detect_res.v_y[match[1]]=fake_kfs[0][match[1]].v_y;
-                    }
-                    remove_KFs_.push_back(match[0]);
-                }else if (match[1]>=5){
-                    fake_kfs[1][match[1]-5].location=KFs_[match[0]].output_point;
-                    fake_kfs[1][match[1]-5].is_first=true;
-                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
-                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
-                        fake_kfs[1][match[1]-5].v_x=speed*sin(35*M_PI/180);
-                        fake_kfs[1][match[1]-5].v_y=speed*cos(35*M_PI/180);
-                    }else {
-                        fake_kfs[1][match[1]-5].v_x=-speed*sin(35*M_PI/180);
-                        fake_kfs[1][match[1]-5].v_y=-speed*cos(35*M_PI/180);
-                    }
-                    lidar_enhance_[1][match[1]-5]=2;
-                    if (self_color==0) {
-                        detect_res.v_x[match[1]-5]=fake_kfs[1][match[1]-5].v_x;
-                        detect_res.v_y[match[1]-5]=fake_kfs[1][match[1]-5].v_y;
-                    }else {
-                        fake_kfs[1][match[1]-5].location.x=28-fake_kfs[1][match[1]-5].location.x;
-                        fake_kfs[1][match[1]-5].location.y=15-fake_kfs[1][match[1]-5].location.y;
-                        fake_kfs[1][match[1]-5].v_x=-fake_kfs[1][match[1]-5].v_x;
-                        fake_kfs[1][match[1]-5].v_y=-fake_kfs[1][match[1]-5].v_y;
-                    }
-                    remove_KFs_.push_back(match[0]);
-                }
-                continue;
-            }
-            //水平隧道
-            if(initornot(tunnel_horizontal_,KFs_[match[0]].output_point,4)==1&&KFs_[match[0]].last_time>0.2) {
-                if (match[1]<5){
-                    fake_kfs[0][match[1]].location=KFs_[match[0]].output_point;
-                    fake_kfs[0][match[1]].is_first=true;
-                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
-                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
-                        fake_kfs[0][match[1]].v_x=speed;
-                        fake_kfs[0][match[1]].v_y=0;
-                    }else {
-                        fake_kfs[0][match[1]].v_x=-speed;
-                        fake_kfs[0][match[1]].v_y=0;
-                    }
-                    lidar_enhance_[0][match[1]]=3;
-                    if (self_color==1) {
-                        fake_kfs[0][match[1]].location.x=28-fake_kfs[0][match[1]].location.x;
-                        fake_kfs[0][match[1]].location.y=15-fake_kfs[0][match[1]].location.y;
-                        fake_kfs[0][match[1]].v_x=-fake_kfs[0][match[1]].v_x;
-                        fake_kfs[0][match[1]].v_y=-fake_kfs[0][match[1]].v_y;
-                        detect_res.v_x[match[1]]=fake_kfs[0][match[1]].v_x;
-                        detect_res.v_y[match[1]]=fake_kfs[0][match[1]].v_y;
-                    }
-                    remove_KFs_.push_back(match[0]);
-                }
-                else if (match[1]>=5){
-                    fake_kfs[1][match[1]-5].location=KFs_[match[0]].output_point;
-                    fake_kfs[1][match[1]-5].is_first=true;
-                    double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
-                    if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
-                        fake_kfs[1][match[1]-5].v_x=speed;
-                        fake_kfs[1][match[1]-5].v_y=0;
-                    }else {
-                        fake_kfs[1][match[1]-5].v_x=-speed;
-                        fake_kfs[1][match[1]-5].v_y=0;
-                    }
-                    lidar_enhance_[1][match[1]-5]=3;
-                    if (self_color==0) {
-                        detect_res.v_x[match[1]-5]=fake_kfs[1][match[1]-5].v_x;
-                        detect_res.v_y[match[1]-5]=fake_kfs[1][match[1]-5].v_y;
-                    }else {
-                        fake_kfs[1][match[1]-5].location.x=28-fake_kfs[1][match[1]-5].location.x;
-                        fake_kfs[1][match[1]-5].location.y=15-fake_kfs[1][match[1]-5].location.y;
-                        fake_kfs[1][match[1]-5].v_x=-fake_kfs[1][match[1]-5].v_x;
-                        fake_kfs[1][match[1]-5].v_y=-fake_kfs[1][match[1]-5].v_y;
-                    }
-                    remove_KFs_.push_back(match[0]);
-                    continue;
-                }
-            }
+            // if(initornot(tunnel_slanted_,KFs_[match[0]].output_point,5)==1&&KFs_[match[0]].last_time>1.3) {
+            //     //自己是红方
+            //     if (self_color==0&&match[1]==5) {
+            //         KFs_[match[0]].output_point.x=17.5392;
+            //         KFs_[match[0]].output_point.y=4.1475;
+            //         lidar_enhance_[1][match[1]-5]=4;
+            //         detect_res.blue_x[match[1]-5]=KFs_[match[0]].output_point.x;
+            //         detect_res.blue_y[match[1]-5]=KFs_[match[0]].output_point.y;
+            //         detect_res.v_x[match[1]-5] = 0;
+            //         detect_res.v_y[match[1]-5] = 0;
+            //         remove_KFs_.push_back(match[0]);
+            //     }else if (self_color==1&&match[1]==0) {
+            //         KFs_[match[0]].output_point.x=10.4608;
+            //         KFs_[match[0]].output_point.y=10.8525;
+            //         lidar_enhance_[0][match[1]]=4;
+            //         detect_res.red_x[match[1]]=KFs_[match[0]].output_point.x;
+            //         detect_res.red_y[match[1]]=KFs_[match[0]].output_point.y;
+            //         detect_res.v_x[match[1]] = 0;
+            //         detect_res.v_y[match[1]] = 0;
+            //         remove_KFs_.push_back(match[0]);
+            //     }else if (match[1]<5){
+            //         fake_kfs[0][match[1]].location=KFs_[match[0]].output_point;
+            //         fake_kfs[0][match[1]].is_first=true;
+            //         double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+            //         if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+            //             fake_kfs[0][match[1]].v_x=speed*sin(35*M_PI/180);
+            //             fake_kfs[0][match[1]].v_y=speed*cos(35*M_PI/180);
+            //         }else {
+            //             fake_kfs[0][match[1]].v_x=-speed*sin(35*M_PI/180);
+            //             fake_kfs[0][match[1]].v_y=-speed*cos(35*M_PI/180);
+            //         }
+            //         lidar_enhance_[0][match[1]]=2;
+            //         if (self_color==1) {
+            //             fake_kfs[0][match[1]].location.x=28-fake_kfs[0][match[1]].location.x;
+            //             fake_kfs[0][match[1]].location.y=15-fake_kfs[0][match[1]].location.y;
+            //             fake_kfs[0][match[1]].v_x=-fake_kfs[0][match[1]].v_x;
+            //             fake_kfs[0][match[1]].v_y=-fake_kfs[0][match[1]].v_y;
+            //             detect_res.v_x[match[1]]=fake_kfs[0][match[1]].v_x;
+            //             detect_res.v_y[match[1]]=fake_kfs[0][match[1]].v_y;
+            //         }
+            //         remove_KFs_.push_back(match[0]);
+            //     }else if (match[1]>=5){
+            //         fake_kfs[1][match[1]-5].location=KFs_[match[0]].output_point;
+            //         fake_kfs[1][match[1]-5].is_first=true;
+            //         double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+            //         if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+            //             fake_kfs[1][match[1]-5].v_x=speed*sin(35*M_PI/180);
+            //             fake_kfs[1][match[1]-5].v_y=speed*cos(35*M_PI/180);
+            //         }else {
+            //             fake_kfs[1][match[1]-5].v_x=-speed*sin(35*M_PI/180);
+            //             fake_kfs[1][match[1]-5].v_y=-speed*cos(35*M_PI/180);
+            //         }
+            //         lidar_enhance_[1][match[1]-5]=2;
+            //         if (self_color==0) {
+            //             detect_res.v_x[match[1]-5]=fake_kfs[1][match[1]-5].v_x;
+            //             detect_res.v_y[match[1]-5]=fake_kfs[1][match[1]-5].v_y;
+            //         }else {
+            //             fake_kfs[1][match[1]-5].location.x=28-fake_kfs[1][match[1]-5].location.x;
+            //             fake_kfs[1][match[1]-5].location.y=15-fake_kfs[1][match[1]-5].location.y;
+            //             fake_kfs[1][match[1]-5].v_x=-fake_kfs[1][match[1]-5].v_x;
+            //             fake_kfs[1][match[1]-5].v_y=-fake_kfs[1][match[1]-5].v_y;
+            //         }
+            //         remove_KFs_.push_back(match[0]);
+            //     }
+            //     continue;
+            // }
+            // //水平隧道
+            // if(initornot(tunnel_horizontal_,KFs_[match[0]].output_point,4)==1&&KFs_[match[0]].last_time>0.2) {
+            //     if (match[1]<5){
+            //         fake_kfs[0][match[1]].location=KFs_[match[0]].output_point;
+            //         fake_kfs[0][match[1]].is_first=true;
+            //         double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+            //         if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+            //             fake_kfs[0][match[1]].v_x=speed;
+            //             fake_kfs[0][match[1]].v_y=0;
+            //         }else {
+            //             fake_kfs[0][match[1]].v_x=-speed;
+            //             fake_kfs[0][match[1]].v_y=0;
+            //         }
+            //         lidar_enhance_[0][match[1]]=3;
+            //         if (self_color==1) {
+            //             fake_kfs[0][match[1]].location.x=28-fake_kfs[0][match[1]].location.x;
+            //             fake_kfs[0][match[1]].location.y=15-fake_kfs[0][match[1]].location.y;
+            //             fake_kfs[0][match[1]].v_x=-fake_kfs[0][match[1]].v_x;
+            //             fake_kfs[0][match[1]].v_y=-fake_kfs[0][match[1]].v_y;
+            //             detect_res.v_x[match[1]]=fake_kfs[0][match[1]].v_x;
+            //             detect_res.v_y[match[1]]=fake_kfs[0][match[1]].v_y;
+            //         }
+            //         remove_KFs_.push_back(match[0]);
+            //     }
+            //     else if (match[1]>=5){
+            //         fake_kfs[1][match[1]-5].location=KFs_[match[0]].output_point;
+            //         fake_kfs[1][match[1]-5].is_first=true;
+            //         double speed=sqrt(pow(KFs_[match[0]].KF.statePost.at<float>(1),2)+pow(KFs_[match[0]].KF.statePost.at<float>(3),2));
+            //         if (KFs_[match[0]].KF.statePost.at<float>(1)>0) {
+            //             fake_kfs[1][match[1]-5].v_x=speed;
+            //             fake_kfs[1][match[1]-5].v_y=0;
+            //         }else {
+            //             fake_kfs[1][match[1]-5].v_x=-speed;
+            //             fake_kfs[1][match[1]-5].v_y=0;
+            //         }
+            //         lidar_enhance_[1][match[1]-5]=3;
+            //         if (self_color==0) {
+            //             detect_res.v_x[match[1]-5]=fake_kfs[1][match[1]-5].v_x;
+            //             detect_res.v_y[match[1]-5]=fake_kfs[1][match[1]-5].v_y;
+            //         }else {
+            //             fake_kfs[1][match[1]-5].location.x=28-fake_kfs[1][match[1]-5].location.x;
+            //             fake_kfs[1][match[1]-5].location.y=15-fake_kfs[1][match[1]-5].location.y;
+            //             fake_kfs[1][match[1]-5].v_x=-fake_kfs[1][match[1]-5].v_x;
+            //             fake_kfs[1][match[1]-5].v_y=-fake_kfs[1][match[1]-5].v_y;
+            //         }
+            //         remove_KFs_.push_back(match[0]);
+            //         continue;
+            //     }
+            // }
+            //己方梯高盲区
             if(initornot(self_trapezoidal_,KFs_[match[0]].output_point,4)==1&&KFs_[match[0]].last_time>1.0){
                 //自己是红方
                 if (self_color==0&&match[1]>=5) {
@@ -1760,7 +1761,7 @@ namespace upc_radar{
 
         for (auto index:u_track) {
             Kalman_filter_plus kf=KFs_[index];
-            if (kf.last_time>2.5||kf.detect_history.size()==0||KFs_[index].kmeans_time_>15) continue;
+            if (kf.last_time>1.5||kf.detect_history.size()==0||KFs_[index].kmeans_time_>15) continue;
             for(int i=0;i<pcs.size();i++) {
                 std::array<cv::Point2f,5> AABB;
                 auto min_pc=pcs[i].GetMinBound();

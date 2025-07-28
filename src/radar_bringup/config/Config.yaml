@@ -136,7 +136,7 @@ Livox:
 
 # 00F26632053
 Hik30:
-  gain: 15
+  gain: 17
   exposureTime: 10000
   gamma: 0.6
   fps: 80
@@ -214,7 +214,7 @@ Hik31:
 
 # DA1521302
 Hik60:
-  gain: 22
+  gain: 23
   camNum: 1
 #  save_root_dir: "/media/plusseven/KESU/img_DATA/test_dir"
   save_root_dir: "/media/thesky/THESKY/camera/3C05-B1C5/record"
