@@ -266,7 +266,8 @@ void Port::checkSelfDart() {
 
 void Port::checkRivalDart() {
     eventDataT_lock.lock();
-    if (time_init&&eventDataT.data.dart_hit_time>rival_dart_) {
+    if (time_init&&eventDataT.data.dart_hit_time>rival_dart_
+        &&eventDataT.data.dart_hit_target!=0&&eventDataT.data.dart_hit_target!=1) {
         rival_dart_=eventDataT.data.dart_hit_time;
         judgment_condition_[Judgment::rival_dart][0]=1;
         judgment_condition_[Judgment::rival_dart][1]=judgment_condition_time_[Judgment::rival_dart];

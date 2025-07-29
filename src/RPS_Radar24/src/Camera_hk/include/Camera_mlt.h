@@ -19,10 +19,10 @@ public:
     rclcpp::Node* node;
 
 private:
-    int CamGain_;                                        // 相机增益
+    float CamGain_;                                        // 相机增益
     int CamExposureTime_;                                // 相机曝光时间
     int CamWhiteBalance_;                                // 相机白平衡
-    int CamGamma_;                                       // 相机伽马平衡
+    float CamGamma_;                                       // 相机伽马平衡
     int CamFps_;                                         // 相机最高帧率
     int CamNum_;                                         // 相机每间隔CamNum_抽取一张图片
     std::future<void> clockFuture_;                          // 与promise关联的future对象

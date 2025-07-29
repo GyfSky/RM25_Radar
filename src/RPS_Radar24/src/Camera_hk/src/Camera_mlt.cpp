@@ -55,7 +55,7 @@ Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, TF 
 
     //加载默认主相机配置参数
     YAML::Node mainCamConfg = YAML::LoadFile(YAML_CONFIC_PATH);
-    CamGain_ = mainCamConfg[Name]["gain"].as<int>();
+    CamGain_ = mainCamConfg[Name]["gain"].as<float>();
     CamExposureTime_ = mainCamConfg[Name]["exposureTime"].as<int>();
     CamGamma_ = mainCamConfg[Name]["gamma"].as<float>();
     CamFps_ = mainCamConfg[Name]["fps"].as<float>();
@@ -74,6 +74,7 @@ Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, TF 
     //初始化主相机
     if(Name == "Hik30"){
         HikCamera_sptr_->open_thread(g_strSerialNumber);
+        HikCamera_sptr_->setGamma(CamGamma_);
     } else{
         HikCamera_sptr_->open(g_strSerialNumber);
     }
@@ -91,7 +92,7 @@ Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, TF 
 void Camera::CamMainSet(){
     //  调节窗口  
     cv::namedWindow("trackbars",(360,240));
-    cv::createTrackbar("Gain","trackbars",&CamGain_,24);
+    // cv::createTrackbar("Gain","trackbars",&CamGain_,24);
     cv::createTrackbar("ExposureTime","trackbars",&CamExposureTime_,12000);
     while (is_MainCamSet){
         cv::Mat imgMain = HikCamera_sptr_->getImage();
