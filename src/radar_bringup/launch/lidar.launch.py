@@ -132,7 +132,9 @@ def generate_launch_description():
             composable_node_descriptions=list(nodes),
             output='both',
             emulate_tty=True,
-            on_exit=Shutdown(),
+            # on_exit=Shutdown(),
+            respawn=True,
+            respawn_delay=0.2,
         )
         
     

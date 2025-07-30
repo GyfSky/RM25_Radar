@@ -5,4 +5,4 @@ cd /home/thesky/RM25_Radar
 
 source install/setup.bash
 
-ros2 run rps_radar24 RadarMain
+ros2 launch radar_bringup camera_node.launch.py

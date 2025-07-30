@@ -92,7 +92,9 @@ def generate_launch_description():
             composable_node_descriptions=list(nodes),
             output='both',
             emulate_tty=True,
-            on_exit=Shutdown(),
+            # on_exit=Shutdown(),
+            respawn=True,
+            respawn_delay=0.2,
         )
         
     
@@ -120,7 +122,11 @@ def generate_launch_description():
                                    )
     camera_detector = Node(
         package="rps_radar24",
-        executable="RadarMain"
+        executable="RadarMain",
+        output='both',
+        emulate_tty=True,
+        respawn=True,
+        respawn_delay=0.2,
     )
 
     return LaunchDescription([
