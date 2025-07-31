@@ -290,9 +290,9 @@ void Port::checkSelfOffense() {
     int car_num=0;
     STrack_lock.lock();
     for (int i=0;i<5;i++) {
-        if (color_index==0&&i!=1&&port_out[mode_num+i].Locate3D.x>14.0&&port_out[mode_num+i].Locate3D.x!=0) {
+        if (color_index==0&&i!=1&&port_out[mode_num+i].Locate3D.x>15.8&&port_out[mode_num+i].Locate3D.x!=0) {
             car_num++;
-        }else if (color_index==mode_num&&i!=1&&port_out[i].Locate3D.x<14.0&&port_out[i].Locate3D.x!=0) {
+        }else if (color_index==mode_num&&i!=1&&port_out[i].Locate3D.x<12.2&&port_out[i].Locate3D.x!=0) {
             car_num++;
         }
     }
@@ -314,9 +314,9 @@ void Port::checkRivalOffense() {
     int car_num=0;
     STrack_lock.lock();
     for (int i=0;i<5;i++) {
-        if (color_index==0&&i!=1&&port_out[color_index+i].Locate3D.x<14.0&&port_out[color_index+i].Locate3D.x!=0) {
+        if (color_index==0&&i!=1&&port_out[color_index+i].Locate3D.x<12.2&&port_out[color_index+i].Locate3D.x!=0) {
             car_num++;
-        }else if (color_index==mode_num&&i!=1&&port_out[color_index+i].Locate3D.x>14.0&&port_out[color_index+i].Locate3D.x!=0) {
+        }else if (color_index==mode_num&&i!=1&&port_out[color_index+i].Locate3D.x>15.8&&port_out[color_index+i].Locate3D.x!=0) {
             car_num++;
         }
     }
@@ -356,10 +356,7 @@ void Port::checkGameTime() {
 }
 
 void Port::checkTrigger() {
-    vulnerability_times_lock.lock();
-    int dacideing=vulnerability_times.data.dacideing;
-    vulnerability_times_lock.unlock();
-    if (time_init&&dacideing==0&&rclcpp::Clock().now().seconds()-trigger_time_.seconds()>5) {
+    if (time_init) {
         checkSelfDart();
         checkRivalDart();
         checkSelfBuff();
@@ -377,11 +374,12 @@ void Port::autoDecisionMaking(){
 
     vulnerability_times_lock.lock();
     int radar_info=vulnerability_times.data.radar_info;
+    int dacideing=vulnerability_times.data.dacideing;
     vulnerability_times_lock.unlock();
 
     for (int i=0;i<7;i++) {
         if (time_init&&judgment_condition_[i][0]==1) {
-            if (number>=3&&radar_info>0) {
+            if (number>=3&&radar_info>0&&dacideing==0&&rclcpp::Clock().now().seconds()-trigger_time_.seconds()>5) {
                 dacision_time_flag=true;
                 std::ofstream fout("resource/debug.txt", std::ios::app);
                 if(!fout)
@@ -413,6 +411,8 @@ void Port::autoDecisionMaking(){
                     string fail_reason;
                     if (number<3) fail_reason+="car_num<3 ";
                     if (radar_info==0) fail_reason+="radar_info=0 ";
+                    if (dacideing==1) fail_reason+="dacideing=1 ";
+                    if (rclcpp::Clock().now().seconds()-trigger_time_.seconds()<=5) fail_reason+="trigger_time<=5 ";
                     fout<<"fail reason: "<<string(fail_reason)<<std::endl;
                     fout<<"------------------"<<std::endl;
                     fout.close();
