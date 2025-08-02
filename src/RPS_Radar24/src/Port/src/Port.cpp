@@ -252,6 +252,7 @@ void Port::sendOldSTrackData() {
     std::this_thread::sleep_for(std::chrono::milliseconds (5));
 }
 
+//裁判系统发力，镖和符的信息更新存在延迟，因此此处触发器有bug
 void Port::checkSelfDart() {
     dartInfo_lock.lock();
     if (time_init&&dartInfo.data.new_hit_target>0) {
@@ -278,7 +279,7 @@ void Port::checkRivalDart() {
 void Port::checkSelfBuff() {
     eventDataT_lock.lock();
     if (time_init&&(eventDataT.data.big_buff==1||eventDataT.data.small_buff==1)) {
-        if (rclcpp::Clock().now().seconds()-buff_time_.seconds()>47){
+        if (rclcpp::Clock().now().seconds()-buff_time_.seconds()>57){
             buff_time_=rclcpp::Clock().now();
             judgment_condition_[Judgment::self_buff][0]=1;
         }
