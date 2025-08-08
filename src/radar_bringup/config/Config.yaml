@@ -82,8 +82,8 @@ net_armor:
   # 神经网络相关参数
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.trt"         #   engine文件路径
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e2.trt"         #   engine文件路径
-  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/ra0729.trt"         #   engine文件路径
-  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.onnx"       #   onnx文件路径
+  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/ra0801.trt"         #   engine文件路径
+  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/ra0801.onnx"       #   onnx文件路径
   obj_thres: 0.2        #
   conf_thres: 0.2       #
   nms_thres: 0.45        #
