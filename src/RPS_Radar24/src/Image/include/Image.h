@@ -18,13 +18,10 @@
 class  Image {
 private:
 //COMMON
-    std::shared_ptr<Camera> Camerahk_prt = nullptr;
     // Cameras useCamera;
     PictureSource pictureSource;
-    Application application;
     // cv::Mat Cam_img;
     cv::Mat Cam_cloneing;
-    cv::Mat Cam_draw;
     cv::VideoCapture cap;
     bool Cam_isOpen = false;
     int input_w;
@@ -44,9 +41,7 @@ private:
 //net
     YAML::Node net_config;
         //RADAR
-    cv::Mat map_img;
     cv::Mat map_cloneing;
-    cv::Mat map_draw;
     std::string mapImage_winname;
     std::string mapImage_path;
     int map_w;
@@ -57,6 +52,13 @@ private:
 public:
 //else
 //    std::map<int,std::string> cls_to_string;
+    Application application;
+    std::shared_ptr<Camera> Camerahk_prt = nullptr;
+    cv::Mat map_img;
+    cv::Mat map_draw;
+    cv::Mat Cam_draw;
+    cv::Mat img_temp;
+
     bool is_getPoint2d_mouse_Cam = true;
     std::string Cam_winname;
     rclcpp::Node* node;
@@ -66,10 +68,11 @@ public:
     Image() = default;
     Image(Application application,PictureSource pictureSource,std::string Name = "Hik30",TF Image_isSave=false_,SaveImagePath saveImagePath=disk02,int serial_number = -1);
     Image(Application application,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name = "Hik30",TF Image_isSave=false_,SaveImagePath saveImagePath=disk02,int serial_number = -1);
-    void Init(int argc,char *argv[]);
+    void Init();
+    void Init_calib();
 //    cv::Mat Image_Get(int after_picture = 0);
     void GetGammaCorrection(Mat& src, Mat& dst, const float fGamma) ;
-    cv::Mat Image_Get(int &after_picture,int argc, char **argv);
+    cv::Mat Image_Get(int &after_picture);
     void getImg(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr);
     void Image_Show();
     void draw_rusult(std::vector<Car> cars,std::vector<Armor> armors,bool isShow=true);
@@ -82,6 +85,7 @@ public:
     void draw_lidar(interfaces::msg::DetectResult lidar);
 //    void draw_line(Place &place);
     void draw_line(std::vector<MapVertex> &vexs);
+    void draw_line_calib(std::vector<MapVertex> &vexs);
     cv::Scalar get_color(int idx);
     void setSaveMode();
     void Close();

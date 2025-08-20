@@ -9,6 +9,8 @@
 
 #include <rclcpp/time.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include "interfaces/msg/cluster_target.hpp"
+#include "interfaces/msg/cost_matrix.hpp"
 #pragma once
 
 enum PlaceType {ordinary,supply,highway,tunnel};
@@ -39,7 +41,7 @@ class Kalman_filter_plus {
     std::vector<std::pair<int ,int>> detect_history;//放相机匹配结果，第一个是颜色，第二个是编号 1是蓝 0是红
     std::vector<double> detect_time;//相机匹配的时间戳
     int max_history = 40;
-    int max_detect_history = 20;
+    int max_detect_history = 15;
     int max_death_history = 35;
     Eigen::MatrixXd  ws_armorConfMatrix = Eigen::MatrixXd::Zero(1,10);
 
@@ -162,6 +164,87 @@ class Kalman_filter_plus {
         has_updated = true;
     }
 
+    Kalman_filter_plus(pcl::PointXYZI input,rclcpp::Time time,rclcpp::Node* node,interfaces::msg::CostMatrix cluster_class) {
+
+        this->node=node;
+        dt_=node->get_parameter("kalman.dt_").as_double();
+        sigma_q_x=node->get_parameter("kalman.sigma_q_x").as_double();
+        sigma_q_y=node->get_parameter("kalman.sigma_q_y").as_double();
+        sigma_r_x=node->get_parameter("kalman.sigma_r_x").as_double();
+        sigma_r_y=node->get_parameter("kalman.sigma_r_y").as_double();
+
+        int max_index=-1;
+        double max_value=0.0;
+        for (int i=0;i<10;i++) {
+            if (cluster_class.cost_matrix[i]>0) {
+                if (cluster_class.cost_matrix[i]>max_value) {
+                    max_value=cluster_class.cost_matrix[i];
+                    max_index=i;
+                }
+            }
+        }
+        if (!max_index!=-1) {
+            if (max_index>=5) {
+                detect_history.push_back(std::make_pair(0,max_index-5));
+            }else {
+                detect_history.push_back(std::make_pair(1,max_index));
+            }
+            detect_time.push_back(GetTimeByRosTime(time));
+            if(detect_history.size() > max_detect_history){
+                detect_history.erase(detect_history.begin());
+                detect_time.erase(detect_time.begin());
+            }
+        }
+
+        predict_point = pcl::PointXY(input.x, input.y);
+        point_size = input.intensity;
+        history.push_back(std::make_pair(GetTimeByRosTime(time), input));
+        timer = std::chrono::steady_clock::now();
+        int stateSize = 4;//状态的维数
+        int measSize = 2;//测量的维数
+        int contrSize = 0;//控制量的维数
+        unsigned int type = CV_32F;//创建的矩阵类型
+        KF.init(stateSize, measSize, contrSize, type);
+
+        // 状态矩阵：[x, vx, y, vy]
+        cv::Mat state(stateSize, 1, type);
+        // 测量矩阵：[z_x, z_y]//z_x, z_y为测量的x，y
+        cv::Mat meas(measSize, 1, type);
+        meas.at<float>(0) = input.x;
+        meas.at<float>(1) = input.y;
+
+        state.at<float>(0) = meas.at<float>(0);
+        state.at<float>(2) = meas.at<float>(1);
+        KF.statePost = state;//系统初始状态
+        KF.transitionMatrix = (cv::Mat_<float>(4, 4) <<
+        1, dt_, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, dt_,
+        0, 0, 0, 1);//F矩阵//状态转移矩阵
+
+        KF.measurementMatrix = (cv::Mat_<float>(2, 4) <<
+        1, 0, 0, 0,
+        0, 0, 1, 0);//H矩阵//测量状态矩阵，即测量值和状态之间的转换关系
+        //Z(测量值)=H(测量状态矩阵)*X(状态值)
+
+        KF.processNoiseCov = (cv::Mat_<float>(4, 4) <<
+        sigma_q_x*pow(dt_, 3) / 3, sigma_q_x*pow(dt_, 2) / 2, 0,0,
+        sigma_q_x*pow(dt_, 2) / 2, sigma_q_x*pow(dt_, 1), 0,0,
+        0, 0, sigma_q_y*pow(dt_, 3) / 3, sigma_q_y*pow(dt_, 2) / 2,
+        0, 0, sigma_q_y*pow(dt_, 2) / 2, sigma_q_y*pow(dt_, 1));
+
+        //越大越相信卡尔曼的预测值，收敛速度越快
+        //过程噪声Q
+
+        KF.measurementNoiseCov = (cv::Mat_<float>(2, 2) <<
+        sigma_r_x, 0,
+        0, sigma_r_y);
+        //越大越不相信卡尔曼预测值
+        //观测噪声R
+        setIdentity(KF.errorCovPost, cv::Scalar::all(1));//初始p（误差的协方差矩阵）
+        has_updated = true;
+    }
+
     ~Kalman_filter_plus() {}
 
     //红是0,蓝是1
@@ -240,6 +323,69 @@ class Kalman_filter_plus {
         if(history.size() > max_history){
             history.erase(history.begin());
             rect_2d1.erase(rect_2d1.begin());
+        }
+    }
+
+    void update(pcl::PointXYZI input, rclcpp::Time time) {
+        timer = std::chrono::steady_clock::now();
+        point_size = input.intensity;
+        cv::Mat meas = cv::Mat::zeros(2, 1, CV_32F);
+        meas.at<float>(0) = input.x;
+        meas.at<float>(1) = input.y;
+        KF.correct(meas);//根据测量值更新状态值
+        predict_point.x = KF.statePost.at<float>(0);//得到最终的状态值
+        predict_point.y = KF.statePost.at<float>(2);
+        has_updated = true;
+        last_time = 0;
+        auto temp_point = input;
+        history.push_back(std::make_pair(GetTimeByRosTime(time), temp_point));
+        if(history.size() > max_history){
+            history.erase(history.begin());
+        }
+    }
+
+    void update(pcl::PointXYZI input, rclcpp::Time time,interfaces::msg::CostMatrix cluster_class) {
+        timer = std::chrono::steady_clock::now();
+        point_size = input.intensity;
+        cv::Mat meas = cv::Mat::zeros(2, 1, CV_32F);
+        // meas.at<float>(0) = (input.x+history.back().second.x)*0.5;
+        // meas.at<float>(1) = (input.y+history.back().second.y)*0.5;
+        meas.at<float>(0) = input.x;
+        meas.at<float>(1) = input.y;
+        KF.correct(meas);//根据测量值更新状态值
+        predict_point.x = KF.statePost.at<float>(0);//得到最终的状态值
+        predict_point.y = KF.statePost.at<float>(2);
+        has_updated = true;
+        last_time = 0;
+        auto temp_point = input;
+        history.push_back(std::make_pair(GetTimeByRosTime(time), temp_point));
+        if(history.size() > max_history){
+            history.erase(history.begin());
+        }
+        bool is_empty=true;
+        int max_index=-1;
+        double max_value=0.0;
+        for (int i=0;i<10;i++) {
+            if (cluster_class.cost_matrix[i]>0) {
+                is_empty=false;
+                if (cluster_class.cost_matrix[i]>max_value) {
+                    max_value=cluster_class.cost_matrix[i];
+                    max_index=i;
+                }
+            }
+        }
+
+        if (!is_empty) {
+            if (max_index>=5) {
+                detect_history.push_back(std::make_pair(0,max_index-5));
+            }else {
+                detect_history.push_back(std::make_pair(1,max_index));
+            }
+            detect_time.push_back(GetTimeByRosTime(time));
+            if(detect_history.size() > max_detect_history){
+                detect_history.erase(detect_history.begin());
+                detect_time.erase(detect_time.begin());
+            }
         }
     }
 

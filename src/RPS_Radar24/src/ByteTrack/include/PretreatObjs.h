@@ -7,6 +7,7 @@
 //#include "STrack.h"
 #include "../../Net/include/Inference.h"
 #include "../../General/include/SensorParam.h"
+#include "interfaces/msg/rect.hpp"
 #include "CostMatrix.h"
 
 
@@ -58,6 +59,7 @@ public:
     bool check_color(cv::Mat armor,int cls);
 
     TRTInferV1::DetectionObj objs2newMainObjs(TRTInferV1::DetectionObj objs, cv::Mat obj2Main);
+    TRTInferV1::DetectionObj objs2newMainObjs(interfaces::msg::Rect objs, cv::Mat obj2Main);
 
     TRTInferV1::DetectionObj allObjs2newMainObjs(TRTInferV1::DetectionObj mainObjs, TRTInferV1::DetectionObj secObjs,
          cv::Mat &img1, cv::Mat &img2);

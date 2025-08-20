@@ -20,7 +20,8 @@ public:
 	STrack();
 	~STrack();
 
-    STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar);
+	STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar);
+    STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar,int cluster_id);
     void init_track(int cls, float conf_armor, Eigen::MatrixXd car_armorConfMatrix);
     void updataSTrack(OurPattern ourPattern);
     void setRectInPrimaryCam(float x1, float y1, float w, float h, float p);
@@ -122,6 +123,7 @@ public:
 	bool is_det=false;
 	int camid=0;
 	vector<float> sec_rect;
+	int cluster_id;
 private:
 	byte_kalman::KalmanFilter kalman_filter;
 };

@@ -87,6 +87,7 @@ Image::Image(Application application,PictureSource pictureSource,char g_strSeria
     this->net_config = YAML::LoadFile(YAML_NETCONFIC_PATH);
     this->classWithoutCar = net_config["classWithoutCar"].as<int>();
     YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
+    this->Cam_img=cv::Mat::zeros(0, 0, CV_8UC3);
 {//pictureSource path
     if(this->pictureSource == single_picture){
         //image_path = "/home/plusseven/桌面/radar2023_withtrt/radar_val_picture/6.jpg";
@@ -147,7 +148,7 @@ void Image::getImg(const sensor_msgs::msg::CompressedImage::ConstPtr &rosImg_ptr
     return;
 }
 
-void Image::Init(int argc,char *argv[]){
+void Image::Init(){
     //视频的初始化ing
     if(pictureSource==video ){
         cap = cv::VideoCapture(video_path);
@@ -176,12 +177,52 @@ void Image::Init(int argc,char *argv[]){
 
 
     //窗口配置
+    // cv::namedWindow(this->Cam_winname,0);
+    // cv::resizeWindow(this->Cam_winname,cv::Size(input_w,input_h));
+    //小地图相关配置
+    if(application == Radar){
+        // cv::namedWindow(this->mapImage_winname,0);
+        // cv::resizeWindow(this->mapImage_winname,cv::Size(map_w/3, map_h/3));  ////TODO:
+        map_img = cv::imread(this->mapImage_path);
+        map_cloneing = map_img.clone();
+    }
+}
+
+void Image::Init_calib(){
+    //视频的初始化ing
+    if(pictureSource==video ){
+        cap = cv::VideoCapture(video_path);
+    }
+    //相机的初始化ing
+    else if(pictureSource==camera_){
+        //        Camerahk_prt->CamMainSet();
+        std::cout << "go on";
+    }
+    else if(pictureSource==ros){
+        // rclcpp::init(argc, argv);
+        // auto nh = rclcpp::Node::make_shared("img_listener");
+        // sub_img = nh->create_subscription<sensor_msgs::msg::CompressedImage>("/compressed_image", 1, std::bind(&Image::getImg, this, std::placeholders::_1));
+        // while (rclcpp::ok())
+        // {
+        //     if(Cam_img.empty()){
+        //         // ros::spinOnce();
+        //         rclcpp::spin_some(nh);
+        //     }else{
+        //         break;
+        //     }
+        // }
+        // rclcpp::spin(nh);
+        // rclcpp::shutdown();
+    }
+
+
+    //窗口配置
     cv::namedWindow(this->Cam_winname,0);
     cv::resizeWindow(this->Cam_winname,cv::Size(input_w,input_h));
     //小地图相关配置
     if(application == Radar){
-        cv::namedWindow(this->mapImage_winname,0);
-        cv::resizeWindow(this->mapImage_winname,cv::Size(map_w/3, map_h/3));  ////TODO:
+        // cv::namedWindow(this->mapImage_winname,0);
+        // cv::resizeWindow(this->mapImage_winname,cv::Size(map_w/3, map_h/3));  ////TODO:
         map_img = cv::imread(this->mapImage_path);
         map_cloneing = map_img.clone();
     }
@@ -213,7 +254,7 @@ void Image::GetGammaCorrection(cv::Mat &src, cv::Mat &dst, const float fGamma) {
     }
 }
 
-cv::Mat Image::Image_Get(int &after_picture,int argc, char **argv){
+cv::Mat Image::Image_Get(int &after_picture){
     //get new picture
     if(this->pictureSource==picture_dir)
         if(this->serial_number == -1){
@@ -274,9 +315,6 @@ cv::Mat Image::Image_Get(int &after_picture,int argc, char **argv){
 
 void Image::Image_Show(){
     cv::imshow(this->Cam_winname, this->Cam_draw);
-    if(application==Application::Radar){
-        cv::imshow(this->mapImage_winname, this->map_draw);  
-    }
     cv::waitKey(1);
 }
 
@@ -503,7 +541,7 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
                     }
 
                     rectangle(Cam_draw, Rect(tlwh[0], tlwh[1], tlwh[2], tlwh[3]), s, 2);
-                    cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 5);
+                    cv::circle(Cam_draw,output_stracks[i].Locate2D,0,10, 5);
                     if(application==Radar){
                         circle(map_draw,cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),0,s,15 );
 //                int track_id = output_stracks[i].track_id;
@@ -522,15 +560,15 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
 //                int track_id = output_stracks[i].track_id;
 //                int cls = track_id%7 + track_id/7*classWithoutCar/2;
                 rectangle(Cam_draw, Rect(output_stracks[i].tlwh[0], output_stracks[i].tlwh[1], output_stracks[i].tlwh[2], output_stracks[i].tlwh[3]), s, 2);
-                cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 5);
+                cv::circle(Cam_draw,output_stracks[i].Locate2D,0,s, 10);
                 putText(Cam_draw,"car",Point(output_stracks[i].tlwh[0]-5, output_stracks[i].tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
                 putText(map_draw,"car",cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
             }
 
-            cv::imshow(Cam_winname,Cam_draw);
-            if(application==Radar){
-                cv::imshow(mapImage_winname,map_draw);
-            }
+            // cv::imshow(Cam_winname,Cam_draw);
+            // if(application==Radar){
+            //     cv::imshow(mapImage_winname,map_draw);
+            // }
         }
     }else{
         for (int i = 0; i < output_stracks.size(); i++)
@@ -565,10 +603,10 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
                     }
                 }
             }
-            cv::imshow(Cam_winname,Cam_draw);
-            if(application==Radar){
-                cv::imshow(mapImage_winname,map_draw);
-            }
+            // cv::imshow(Cam_winname,Cam_draw);
+            // if(application==Radar){
+            //     cv::imshow(mapImage_winname,map_draw);
+            // }
         }
     }
 
@@ -595,6 +633,23 @@ void Image::draw_rusult(cv::Rect rect, cv::Point3d xyz, cv::Mat img_draw){
 
 
 void Image::draw_line(std::vector<MapVertex> &vexs){
+    for (int i = 0; i < vexs.size(); i++) {
+        for (int j = 0; j < vexs[i].point_3d_number; j++) {
+            if(j < vexs[i].point_3d_number-1 ){
+                cv::line(Cam_draw,vexs[i].points_predict_2d[j],vexs[i].points_predict_2d[j+1],cv::Scalar(250,255,250));
+            }
+            //第一个点和最后一个点连线
+            else if(j == vexs[i].point_3d_number-1 ){
+                cv::line(Cam_draw,vexs[i].points_predict_2d[j],vexs[i].points_predict_2d[0],cv::Scalar(250,255,250));
+            }else{
+                std::cout << "def draw_line may have error " << std::endl;
+            }
+        }
+    }
+    // cv::imshow(Cam_winname,Cam_draw);
+}
+
+void Image::draw_line_calib(std::vector<MapVertex> &vexs){
     for (int i = 0; i < vexs.size(); i++) {
         for (int j = 0; j < vexs[i].point_3d_number; j++) {
             if(j < vexs[i].point_3d_number-1 ){

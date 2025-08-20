@@ -32,16 +32,19 @@
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
-//-------------------------------------------//
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <pcl/common/transforms.h>
+#include "interfaces/msg/cluster_rect.hpp"
+#include "interfaces/msg/rect.hpp"
 
 namespace upc_radar{
 
     //自定义消息同步策略
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,sensor_msgs::msg::PointCloud2> MySyncPolicy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,sensor_msgs::msg::PointCloud2> PC2PCPolicy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,interfaces::msg::ClusterTarget> Clus2TargetPolicy;
 
     class KalmanFilter :public rclcpp::Node
     {
@@ -50,6 +53,7 @@ namespace upc_radar{
         ~KalmanFilter(){}
     
         private:
+        Z_Map::SharedPtr z_map;
         int self_color=0;
         double match_thresh=0.45;
         std::vector<Kalman_filter_plus> KFs;
@@ -77,9 +81,13 @@ namespace upc_radar{
         std::array<std::array<FakeKF,5>,2> fake_kfs;
 
         //双雷达消息同步
-        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> mid70_sub;
-        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> avia_sub;
-        std::shared_ptr<message_filters::Synchronizer<MySyncPolicy>> sync;
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> mid70_sub_;
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> avia_sub_;
+        std::shared_ptr<message_filters::Synchronizer<PC2PCPolicy>> pc_sync_;
+        //聚类及种类消息同步
+        message_filters::Subscriber<sensor_msgs::msg::PointCloud2> cluster_sub_;
+        message_filters::Subscriber<interfaces::msg::ClusterTarget> target_sub_;
+        std::shared_ptr<message_filters::Synchronizer<Clus2TargetPolicy>> clus_sync_;
         //飞机点云同步
         message_filters::Subscriber<sensor_msgs::msg::PointCloud2> drone1_sub_;
         message_filters::Subscriber<sensor_msgs::msg::PointCloud2> drone2_sub_;
@@ -105,6 +113,8 @@ namespace upc_radar{
 
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr net_pub;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pc_pub;
+        rclcpp::Publisher<interfaces::msg::ClusterRect>::SharedPtr rects_pub_;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr filtered_pc_pub_;
 
         void prepareParameter();
         void prepareLocation();
@@ -113,10 +123,9 @@ namespace upc_radar{
         void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
         void PCTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2);
         void droneTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const sensor_msgs::msg::PointCloud2::SharedPtr msg2);
-        void camCallback(const interfaces::msg::DetectRes::SharedPtr msg);
+        void clusTimeSynC(const sensor_msgs::msg::PointCloud2::SharedPtr msg1, const interfaces::msg::ClusterTarget::SharedPtr msg2);
         void clearOutPut();
 
-        void detectCallback(const interfaces::msg::DetectFrame::SharedPtr msg);
         void robotHPCallback(const interfaces::msg::RobotHP::SharedPtr msg);
 
         void guessWithoutClass(std::vector<Kalman_filter_plus> &KFs_,std::vector<int> u_strack,visualization_msgs::msg::MarkerArray &vis_array,std::vector<std::vector<int>> history_cost);
@@ -128,10 +137,12 @@ namespace upc_radar{
         std::vector<int> normalDBSCAN(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,double eps,size_t min_points);
 
         void getCluster(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,std::vector<open3d::geometry::PointCloud> &out);
-        void getRect2d(std::vector<open3d::geometry::PointCloud> pcs,Eigen::Transform<float, 3, 2> transform,std::vector<cv::Rect> &rects,int camid);
+        void getRect2d(std::vector<open3d::geometry::PointCloud> pcs,Eigen::Transform<float, 3, 2> transform,std::vector<cv::Rect> &rects,std::vector<cv::Point3d> &points,int camid);
         void getClusterID(std::vector<ClusPC>&clus_pcs,std::vector<open3d::geometry::PointCloud> pcs,std::vector<cv::Rect>rects);
         void updateKFs(std::vector<Kalman_filter_plus> &KFs_,pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_xy,const std::vector<cv::Rect> &rects1,
             const std::vector<cv::Rect> &rects2,const std::vector<open3d::geometry::PointCloud> &pcs,pcl::PointCloud<pcl::PointXYZ> &kmeans_out,rclcpp::Time time);
+        void updateKFs(std::vector<Kalman_filter_plus> &KFs_,pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_xy,const std::vector<open3d::geometry::PointCloud> &pcs,
+            const interfaces::msg::ClusterTarget::SharedPtr clus_msg,pcl::PointCloud<pcl::PointXYZ> &kmeans_out,rclcpp::Time time);
         void checkKFs(std::vector<Kalman_filter_plus> &KFs_);
         void checkClass(std::vector<Kalman_filter_plus> &KFs_);
         void check(std::vector<Kalman_filter_plus> &KFs_);

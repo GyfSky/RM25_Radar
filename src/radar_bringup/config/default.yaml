@@ -4,13 +4,11 @@
     map_path: "resource/RM2025_national.pcd"
     is_real: true
     #0.5 数据集效果好，0.25实际效果好，数据集出现误匹配 0.6
-    sor.thres: 0.5
-    sor.MeanK: 7
     sor.remove_outlier: true
-    mesh.mesh_ori: "resource/24_bg2align_fix1.stl"
-    mesh.mesh_filter: "resource/24_bg2filter_fix1.stl"
+    mesh.mesh_ori: "resource/RMUC2025_national.stl"
+    mesh.mesh_filter: "resource/RMUC2025_national.stl"
     mesh.init_translate: [ 0.0, 0.0, 0.0 ]
-    voxel_grid.voxel_size: 0.06
+    voxel_grid.voxel_size: 0.08
     voxel_grid.dilate_size: 1
     voxel_grid.size.min: [ 0.150, 0.150, 0.0 ]
     voxel_grid.size.max: [ 27.850, 14.850, 1.500 ]
@@ -29,8 +27,7 @@
     use_prepoints: false
     is_one_lidar: false
 
-/avia:
-  /dynamic_cloud_node:
+/avia/dynamic_cloud_node:
     ros__parameters:
       dynamic.sub_topic: "/livox/lidar_3JEDM7A00106241"
       dynamic.pub_topic: "/livox/avia"
@@ -38,9 +35,10 @@
       dynamic.accumulate: 4
       pc.dis_thres: 0.02
       pc.thread: 12
+      sor.thres: 0.5
+      sor.MeanK: 5
 
-/mid70:
-  /dynamic_cloud_node:
+/mid70/dynamic_cloud_node:
     ros__parameters:
       dynamic.sub_topic: "/livox/lidar_3GGDL82001UK381"
       dynamic.pub_topic: "/livox/mid70"
@@ -48,6 +46,8 @@
       dynamic.accumulate: 4
       pc.dis_thres: 0.02
       pc.thread: 12
+      sor.thres: 0.7
+      sor.MeanK: 5
 
 /dynamic_cloud_node:
   ros__parameters:
@@ -97,10 +97,10 @@
     kalman.detect_r: 3.0
     kalman.car_max_speed: 2.0
     kalman.dt_: 0.1
-    kalman.sigma_q_x: 2.5
-    kalman.sigma_q_y: 2.5
-    kalman.sigma_r_x: 0.4
-    kalman.sigma_r_y: 0.4
+    kalman.sigma_q_x: 2.2
+    kalman.sigma_q_y: 2.2
+    kalman.sigma_r_x: 1.0
+    kalman.sigma_r_y: 1.0
 
     cost.distance_weight: 1.0
     cost.distance_thres: 6.0
@@ -112,7 +112,7 @@
     #大了导致两个kal与两个clus匹配交换，小了导致kal在拐弯时跟不上clus(跟踪器问题)
     clu.dis_thres: 2.2
     #需要新增卡尔曼的两聚类最小距离阈值
-    clu.min_dis_thres: 0.8
+    clu.min_dis_thres: 1.1
 
     #----相机识别和点云聚类匹配----3d
     cam.match_thres: 0.9

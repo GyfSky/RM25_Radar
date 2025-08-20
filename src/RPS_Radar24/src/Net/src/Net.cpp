@@ -114,6 +114,29 @@ void Net::getCarImgs(std::vector<std::vector<TRTInferV1::DetectionObj>> Objs, cv
     }
 }
 
+void Net::getCarImgs(const interfaces::msg::ClusterRect rects, cv::Mat &img,std::vector<cv::Mat> &car_imgs,int cam_id){
+        std::vector<std::thread> threads;
+        int thread_num;
+        if (cam_id==1)thread_num=rects.rects1.size();
+        else if (cam_id==2)thread_num=rects.rects2.size();
+        std::vector<cv::Mat> car_img(thread_num);
+        for(int j=0;j<thread_num;j++) {
+            threads.push_back(std::thread([j,&car_img,&img,rects,cam_id](){
+                if (cam_id==1) {
+                    car_img[j]=img(cv::Rect(cv::Point(rects.rects1[j].x1,rects.rects1[j].y1),cv::Point(rects.rects1[j].x2,rects.rects1[j].y2)));
+                }else if (cam_id==2) {
+                    car_img[j]=img(cv::Rect(cv::Point(rects.rects2[j].x1,rects.rects2[j].y1),cv::Point(rects.rects2[j].x2,rects.rects2[j].y2)));
+                }
+            }));
+        }
+        for(auto &t:threads){
+            t.join();
+        }
+        for(auto &car:car_img){
+            car_imgs.push_back(car);
+        }
+}
+
 
 void Net::getCarImgs(std::vector<std::vector<TRTInferV1::Object>> Objs, cv::Mat img, std::vector<cv::Mat> &car_imgs){
     for(int i=0;i<Objs.size();i++){

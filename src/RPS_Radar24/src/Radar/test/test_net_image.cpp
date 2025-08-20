@@ -45,17 +45,17 @@ MyRadar::~MyRadar(){
 
 }
 
-void MyRadar::Init(int argc, char **argv){
+void MyRadar::Init(){
 
-    MainCam_Image_ptr->Init(argc, argv);
-    SecCam_Image_ptr->Init(argc, argv);
+    MainCam_Image_ptr->Init();
+    SecCam_Image_ptr->Init();
 
 
     if(MainCam_Image_ptr->is_getPoint2d_mouse_Cam && SecCam_Image_ptr->is_getPoint2d_mouse_Cam){
 
         while(mainCamMat.empty() && secCamMat.empty()){
-            mainCamMat = MainCam_Image_ptr->Image_Get(after,argc,argv);
-            secCamMat = SecCam_Image_ptr->Image_Get(after,argc,argv);
+            mainCamMat = MainCam_Image_ptr->Image_Get(after);
+            secCamMat = SecCam_Image_ptr->Image_Get(after);
 
         }
         MainCam_Image_ptr->Image_Show();
@@ -116,7 +116,7 @@ void MyRadar::Save() {
 }
 
 
-void MyRadar::Spin(int argc, char **argv){
+void MyRadar::Spin(){
     bool is_only_port = false;
     if (!is_only_port){
         std::cout << "next step0.0.0" << std::endl;
@@ -136,9 +136,9 @@ void MyRadar::Spin(int argc, char **argv){
         int a = this->after * 2;
 
 
-        this->mainCamMat = MainCam_Image_ptr->Image_Get(this->after,argc,argv);
+        this->mainCamMat = MainCam_Image_ptr->Image_Get(this->after);
         int after_2 = this->after+1 ;
-        this->secCamMat = SecCam_Image_ptr->Image_Get(this->after,argc,argv);
+        this->secCamMat = SecCam_Image_ptr->Image_Get(this->after);
 
 
 

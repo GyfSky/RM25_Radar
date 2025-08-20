@@ -78,7 +78,7 @@ Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, TF 
     } else{
         HikCamera_sptr_->open(g_strSerialNumber);
     }
-//    HikCamera_sptr_->setPixelFormat2BayerRG8_8();
+    // HikCamera_sptr_->setPixelFormat2BayerRG8_12();
     HikCamera_sptr_->setGain(CamGain_);
     HikCamera_sptr_->setExposureTime(CamExposureTime_);
     HikCamera_sptr_->startGrabImage();

@@ -231,6 +231,39 @@ STrack::STrack(float x1, float y1, float w, float h, float conf,int classWithout
     static_tlbr();
 }
 
+STrack::STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar,int cluster_id) {
+    _tlwh.resize(4);
+    _tlwh = {x1, y1, w, h};
+    this->conf = conf;
+    this->cluster_id=cluster_id;
+    this->cls = -1;
+
+    is_activated = false; // default = fales
+    track_id = -1;
+    state = TrackState::New;
+
+    tlwh.resize(4);
+    tlbr.resize(4);
+
+
+    frame_id = 0;
+    lost_frame_ind_num = 0;
+    tracklet_len = 0;
+    start_frame = 0;
+
+    this->classWithoutCar=classWithoutCar;
+    this->half_classWithoutCar = classWithoutCar/2;
+    std::cout<<"---------classWithoutCar:"<<classWithoutCar<<std::endl;
+    std::cout<<"---------half_classWithoutCar:"<<half_classWithoutCar<<std::endl;
+
+
+    if( -1 < this->cls && this->cls < classWithoutCar ){
+        this->track_id = cls;
+    }
+    static_tlwh();
+    static_tlbr();
+}
+
 void STrack::init_track(int cls, float conf_armor, Eigen::MatrixXd car_armorConfMatrix) {
     this->cls = cls;
     this->conf_armor = conf_armor;

@@ -22,6 +22,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/GameState.msg"
   "msg/LidarEnhance.msg"
   "msg/DroneLocation.msg"
+  "msg/Rect.msg"
+  "msg/ClusterRect.msg"
+  "msg/ClusterTarget.msg"
+  "msg/CostMatrix.msg"
   "msg/ToPlane.msg"
   DEPENDENCIES geometry_msgs std_msgs
 )

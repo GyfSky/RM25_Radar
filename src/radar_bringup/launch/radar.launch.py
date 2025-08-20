@@ -96,6 +96,22 @@ def generate_launch_description():
             respawn=True,
             respawn_delay=0.2,
         )
+    def read_matrix_from_file(file_path):
+        with open(file_path, "r") as f:
+            lines = f.readlines()
+
+        matrix_data = []
+        i=0;
+        for line in lines:
+            if i==4:
+                break
+            row_data = [float(x) for x in line.strip().split()]
+            matrix_data.append(row_data)
+            i=i+1
+
+        return np.array(matrix_data)
+
+    cali_matrix = read_matrix_from_file("/home/thesky/RM25_Radar/resource/lidar2world.txt")
         
     
     # 创建节点描述
@@ -111,14 +127,14 @@ def generate_launch_description():
                   [0.364407  , 0.928117 , 0.0762062 ,-0.0841121],
                   [-0.0162903 , -0.0754673 ,  0.997015 ,-0.00709805],
                   [0.,0.,0.,1.],]), 'lidar_avia_frame', 'lidar_mid70_frame'),
+    lidar_extrinsic_tf=get_matrix_tf_broadcaster(cali_matrix, 'rm_frame', 'lidar_avia_frame'),
 
     # 创建节点容器
     lidar_detector = get_container(
-                                    lidar_registration_node,
                                     kalman_filter_node,
                                     mid70_dynamic_cloud_node,
                                     avia_dynamic_cloud_node,
-                                    # foxglove_node
+                                    foxglove_node
                                    )
     camera_detector = Node(
         package="rps_radar24",
@@ -131,6 +147,7 @@ def generate_launch_description():
 
     return LaunchDescription([
             *lidar_tf,
+            *lidar_extrinsic_tf,
             camera_detector,
             lidar_detector
             ])

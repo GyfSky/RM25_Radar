@@ -12,7 +12,7 @@
 #     video_path: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-04_16_38_22/shangjiao.mp4"  #  视频路径
 
 general:
-  cam_use_saved_T: false
+  cam_use_saved_T: true
   lidar_use_saved_T: false
   lidar_use_prepoints: true
   situation: "rm25"
@@ -39,7 +39,7 @@ net:
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.trt"         #   engine文件路径
   trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.trt"
   #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"
-  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.onnx"       #   onnx文件路径
+  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.onnx"       #   onnx文件路径
   # 神经网络相关参数
   obj_thres: 0.5        #
   conf_thres: 0.5       #
@@ -61,7 +61,7 @@ net_60:
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.trt"         #   engine文件路径
   trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.trt"
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"         #   engine文件路径
-  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.onnx"       #   onnx文件路径
+  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.onnx"       #   onnx文件路径
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/shuffle.engine"         #   engine文件路径
 #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.trt"         #   engine文件路径
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.onnx"       #   onnx文件路径

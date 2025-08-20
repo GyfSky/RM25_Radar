@@ -50,7 +50,8 @@ find_package(Boost REQUIRED)
 find_package(rosbag2 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(interfaces REQUIRED)
-find_package(cv_bridge REQUIRED)   
+find_package(cv_bridge REQUIRED)
+find_package(message_filters REQUIRED)
 
 # catkin_package(
 #         #  INCLUDE_DIRS include
@@ -227,31 +228,32 @@ add_executable(RadarMain
         src/Radar/src/Radar.cpp
         src/Radar/src/main.cpp)
 
-add_executable(test_net_img
-        src/Radar/test/test_net_image.cpp
-        src/Radar/test/main.cpp)
+add_executable(calib_main
+        src/Radar/test/main.cpp
+		src/Radar/src/Radar.cpp)
 
 add_executable(test_contract_img
 	 src/Radar/test/main_test_contract_img.cpp)
 
- ament_auto_find_build_dependencies ()
+# ament_auto_find_build_dependencies ()
 
-ament_target_dependencies(RadarMain rclcpp interfaces std_msgs cv_bridge sensor_msgs Boost)
- ament_target_dependencies(test_net_img rclcpp interfaces rclpy std_msgs Boost rosbag2 sensor_msgs PCL)
- ament_target_dependencies(test_contract_img rclcpp interfaces rclpy std_msgs Boost rosbag2 sensor_msgs PCL)
+ament_target_dependencies(RadarMain rclcpp interfaces std_msgs cv_bridge sensor_msgs Boost message_filters)
+ ament_target_dependencies(calib_main rclcpp interfaces rclpy std_msgs Boost rosbag2 sensor_msgs PCL message_filters)
+ ament_target_dependencies(test_contract_img rclcpp interfaces rclpy std_msgs Boost rosbag2 sensor_msgs PCL message_filters)
  ament_target_dependencies(General PUBLIC rclcpp cv_bridge std_msgs interfaces)
 
 
 
 target_link_libraries(RadarMain  
 SensorParam Image Locate Net Mouse ByteTrack Port cudart)
-target_link_libraries(test_net_img  
+target_link_libraries(calib_main
 SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 target_link_libraries(test_contract_img  
 SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 
 install(TARGETS
 		RadarMain
+		calib_main
 		DESTINATION lib/${PROJECT_NAME}
 )
 

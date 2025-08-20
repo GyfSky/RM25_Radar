@@ -1,7 +1,7 @@
 #include<lidar_registration.h>
 
 namespace upc_radar {
-    LidarRegistration::LidarRegistration(const rclcpp::NodeOptions& node_options) : Node("LidarRegistration", node_options) {
+    LidarRegistration::LidarRegistration(const rclcpp::NodeOptions& node_options) : Node("lidar_registration_node", node_options) {
 
         declare_parameter<double>("cost_thres", 0.3);
 

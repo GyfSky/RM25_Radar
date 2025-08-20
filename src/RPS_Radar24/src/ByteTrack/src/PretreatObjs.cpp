@@ -193,6 +193,29 @@ TRTInferV1::DetectionObj PretreatObjs::objs2newMainObjs(TRTInferV1::DetectionObj
     return objs;
 }
 
+TRTInferV1::DetectionObj PretreatObjs::objs2newMainObjs(interfaces::msg::Rect objs, cv::Mat obj2Main)
+{
+    float cx = (objs.x1 + objs.x2)/2. *1.333,
+          y2 = objs.y2  * 1.333,
+          w  = (objs.x2 - objs.x1) * 1.333,
+          h  = (objs.y2 - objs.y1) * 1.333;
+
+    TRTInferV1::DetectionObj res;
+
+    std::vector<cv::Point2f>corners(1);
+    std::vector<cv::Point2f>corners1(1);
+    std::vector<cv::Point2f>corners2(1);
+    corners[0] = cv::Point(cx, y2);
+    perspectiveTransform(corners, corners2, obj2Main);
+    res.x1 = corners2[0].x - w/2;
+    res.x2 = corners2[0].x + w/2;
+    res.y1 = corners2[0].y - h;
+    res.y2 = corners2[0].y;
+    res.confidence=0.9;
+
+    return res;
+}
+
 
 
 std::vector<TRTInferV1::DetectionObj> PretreatObjs::secObjs2mainObjs(
@@ -429,7 +452,7 @@ void PretreatObjs::update_classfy(int &temp_bestcls, float &conf_armor, Eigen::M
     car_armorConfMatrix.row(0).maxCoeff(&max_index);
     conf_armor = car_armorConfMatrix(0,max_index);
 
-    if(conf_armor < 1e-1){
+    if(conf_armor < 5e-2){
         temp_bestcls = classWithoutCar ; //  classWithoutCar+1-1
     }
     else if(half_classWithoutCar == 7){
@@ -834,7 +857,10 @@ bool PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
         double w_armorArea = (armor.y2-armor.y1) * (armor.x2-armor.x1);
         w_getAllArea += w_armorArea;
         // 1/3y - 3/4y
-        double w_armorY = 1.0 - min_(abs((armorLocate2D[1] - carY_downLine)/(carY_upLine - carY_downLine)),1.0);
+        // double w_armorY = 1.0 - min_(abs((armorLocate2D[1] - carY_downLine)/(carY_upLine - carY_downLine)),1.0);//纯相机识别用
+
+        // 1/2y
+        double w_armorY = 1.0 - min_(abs((armorLocate2D[1] - car.tlwh[3]*0.5)/(car.tlwh[3]*0.5)),1.0);//点云第一层网络用
         //add
         double w_armorConf = w_armorArea * w_armorY * armor.confidence;
 //                Eigen::MatrixXd  car_armorConfMatrix = Eigen::MatrixXd::Zero(1,20); ///TODO:
@@ -888,8 +914,6 @@ bool PretreatObjs::get_Armors_w_conf_Double_net(STrack &car, vector<TRTInferV1::
             temp_bestcls-=1;
         }else if (temp_bestcls==11) {
             temp_bestcls-=2;
-        }else if (temp_bestcls==4||temp_bestcls==10) {
-            return true;
         }
         for (int i=0;i<12;i++) {
             if (i<=3)

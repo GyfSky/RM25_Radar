@@ -9,9 +9,74 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <builtin_interfaces/msg/duration.hpp>
 #include <random>
+#include <open3d/t/geometry/RaycastingScene.h>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
 #include <pcl/point_cloud.h>
+
+#pragma pack(push, 1)
+    typedef struct {
+        float x;
+        float y;
+        float z;
+        int32_t clustered_label;
+        int32_t sum_label;
+    } ClusterPoint;
+#pragma pack(pop)
+
+struct Z_Map {
+    using SharedPtr = std::shared_ptr<Z_Map>;
+
+    open3d::geometry::AxisAlignedBoundingBox bbox;
+    double voxel_size;
+    Eigen::Vector3i grid_size;
+    Eigen::MatrixXf z_map;
+
+    Z_Map(Eigen::Vector3d grid_min, Eigen::Vector3d grid_max, double voxel_size, std::shared_ptr<const open3d::geometry::TriangleMesh> mesh)
+        : bbox(grid_min, grid_max)
+        , voxel_size(voxel_size)
+        , grid_size(((grid_max - grid_min) / voxel_size + Eigen::Vector3d::Ones()).cast<int>())
+        , z_map(Eigen::MatrixXf::Zero(grid_size[0], grid_size[1])){
+
+        double z_max = bbox.max_bound_(2);
+        open3d::t::geometry::RaycastingScene scene_r;
+        scene_r.AddTriangles(open3d::t::geometry::TriangleMesh::FromLegacy(*mesh));
+        z_map = Eigen::MatrixXf::Zero(grid_size[0], grid_size[1]);
+        Eigen::MatrixXf Q(grid_size[0] * grid_size[1], 6); // 查询光线
+        for (int i = 0; i < grid_size[0]; ++i) {
+            for (int j = 0; j < grid_size[1]; ++j) {
+                Q.row(i * grid_size[1] + j)(0) = get_grid_center({ i, j, 0 })(0);
+                Q.row(i * grid_size[1] + j)(1) = get_grid_center({ i, j, 0 })(1);
+                Q.row(i * grid_size[1] + j)(2) = z_max;
+                Q.row(i * grid_size[1] + j)(3) = 0;
+                Q.row(i * grid_size[1] + j)(4) = 0;
+                Q.row(i * grid_size[1] + j)(5) = -1;
+
+            }
+        }
+        open3d::core::Tensor Q_tensor = open3d::core::eigen_converter::EigenMatrixToTensor(Q);
+        std::unordered_map<std::string, open3d::core::Tensor> rslt_r = scene_r.CastRays(Q_tensor);
+        open3d::core::Tensor rslt_hit = rslt_r["t_hit"];
+        for (int i = 0; i < grid_size[0]; ++i)
+            for (int j = 0; j < grid_size[1]; ++j)
+                z_map(i, j) = z_max - rslt_hit[i * grid_size[1] + j].Item<float>();
+
+    }
+    Eigen::Vector3d project_ground(const Eigen::Vector2d& pt) const{
+        /// @brief 将点投影到地面
+        Eigen::Vector2d pt_grid = (pt - Eigen::Vector2d(bbox.min_bound_(0),bbox.min_bound_(1))) / voxel_size;
+        Eigen::Vector2i pt_grid_int = pt_grid.cast<int>();
+        if ((pt_grid_int.array() >= Eigen::Vector2i(grid_size(0),grid_size(1)).array()).any() || (pt_grid_int.array() < 0).any())
+            return Eigen::Vector3d(pt(0), pt(1), 0.2);
+        else
+            return Eigen::Vector3d(pt(0), pt(1), z_map(pt_grid_int(0), pt_grid_int(1))+0.2);
+    }
+
+    Eigen::Vector3d get_grid_center(const Eigen::Vector3i& grid_idx) const{
+        /// @brief 获取体素中心点坐标
+        return bbox.min_bound_ + (grid_idx.cast<double>() + Eigen::Vector3d::Ones() * 0.5) * voxel_size;
+    }
+};
 
 struct BucketSet {
     std::vector<char> bucket;
@@ -139,15 +204,21 @@ int initornot(std::array<cv::Point2f,5> AABB ,pcl::PointXY xy, int pointNum){
     }
 }
 
-// Eigen::MatrixXd getCost_confMatrix(std::vector<Kalman_filter_plus> &KFs,int &num_strack,int &num_cls) {
-//     num_strack=KFs.size();
-//     num_cls=10;
-//     Eigen::MatrixXd cost_matrix = Eigen::MatrixXd::Ones(num_strack,num_cls);
-//     for (int index=0;index<num_strack;index++) {
-//         cost_matrix.block(index,0,1,num_cls)-=KFs[index].ws_armorConfMatrix.block(0,0,1,num_cls);
-//     }
-//     return cost_matrix;
-// }
+Eigen::MatrixXd getCost_confMatrix(interfaces::msg::ClusterTarget::SharedPtr clus_msg ,int &num_strack,int &num_cls){
+
+    num_strack = clus_msg->clusters.size();num_cls = 10;////TODO:
+    Eigen::MatrixXd cost_confMatrix = Eigen::MatrixXd::Ones(num_strack,num_cls);
+    for(int i=0; i<num_strack; i++){
+        for (int j=0;j<5;j++) {
+            cost_confMatrix(i,j)-=clus_msg->clusters[i].cost_matrix[j+5];
+        }
+        for (int j=5;j<10;j++) {
+            cost_confMatrix(i,j)-=clus_msg->clusters[i].cost_matrix[j-5];
+        }
+    }
+    return cost_confMatrix;
+}
+
 
 Eigen::MatrixXd getCost_confMatrix(std::vector<Kalman_filter_plus> &KFs,int &num_strack,int &num_cls) {
     num_strack=KFs.size();
@@ -239,6 +310,88 @@ Eigen::MatrixXd getCloudCost(std::vector<ClusPC> atracks, std::vector<Kalman_fil
             cost_matrix(a,b)=distance_cost*0.7+history_cost*0.3;
             // cost_matrix(a,b)=distance_cost;
         }
+    }
+    return cost_matrix;
+}
+
+Eigen::MatrixXd getCloudCost(pcl::PointCloud<pcl::PointXYZI>atracks, std::vector<Kalman_filter_plus>btracks,int &atracks_size, int &btracks_size,double distance_thres,
+    std::vector<bool> a_update,std::vector<bool> b_update){
+    atracks_size=atracks.points.size();btracks_size=btracks.size();
+    if (atracks_size*btracks_size==0){
+        Eigen::MatrixXd cost_matrix;
+        return cost_matrix;
+    }
+    double distance_cost;
+    double mah_cost;
+    double size_cost;
+    float max_det=0.001;
+    std::vector<float> det(btracks_size);
+    std::vector<Eigen::Matrix2d> conv(btracks_size);
+    std::vector<Eigen::Vector2d> mean(btracks_size);
+    for (int b=0;b<btracks_size;b++) {
+        int his_size=btracks[b].history.size();
+        double meanX = 0.0, meanY = 0.0,cov00=0,cov01=0,cov11=0;
+        for (auto pair: btracks[b].history) {
+            meanX += pair.second.x;
+            meanY += pair.second.y;
+        }
+        meanX /= his_size;
+        meanY /= his_size;
+        mean[b]<<meanX,meanY;
+
+        for (auto pair: btracks[b].history) {
+            cov00 += (pair.second.x - meanX) * (pair.second.x - meanX);
+            cov01 += (pair.second.x - meanX) * (pair.second.y - meanY);
+            cov11 += (pair.second.y - meanY) * (pair.second.y - meanY);
+        }
+
+        cov00 /= (his_size - 1);
+        cov01 /= (his_size - 1);
+        cov11 /= (his_size - 1);
+        conv[b]<<cov00,cov01,cov01,cov11;
+        cv::Mat Sk=btracks[b].KF.measurementMatrix*btracks[b].KF.errorCovPre*btracks[b].KF.measurementMatrix.t()+btracks[b].KF.measurementNoiseCov;
+        float det_t=log(fabs(Sk.at<float>(0,0)*Sk.at<float>(1,1)-Sk.at<float>(1,0)*Sk.at<float>(0,1)));
+        det[b]=det_t;
+        if (det_t>max_det) max_det=det_t;
+    }
+    Eigen::MatrixXd  cost_matrix = Eigen::MatrixXd::Zero(atracks_size,btracks_size);
+
+    for(int a = 0; a<atracks_size; a++){
+        for(int b=0;b<btracks_size;b++){
+            double distance=sqrt(pow(atracks.points[a].x-btracks[b].predict_point.x,2)+pow(atracks.points[a].y-btracks[b].predict_point.y,2));
+            double speed=sqrt(pow(btracks[b].KF.statePost.at<float>(1),2)+pow(btracks[b].KF.statePost.at<float>(3),2));
+            // if (distance>btracks[b].last_time*speed*3)
+            //     distance=distance_thres;
+            if (distance<distance_thres) {
+                distance_cost=distance/distance_thres;
+            }else {
+                cost_matrix(a,b)=1;
+                continue;
+            }
+            size_cost=atracks.points[a].intensity>btracks[b].point_size?btracks[b].point_size/atracks.points[a].intensity:atracks.points[a].intensity/btracks[b].point_size;
+            size_cost=1-size_cost;
+            Eigen::Matrix2d cov_eigen;
+            cov_eigen<<btracks[b].KF.errorCovPost.at<float>(0,0),btracks[b].KF.errorCovPost.at<float>(0,2),
+                                        btracks[b].KF.errorCovPost.at<float>(2,0),btracks[b].KF.errorCovPost.at<float>(2,2);
+
+            Eigen::Vector2d kal_pos,pc_pos;
+            kal_pos<<btracks[b].predict_point.x,btracks[b].predict_point.y;
+            pc_pos<<atracks.points[a].x,atracks.points[a].y;
+            Eigen::Vector2d d = pc_pos - mean[b];
+            mah_cost=sqrt(d.transpose() * conv[b].inverse() * d);
+            mah_cost=mah_cost<distance_thres?mah_cost/distance_thres:1;
+            // std::cout<<"mah dis: "<<mah_cost<<"  dis_cost: "<<distance<<std::endl;
+            cost_matrix(a,b)=mah_cost*0.4+distance_cost*0.6;
+            // cost_matrix(a,b)=distance_cost;
+        }
+    }
+    for(int a = 0; a<atracks_size; a++) {
+        if (a_update[a])
+            cost_matrix.row(a).fill(1);
+    }
+    for(int b = 0; b<btracks_size; b++) {
+        if (b_update[b])
+            cost_matrix.col(b).fill(1);
     }
     return cost_matrix;
 }

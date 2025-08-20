@@ -18,6 +18,7 @@ namespace Camera_hk
         target->mCount = target->mCount + 1;
         if(pFrameInfo)
         {
+            target->img_lock.lock();
                 if(target->pixelFormat==BayerRG8 || target->pixelFormat==BayerGR8){
                     target->m_time=rclcpp::Clock().now();
                     target->mRawImage = cv::Mat(pFrameInfo->nHeight,pFrameInfo->nWidth,CV_8UC1,data);
@@ -37,6 +38,7 @@ namespace Camera_hk
                     std::cerr << "ERROR[self]: cannot show img" << std::endl;
                     exit(EXIT_FAILURE); // 终止程序执行
                 }
+            target->img_lock.unlock();
         }
 
     }
@@ -473,7 +475,10 @@ void Camera_hk::HikCamera::setPixelFormat2BayerRG8_12() {
         pixelFormat = BayerRG8;
         MV_CC_SetEnumValue(mHandle,"ADCBitDepth",CS_Bits_12);
     }else if(this->deviceModel == "MV-CS050-60UC") {
-        std::cerr << "ERROR[self]： MV-CS050-60UC don't have BayerRG modes" << std::endl;
+        // std::cerr << "ERROR[self]： MV-CS050-60UC don't have BayerRG modes" << std::endl;
+        MV_CC_SetEnumValue(mHandle,"PixelFormat",BGR8Packed);
+        pixelFormat = BGR8Packed;
+        MV_CC_SetEnumValue(mHandle,"ADCBitDepth",CS_Bits_12);
     }else{
         std::cerr <<  "\033[35m"  << "ERROR[self]： set fail!!!" <<  "\033[0m"  << std::endl;
     }

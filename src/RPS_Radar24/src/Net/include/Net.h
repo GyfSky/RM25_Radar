@@ -16,6 +16,8 @@
 #include "unistd.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include <interfaces/msg/rect.hpp>
+#include <interfaces/msg/cluster_rect.hpp>
 
 class Net {
 private:
@@ -56,6 +58,7 @@ public:
 
     void getCarImgs(std::vector<std::vector<TRTInferV1::DetectionObj>> Objs, cv::Mat img, std::vector<cv::Mat> &car_imgs);
     void getCarImgs(std::vector<std::vector<TRTInferV1::Object>> Objs, cv::Mat img, std::vector<cv::Mat> &car_imgs);
+    void getCarImgs(const interfaces::msg::ClusterRect rects, cv::Mat &img,std::vector<cv::Mat> &car_imgs,int cam_id);
     // void Spin(std::vector<cv::Mat> frames);
 //    void Car_Armor(
 //            std::vector<TRTInferV1::DetectionObj> &DetectionObjs,

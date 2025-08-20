@@ -19,6 +19,10 @@
 #include <interfaces/msg/detect_res.hpp>
 #include <interfaces/msg/lidar_enhance.hpp>
 #include <interfaces/msg/drone_location.hpp>
+#include <interfaces/msg/cost_matrix.hpp>
+#include <interfaces/msg/cluster_target.hpp>
+
+double getTimeByRosTime(rclcpp::Time ros_time);
 
 // class MyRadar : public Livox
 class MyRadar 
@@ -29,6 +33,7 @@ private:
     // int after_picture=1;
     cv::Mat mainCamMat;
     cv::Mat secCamMat;
+    int save_count=0;
 
     //test
     TRTInferV1::TRTInfer myInfer;
@@ -39,8 +44,6 @@ private:
     std::shared_ptr<SensorParam> Lidar_ptr = nullptr;
 
     std::shared_ptr<Modes> Modes_ptr = nullptr;
-    std::shared_ptr<MapGraphMtx> MainMapGraph_ptr = nullptr;
-    std::shared_ptr<MapGraphMtx> SecMapGraph_ptr = nullptr;
 
 
     std::shared_ptr<Predict> Predict_ptr = nullptr;
@@ -86,7 +89,6 @@ private:
 
     int after = 0;//图片序号
     int bafter;
-    int value=200;
     int classWithoutCar;
 
     std::string save_main_dir;
@@ -97,6 +99,8 @@ private:
     double game_time_=0;
 
 public:
+    std::shared_ptr<MapGraphMtx> MainMapGraph_ptr = nullptr;
+    std::shared_ptr<MapGraphMtx> SecMapGraph_ptr = nullptr;
     bool is_one_cam = false;
     rclcpp::Node::SharedPtr node;
     interfaces::msg::DetectResult lidar_det;
@@ -106,6 +110,7 @@ public:
     rclcpp::Time time_now;
     rclcpp::Publisher<interfaces::msg::DetectFrame>::SharedPtr detect_pub;
     rclcpp::Publisher<interfaces::msg::DetectRes>::SharedPtr res_pub;
+    rclcpp::Publisher<interfaces::msg::ClusterTarget>::SharedPtr cluster_target_pub_;
     interfaces::msg::NetDetect car_det;
     interfaces::msg::NetDetect armor_det;
     interfaces::msg::LidarEnhance lidar_enhance_;
@@ -116,21 +121,57 @@ public:
 
     cv::Point3d hero_location1_,hero_location2_,hero_location3_,buff_location_,
     engineer_location1_,engineer_location2_,fortress_location_,supply_location_;
-    std::array<cv::Point2f, 25> self_central_heights_;
+    std::array<cv::Point2f, 25> self_central_heights_,tunnel_slanted_;
     std::array<int,5> rival_offense_time={0};
+    std::array<int,5> acc_time_{};
+
+    std::vector<cv::Mat> cam1,cam2;
+    std::vector<double> time1,time2;
+    std::mutex netLock,cam1Lock,cam2Lock,timeSyncLock,droneLock,lidarLock,initLock,accTimeLock;
+    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::Subscription<interfaces::msg::ClusterRect>::SharedPtr cluster_rect_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_main_img;
+    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_sec_img;
+    rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_car;
+    rclcpp::Subscription<interfaces::msg::NetDetect>::SharedPtr sub_armor;
+    rclcpp::Subscription<interfaces::msg::DetectResult>::SharedPtr sub_lidar_det;
+    rclcpp::Subscription<interfaces::msg::LidarEnhance>::SharedPtr sub_lidar_enh;
+    rclcpp::Subscription<interfaces::msg::DroneLocation>::SharedPtr sub_drone_location;
+
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr map_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr main_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr sec_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr img1_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr img2_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr dart_pub_;
+    bool flag1=false,flag2=false,first_sub_lidar_=true;
+    rclcpp::CallbackGroup::SharedPtr callBackGroup_;
+    rclcpp::CallbackGroup::SharedPtr timerGroup_;
 
     MyRadar(/* args */rclcpp::Node::SharedPtr node);
+    MyRadar(rclcpp::Node::SharedPtr node,bool flag);
     ~MyRadar();
+
+    void rectsCallBack(const interfaces::msg::ClusterRect::SharedPtr msg);
+    void cam1CallBack(const sensor_msgs::msg::CompressedImage::SharedPtr msg);
+    void cam2CallBack(const sensor_msgs::msg::CompressedImage::SharedPtr msg);
+    void lidarEnhanceCallBack(const interfaces::msg::LidarEnhance::SharedPtr msg);
+    void lidarDetCallBack(const interfaces::msg::DetectResult::SharedPtr msg);
+    void droneCallBack(const interfaces::msg::DroneLocation::SharedPtr msg);
+
     std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
     std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
-    void Init(int argc, char **argv);
+    void Init();
+    void calib();
     void STrackInit(int classWithoutCar, OurPattern ourPattern);
     void STrackGuess(int classWithoutCar);
     void STrackClear();
+    void getDartWarning(cv::Mat img);
+
     void getDartWarning(cv::Mat img,int value);
     void getRivalOffenseWarning(vector<bool> &isWarring);
     PictureSource getPictureSource();
     void Save();
-    void Spin(int argc, char **argv);
+    void Spin();
     void Close();
 };

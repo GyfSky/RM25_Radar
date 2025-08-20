@@ -35,7 +35,7 @@ namespace upc_radar{
             sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(sub_topic, 5, std::bind(&DynamicCloud::callback_pc, this, std::placeholders::_1));
         }
 
-        sub_game_state=this->create_subscription<interfaces::msg::GameState>("/game_state", 10, std::bind(&DynamicCloud::callback_game_state, this, std::placeholders::_1));
+        // sub_game_state=this->create_subscription<interfaces::msg::GameState>("/game_state", 10, std::bind(&DynamicCloud::callback_game_state, this, std::placeholders::_1));
         pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic, 5);
         pub_raw = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic + "/raw", 3);
         pub_drone_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_topic + "/drone", 5);
