@@ -4,8 +4,6 @@
     map_path: "resource/RM2025_national.pcd"
     is_real: true
     #0.5 数据集效果好，0.25实际效果好，数据集出现误匹配 0.6
-    sor.thres: 0.5
-    sor.MeanK: 7
     sor.remove_outlier: true
     mesh.mesh_ori: "resource/24_bg2align_fix1.stl"
     mesh.mesh_filter: "resource/24_bg2filter_fix1.stl"
@@ -36,8 +34,10 @@
       dynamic.pub_topic: "/livox/avia"
       dynamic.frame_id: "lidar_avia_frame"
       dynamic.accumulate: 4
-      pc.dis_thres: 0.02
+      pc.dis_thres: 0.025
       pc.thread: 12
+      sor.thres: 0.4
+      sor.MeanK: 5
 
 /mid70:
   /dynamic_cloud_node:
@@ -46,8 +46,10 @@
       dynamic.pub_topic: "/livox/mid70"
       dynamic.frame_id: "lidar_mid70_frame"
       dynamic.accumulate: 4
-      pc.dis_thres: 0.02
+      pc.dis_thres: 0.03
       pc.thread: 12
+      sor.thres: 0.6
+      sor.MeanK: 5
 
 /dynamic_cloud_node:
   ros__parameters:
@@ -116,7 +118,7 @@
 
     #----相机识别和点云聚类匹配----3d
     cam.match_thres: 0.9
-    cam.dis_thres: 1.8
+    cam.dis_thres: 2.0
     cam.dis_weight: 0.95
     cam.his_weight: 0.05
     cam.time_offset: 0.0
@@ -126,5 +128,5 @@
     rect.dis_weight: 0.6
     rect.iou_thres: 0.2
     rect.dis_thres: 2.3
-    rect.match_thres: 0.4
+    rect.match_thres: 0.3
     rect.use_rect2d: true

@@ -1,4 +1,5 @@
 import os
+import sys
 from launch_ros.descriptions import ComposableNode
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch.actions import Shutdown
@@ -7,6 +8,10 @@ import launch
 import numpy as np
 from ament_index_python.packages import get_package_share_directory
 from tf2_geometry_msgs.tf2_geometry_msgs import _decompose_affine
+
+config_dir = os.path.join(get_package_share_directory('radar_bringup'),'define')
+sys.path.append(config_dir)
+from define import ROOT_DIR
 
 def get_matrix_tf_broadcaster(cali: np.array, fr: str, child_fr: str):
     quat, trans = _decompose_affine(cali)
@@ -27,7 +32,7 @@ def get_matrix_tf_broadcaster(cali: np.array, fr: str, child_fr: str):
 
 def generate_launch_description():
 
-    params_config = os.path.join(get_package_share_directory('radar_bringup'), 'config', 'default.yaml')
+    params_config = os.path.join(ROOT_DIR, 'config', 'default.yaml')
     print(params_config)
 
     def get_lidar_registration_node(package, plugin):

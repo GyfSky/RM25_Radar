@@ -104,8 +104,8 @@ namespace upc_radar{
                 ((21.5-2.75/sqrt(2))<(point.x + point.y) &&(point.x + point.y) <(21.5+2.75/sqrt(2))&&
                 (-6.5-0.75/sqrt(2))<(point.y-point.x)&&(point.y-point.x)<(-6.5+0.75/sqrt(2)))||
                 //前哨站
-                ((3.1<point.y&&point.y<4.1)&&(10.5<point.x&&point.x<11.3))||
-                ((10.9<point.y&&point.y<11.9)&&(16.7<point.x&&point.x<17.5))
+                ((3.2<point.y&&point.y<4.1)&&(10.6<point.x&&point.x<11.3))||
+                ((10.8<point.y&&point.y<11.9)&&(16.7<point.x&&point.x<17.4))
                 ||(point.x>3.6497&&point.x<4.3043&&point.y>2.0&&point.y<3.9531)
                 // ||(point.x>5.6&&point.x<9.35&&point.y>12.5&&point.y<13.0)
                 // ||(initornot(location,point,5)!=-1&&point.z<0.3)

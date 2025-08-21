@@ -1,4 +1,5 @@
 import os
+import sys
 from launch_ros.descriptions import ComposableNode
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch.actions import Shutdown
@@ -7,6 +8,10 @@ import launch
 import numpy as np
 from ament_index_python.packages import get_package_share_directory
 from tf2_geometry_msgs.tf2_geometry_msgs import _decompose_affine
+
+config_dir = os.path.join(get_package_share_directory('radar_bringup'),'define')
+sys.path.append(config_dir)
+from define import ROOT_DIR
 
 def get_matrix_tf_broadcaster(cali: np.array, fr: str, child_fr: str):
     quat, trans = _decompose_affine(cali)
@@ -26,10 +31,7 @@ def get_matrix_tf_broadcaster(cali: np.array, fr: str, child_fr: str):
                    '--child-frame-id', child_fr],)
 def generate_launch_description():
 
-    params_config = os.path.join(get_package_share_directory('radar_bringup'), 'config', 'default.yaml')
-    depth_fusion_config = os.path.join(get_package_share_directory('depth_fusion'), 'config', 'depth_fusion.yaml')
-    depth_kalman_config = os.path.join(get_package_share_directory('depth_kalman'), 'config', 'depth_kalman.yaml')
-
+    params_config = os.path.join(ROOT_DIR, 'config', 'default.yaml')
 
     def get_rosbag_player_node(package, plugin):
         return ComposableNode(
@@ -57,7 +59,7 @@ def generate_launch_description():
             package=package,
             plugin=plugin,
             name='depth_fusion_node',
-            parameters=[depth_fusion_config],
+            parameters=[params_config],
             extra_arguments=[{'use_intra_process_comms': True},
                              {'use_multi_threaded_executor': True}],
         )
@@ -67,7 +69,7 @@ def generate_launch_description():
             package=package,
             plugin=plugin,
             name='depth_kalman_node',
-            parameters=[depth_kalman_config],
+            parameters=[params_config],
             extra_arguments=[{'use_intra_process_comms': True},
                              {'use_multi_threaded_executor': True}],
         )

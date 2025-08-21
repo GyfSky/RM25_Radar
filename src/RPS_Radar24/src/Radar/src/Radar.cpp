@@ -922,7 +922,7 @@ void MyRadar::Spin(int argc, char **argv){
 //            Armors.push_back((Armor_Net_ptr->NetWork_mlt({car_img}))[0]);
                     std::vector<Mat> car_img_s(1);
                     car_img_s[0].push_back(car_img);
-                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.5, 0.45,1))[0]);
+                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.65, 0.45,1))[0]);
 //            Armors.push_back((Armor_Net_ptr->NetWork_mlt(car_imgs))[0]);
                 }
                 std::map<int,int> id_map={{0,5},{1,0},{2,1},{3,2},{4,3},
@@ -1249,11 +1249,11 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "fps: " << 1000. / (endTime - startTime) << std::endl;
 
             }
-            if(Modes_ptr->isSave==true_ && Modes_ptr->pictureSource==camera_){
-                cv::imwrite((this->save_main_dir + "/" +std::to_string(pic_num)+ ".jpg"),mainCamMat);
-//            cv::imwrite((this->save_sec_dir + "/" +std::to_string(pic_num)+ ".jpg"),secImg_save);
-                pic_num++;
-            }
+//             if(Modes_ptr->isSave==true_ && Modes_ptr->pictureSource==camera_){
+//                 cv::imwrite((this->save_main_dir + "/" +std::to_string(pic_num)+ ".jpg"),mainCamMat);
+// //            cv::imwrite((this->save_sec_dir + "/" +std::to_string(pic_num)+ ".jpg"),secImg_save);
+//                 pic_num++;
+//             }
 
 //        cv::waitKey(500);
         }
@@ -1340,7 +1340,7 @@ void MyRadar::Spin(int argc, char **argv){
 //            Armors.push_back((Armor_Net_ptr->NetWork_mlt({car_img}))[0]);
                     std::vector<Mat> car_img_s(1);
                     car_img_s[0].push_back(car_img);
-                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.5, 0.45,1))[0]);
+                    Armors.push_back((Armor_Net_ptr->myInfer.doInference(car_img_s,0.2, 0.65, 0.45,1))[0]);
                 }
 
                 std::map<int,int> id_map={{0,5},{1,0},{2,1},{3,2},{4,3},
@@ -1758,11 +1758,11 @@ void MyRadar::Spin(int argc, char **argv){
                 std::cout << "fps: " << 1000. / (endTime - startTime) << std::endl;
 
             }
-            if(Modes_ptr->isSave==true_ && Modes_ptr->pictureSource==camera_){
-                cv::imwrite((this->save_main_dir + "/" +std::to_string(pic_num)+ ".jpg"),mainCamMat);
-                cv::imwrite((this->save_sec_dir + "/" +std::to_string(pic_num)+ ".jpg"),secCamMat);
-                pic_num++;
-            }
+            // if(Modes_ptr->isSave==true_ && Modes_ptr->pictureSource==camera_){
+            //     cv::imwrite((this->save_main_dir + "/" +std::to_string(pic_num)+ ".jpg"),mainCamMat);
+            //     cv::imwrite((this->save_sec_dir + "/" +std::to_string(pic_num)+ ".jpg"),secCamMat);
+            //     pic_num++;
+            // }
 
 //            after++;
 
