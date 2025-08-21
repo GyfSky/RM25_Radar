@@ -233,9 +233,11 @@ namespace upc_radar{
         std::shared_ptr<open3d::geometry::TriangleMesh> mesh_filter;
         tf2_ros::Buffer tf_buffer_;
         tf2_ros::TransformListener tf_listener_;
+        rclcpp::TimerBase::SharedPtr timer_;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
         rclcpp::Subscription<interfaces::msg::GameState>::SharedPtr sub_game_state;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_map_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_raw;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_drone_;
     };

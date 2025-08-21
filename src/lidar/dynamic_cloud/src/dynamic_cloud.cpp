@@ -102,6 +102,14 @@ namespace upc_radar{
         sor.filter(*result);
         map_pc = result;
         kd_Tree.setInputCloud(map_pc);
+        pub_map_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox/map", 1);
+        timer_ = this->create_wall_timer(std::chrono::seconds(10), [this,result]() {
+            sensor_msgs::msg::PointCloud2 target_msg;
+            pcl::toROSMsg(*result, target_msg);
+            target_msg.header.frame_id = "rm_frame";
+            target_msg.header.stamp = this->get_clock()->now();
+            pub_map_->publish(target_msg);
+        });
     }
 
     void DynamicCloud::seg_normal(pcl::PointCloud<pcl::PointXYZ> pcl2cloud,
