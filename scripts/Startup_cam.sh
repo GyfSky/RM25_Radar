@@ -1,7 +1,7 @@
 #!/bin/bash
 source /opt/ros/humble/setup.bash
 
-cd /home/thesky/RM25_Radar
+cd ..
 
 source install/setup.bash
 

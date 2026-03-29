@@ -21,16 +21,15 @@
 // }
 
 
-Image::Image(Application application,PictureSource pictureSource,std::string Name ,TF Image_isSave,SaveImagePath saveImagePath,int serial_number ){
+Image::Image(Application application,std::string config_path,PictureSource pictureSource,std::string Name ,TF Image_isSave,int serial_number ){
     //mode
     this->pictureSource = pictureSource;
     this->application = application;
     this->serial_number = serial_number;
 //    SetNet(cls_to_string);
-    this->net_config = YAML::LoadFile(YAML_NETCONFIC_PATH);
-    this->classWithoutCar = net_config["classWithoutCar"].as<int>();
+    this->config = YAML::LoadFile(config_path);
+    this->classWithoutCar = config["general"]["classWithoutCar"].as<int>();
     std::cout << "classWithoutCar: " << classWithoutCar << std::endl;
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
 {//pictureSource path
     if(this->pictureSource == single_picture){
         //image_path = "/home/plusseven/桌面/radar2023_withtrt/radar_val_picture/6.jpg";
@@ -57,12 +56,6 @@ Image::Image(Application application,PictureSource pictureSource,std::string Nam
     else if(Image_isSave == TF::false_){
         Image_issave = false;
     }
-    if(saveImagePath == SaveImagePath::disk02){
-        Image_savepath = config["ImageSavePath"]["disk02"].as<std::string>();
-    }
-    else if(saveImagePath == SaveImagePath::ssdgaoyuan){
-        Image_savepath = config["ImageSavePath"]["ssdgaoyuan"].as<std::string>();
-    }
 }
     Cam_winname = config[Name]["winname"].as<std::string>();
     input_w = config[Name]["picture_size"]["input_w"].as<int>();
@@ -78,15 +71,14 @@ Image::Image(Application application,PictureSource pictureSource,std::string Nam
 }
 
 //带有序列号 g_strSerialNumber
-Image::Image(Application application,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name,TF Image_isSave,SaveImagePath saveImagePath,int serial_number){
+Image::Image(Application application,std::string config_path,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name,TF Image_isSave,int serial_number){
     ////mode
     this->pictureSource = pictureSource;
     this->application = application;
     this->serial_number = serial_number;//start
 //    SetNet(cls_to_string);
-    this->net_config = YAML::LoadFile(YAML_NETCONFIC_PATH);
-    this->classWithoutCar = net_config["classWithoutCar"].as<int>();
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
+    this->config = YAML::LoadFile(config_path);
+    this->classWithoutCar = config["general"]["classWithoutCar"].as<int>();
     this->Cam_img=cv::Mat::zeros(0, 0, CV_8UC3);
 {//pictureSource path
     if(this->pictureSource == single_picture){
@@ -107,7 +99,7 @@ Image::Image(Application application,PictureSource pictureSource,char g_strSeria
     }
     else if(this->pictureSource == camera_){
         Cam_isOpen = true;
-        this->Camerahk_prt = std::shared_ptr<Camera>(new Camera(g_strSerialNumber, Name, node,Image_isSave));
+        this->Camerahk_prt = std::shared_ptr<Camera>(new Camera(g_strSerialNumber, Name, node,config_path,Image_isSave));
     }
 }
 {//save image or not and save image_path
@@ -116,12 +108,6 @@ Image::Image(Application application,PictureSource pictureSource,char g_strSeria
     }
     else if(Image_isSave == TF::false_){
         Image_issave = false;
-    }
-    if(saveImagePath == SaveImagePath::disk02){
-        Image_savepath = config["ImageSavePath"]["disk02"].as<std::string>();
-    }
-    else if(saveImagePath == SaveImagePath::ssdgaoyuan){
-        Image_savepath = config["ImageSavePath"]["ssdgaoyuan"].as<std::string>();
     }
 }
     Cam_winname = config[Name]["winname"].as<std::string>();
@@ -354,7 +340,7 @@ void Image::draw_rusult(std::vector<TRTInferV1::Object> objs, bool isShow/*=true
     // std::cout << "draw1" << std::endl;
     for(TRTInferV1::Object obj:objs){
         cv::rectangle(Cam_draw,cv::Rect(obj.x1,obj.y1,obj.w,obj.h),cv::Scalar(75, 150, 225),2);
-        cv::putText(Cam_draw,net_config[obj.classId].as<std::string>(),cv::Point(obj.x2+10,obj.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {225, 150, 75},2);
+        cv::putText(Cam_draw,config["class_mapping"][obj.classId].as<std::string>(),cv::Point(obj.x2+10,obj.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {225, 150, 75},2);
         cv::putText(Cam_draw,std::to_string(obj.confidence),cv::Point(obj.x2+10,obj.y1-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
     }
     if(isShow){
@@ -368,7 +354,7 @@ void Image::draw_rusult(std::vector<Car> cars,std::vector<Armor> armors,bool isS
     for(Armor armor:armors){
         cv::rectangle(Cam_draw,armor.rect,cv::Scalar(75, 150, 225),2);
         cv::circle(Cam_draw,cv::Point((armor.rect.x+armor.rect.width/2),(armor.rect.y+armor.rect.height/2)),1,cv::Scalar(25,125,225),2);
-        cv::putText(Cam_draw,net_config[armor.cls].as<std::string>(),cv::Point(armor.x2+10,armor.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {225, 150, 75},2);
+        cv::putText(Cam_draw,config["class_mapping"][armor.cls].as<std::string>(),cv::Point(armor.x2+10,armor.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {225, 150, 75},2);
         cv::putText(Cam_draw,std::to_string(armor.conf),cv::Point(armor.x2+10,armor.y1-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
     }
     // std::cout << "draw2" << std::endl;
@@ -379,20 +365,20 @@ void Image::draw_rusult(std::vector<Car> cars,std::vector<Armor> armors,bool isS
             if(car.cls<0){
                 cls = classWithoutCar;
             }
-            cv::putText(Cam_draw,net_config[cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {150, 150, 250},2);
+            cv::putText(Cam_draw,config["class_mapping"][cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {150, 150, 250},2);
             cv::putText(Cam_draw,std::to_string(car.conf),cv::Point(car.x2+10,car.y1-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
             if(application==Radar){
                 circle(map_draw,cv::Point(car.Locate3D.x/28*map_w,map_h-car.Locate3D.y/15*map_h),0,cv::Scalar(150, 150, 250),15 );
-                putText(map_draw,net_config[cls].as<std::string>(),cv::Point(car.Locate3D.x/28*map_w,map_h-car.Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(150, 150, 250), 2);
+                putText(map_draw,config["class_mapping"][cls].as<std::string>(),cv::Point(car.Locate3D.x/28*map_w,map_h-car.Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(150, 150, 250), 2);
             }
         }
         else if(car.cls < this->classWithoutCar){
             cv::rectangle(Cam_draw,car.rect,cv::Scalar(255, 150, 150),2);
-            cv::putText(Cam_draw,net_config[car.cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {255, 150, 150},2);
+            cv::putText(Cam_draw,config["class_mapping"][car.cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {255, 150, 150},2);
             cv::putText(Cam_draw,std::to_string(car.conf),cv::Point(car.x2+10,car.y1-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
             if(application==Radar){
                 circle(map_draw,cv::Point(car.Locate3D.x/28*map_w,map_h-car.Locate3D.y/15*map_h),0,cv::Scalar(255, 150, 150),15 );
-                putText(map_draw,net_config[car.cls].as<std::string>(),cv::Point(car.Locate3D.x/28*map_w,map_h-car.Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255, 150, 150), 2);
+                putText(map_draw,config["class_mapping"][car.cls].as<std::string>(),cv::Point(car.Locate3D.x/28*map_w,map_h-car.Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255, 150, 150), 2);
             }
         }else{
             cv::rectangle(Cam_draw,car.rect,cv::Scalar(150, 150, 150),2);
@@ -416,18 +402,18 @@ void Image::draw_rusult(std::vector<Car> &cars,std::vector<Armor> &armors,cv::Ma
     for(Armor armor:armors){
         cv::rectangle(img_draw,armor.rect,cv::Scalar(75, 150, 225),2);
         cv::circle(img_draw,cv::Point((armor.rect.x+armor.rect.width/2),(armor.rect.y+armor.rect.height/2)),1,cv::Scalar(25,125,225),2);
-        cv::putText(img_draw,net_config[armor.cls].as<std::string>(),cv::Point(armor.x2+10,armor.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {225, 150, 75},2);
+        cv::putText(img_draw,config["class_mapping"][armor.cls].as<std::string>(),cv::Point(armor.x2+10,armor.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {225, 150, 75},2);
         cv::putText(img_draw,std::to_string(armor.conf),cv::Point(armor.x2+10,armor.y1-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
     }
     for(Car car:cars){
         if(car.cls < (this->classWithoutCar/2) && -1 < car.cls){
             cv::rectangle(img_draw,car.rect,cv::Scalar(150, 150, 250),2);
-            cv::putText(img_draw,net_config[car.cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {150, 150, 250},2);
+            cv::putText(img_draw,config["class_mapping"][car.cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {150, 150, 250},2);
             cv::putText(img_draw,std::to_string(car.conf),cv::Point(car.x2+10,car.y1-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
         }
         else if(car.cls < this->classWithoutCar && -1 < car.cls ){
             cv::rectangle(img_draw,car.rect,cv::Scalar(255, 150, 150),2);
-            cv::putText(img_draw,net_config[car.cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {255, 150, 150},2);
+            cv::putText(img_draw,config["class_mapping"][car.cls].as<std::string>(),cv::Point(car.x2+10,car.y1-10),cv::FONT_HERSHEY_SIMPLEX, 1, {255, 150, 150},2);
             cv::putText(img_draw,std::to_string(car.conf),cv::Point(car.x2+10,car.y1-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
         }else{
             cv::rectangle(img_draw,car.rect,cv::Scalar(150, 150, 150),2);
@@ -460,7 +446,7 @@ void Image::draw_cls(std::vector<STrack> output_stracks,int cam_id) {
                     0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
 
                 if( -1 < cls && cls < classWithoutCar){
-                    putText(Cam_draw,net_config[cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                    putText(Cam_draw,config["class_mapping"][cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
                     cv::putText(Cam_draw,std::to_string(output_stracks[i].conf_armor),cv::Point(output_stracks[i].tlbr[2]+10,output_stracks[i].tlbr[1]-30),cv::FONT_HERSHEY_SIMPLEX, 2, {100, 225, 100},2);
                 } else{
                     putText(Cam_draw,"car",Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
@@ -490,7 +476,7 @@ void Image::draw_cls(std::vector<STrack> output_stracks,int cam_id) {
                     0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
 
                 if( -1 < cls && cls < classWithoutCar){
-                    putText(Cam_draw,net_config[cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                    putText(Cam_draw,config["class_mapping"][cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
                     cv::putText(Cam_draw,std::to_string(output_stracks[i].conf_armor),cv::Point(output_stracks[i].tlbr[2]+10,output_stracks[i].tlbr[1]-30),cv::FONT_HERSHEY_SIMPLEX, 2, {100, 225, 100},2);
                 } else{
                     putText(Cam_draw,"car",Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
@@ -534,7 +520,7 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
                             0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
 
                     if( -1 < cls && cls < classWithoutCar){
-                        putText(Cam_draw,net_config[cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                        putText(Cam_draw,config["class_mapping"][cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
                         cv::putText(Cam_draw,std::to_string(output_stracks[i].conf_armor),cv::Point(output_stracks[i].tlbr[2]+10,output_stracks[i].tlbr[1]-30),cv::FONT_HERSHEY_SIMPLEX, 2, {100, 225, 100},2);
                     } else{
                         putText(Cam_draw,"car",Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
@@ -547,7 +533,7 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
 //                int track_id = output_stracks[i].track_id;
 //                int cls = track_id%7 + track_id/7*classWithoutCar/2;
                         if( -1 < cls && cls < classWithoutCar){
-                            putText(map_draw,net_config[cls].as<std::string>(),cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
+                            putText(map_draw,config["class_mapping"][cls].as<std::string>(),cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
                         } else{
                             putText(map_draw,"car",cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 5, s, 2);
                         }
@@ -584,7 +570,7 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
                 int track_id = output_stracks[i].track_id;
                 int cls = track_id%classWithoutCar;
                 if( -1 < track_id && track_id < classWithoutCar){
-                    putText(Cam_draw,net_config[cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
+                    putText(Cam_draw,config["class_mapping"][cls].as<std::string>(),Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
                     cv::putText(Cam_draw,std::to_string(output_stracks[i].conf_armor),cv::Point(output_stracks[i].tlbr[2]+10,output_stracks[i].tlbr[1]-30),cv::FONT_HERSHEY_SIMPLEX, 1, {100, 225, 100},2);
                 } else{
                     putText(Cam_draw,"car",Point(tlwh[0]-5, tlwh[1] - 10),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
@@ -597,7 +583,7 @@ void Image::draw_rusult(std::vector<STrack> output_stracks, bool is_cls){
 //                int track_id = output_stracks[i].track_id;
 //                int cls = track_id%7 + track_id/7*classWithoutCar/2;
                     if( -1 < cls && cls < classWithoutCar){
-                        putText(map_draw,net_config[cls].as<std::string>(),cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
+                        putText(map_draw,config["class_mapping"][cls].as<std::string>(),cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
                     } else{
                         putText(map_draw,"car",cv::Point(output_stracks[i].Locate3D.x/28*map_w,map_h-output_stracks[i].Locate3D.y/15*map_h),cv::FONT_HERSHEY_PLAIN, 1, s, 2);
                     }

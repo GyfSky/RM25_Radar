@@ -14,9 +14,6 @@ class STrack
 {
 public:
     STrack(int cls, float x, float y);
-    STrack(vector<float> tlwh_, Car &car);
-    STrack(float x1, float y1, float w, float h, int cls,float conf, float conf_armor, Eigen::MatrixXd car_armorConfMatrix);
-    STrack(float x1, float y1, float w, float h, int cls,float conf, float conf_armor);
 	STrack();
 	~STrack();
 

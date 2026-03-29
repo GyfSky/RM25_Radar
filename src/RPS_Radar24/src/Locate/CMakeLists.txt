@@ -101,7 +101,6 @@ target_link_libraries(Image PUBLIC Camera)
 
 add_library(Locate
         ../Locate/src/CoordinateSystem.cpp
-        ../Locate/src/KRepresent.cpp
         ../Locate/src/MapAOV.cpp
         ../Hero/src/CoordSolver.cpp
         )

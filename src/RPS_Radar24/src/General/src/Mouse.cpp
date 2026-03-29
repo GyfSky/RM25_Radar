@@ -38,16 +38,13 @@
 //     return mouse.point2d_mouse_xy;
 // }
 
-Mouse::Mouse(cv::Mat &image, std::string Name){
+Mouse::Mouse(cv::Mat &image, std::string Name, std::string config_path){
     this->Name = Name;
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
+    YAML::Node config = YAML::LoadFile(config_path);
     this->image = image;
     this->flag_num = 0;
     this->pointNumber = config[Name]["mousePointNumber"].as<int>();
     this->winname = config[Name]["winname"].as<std::string>();
-    this->is_test = config["test"]["is_test"].as<bool>();
-    this->w = config["test"]["rect"]["w"].as<int>();
-    this->h = config["test"]["rect"]["h"].as<int>();
     if(Name == "Livox"){
         this->paddingu = config[Name]["paddingu"].as<int>();
         this->paddingv = config[Name]["paddingv"].as<int>();
@@ -62,8 +59,8 @@ Mouse::Mouse (cv::Mat &image,int pointNumber/* = 5*/, std::string winname/* = "d
     this->winname = winname;
 }
 
-std::vector<cv::Point2d> GetPoint2d_mouse(cv::Mat &imshowMat, std::string Name){
-    Mouse mouse(imshowMat,Name);
+std::vector<cv::Point2d> GetPoint2d_mouse(cv::Mat &imshowMat, std::string Name, std::string config_path){
+    Mouse mouse(imshowMat,Name,config_path);
     while (mouse.point2d_mouse_xy.size() != mouse.pointNumber){
         cv::setMouseCallback(mouse.winname, onMouse, &mouse);
         cv::imshow(mouse.winname, mouse.image);
@@ -73,8 +70,8 @@ std::vector<cv::Point2d> GetPoint2d_mouse(cv::Mat &imshowMat, std::string Name){
     return mouse.point2d_mouse_xy;
 }
 
-cv::Rect GetRect_mouse(cv::Mat &imshowMat, std::string Name){
-    Mouse mouse(imshowMat,Name);
+cv::Rect GetRect_mouse(cv::Mat &imshowMat, std::string Name, std::string config_path){
+    Mouse mouse(imshowMat,Name,config_path);
     while (mouse.rect_points.size()!=2){
         cv::setMouseCallback(mouse.winname, onMouseRect, &mouse);
         cv::imshow(mouse.winname, mouse.image);
@@ -118,11 +115,6 @@ void onMouse(int event, int x, int y, int flags, void *para){
             mouse.flag_num = mouse.flag_num + 1;
             // mouse.flag_back = 1;
         }
-        // if(mouse.is_test){
-        //     mouse.test = cv::Rect(((int)mouse.point2d_mouse_xy[0].x - mouse.w/2),((int)mouse.point2d_mouse_xy[0].y - mouse.h),mouse.w,mouse.h);
-        //     cv::rectangle(mouse.image,mouse.test,255,2,100);
-        // }
-
     }
     if(event==cv::EVENT_RBUTTONDOWN) {   //右键按下
         if(mouse.flag_num>0){

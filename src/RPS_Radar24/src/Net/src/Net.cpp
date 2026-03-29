@@ -8,9 +8,9 @@
 /**
  * @brief 初始化神经网络，加载参数
  */
-Net::Net(std::string Name) {
+Net::Net(std::string config_path,std::string Name) {
     //加载神经网络所需的参数
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
+    YAML::Node config = YAML::LoadFile(config_path);
     this->isArmor = config[Name]["isArmor"].as<bool>();
     this->onnx_path = config[Name]["onnx_path"].as<std::string>();
     this->trt_path  = config[Name]["trt_path"].as<std::string>();
@@ -21,9 +21,8 @@ Net::Net(std::string Name) {
     this->num_class  = config[Name]["num_class"].as<int>();
     this->input_h = config[Name]["input_h"].as<int>();
     this->input_w = config[Name]["input_w"].as<int>();
+    this->classWithoutCar= config["general"]["classWithoutCar"].as<int>();
 
-    this->net_config = YAML::LoadFile(YAML_NETCONFIC_PATH);
-    this->classWithoutCar= net_config["classWithoutCar"].as<int>();
     //神经网络初始化
     myInfer.getDevice(0);
     const char* temp_trtpath = this->trt_path.c_str();

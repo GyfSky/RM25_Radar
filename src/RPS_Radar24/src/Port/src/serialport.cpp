@@ -12,10 +12,9 @@
  *@param  parity   类型  int  效验类型 取值为N,E,O,S
  *@param  portchar 类型  char* 串口路径
  */
-bool SerialPort::initSerialPort(const char *port_path)
-{
+bool SerialPort::initSerialPort(const char *port_path,std::string config_path){
 
-    YAML::Node config = YAML::LoadFile("/home/thesky/RM25_Radar/src/radar_bringup/config/Port_config.yaml");
+    YAML::Node config = YAML::LoadFile(config_path);
 //    this->port_path = port_path;
 //    const char *cmd_system = "sudo chmod 777 " + port_path;
     std::cout << "give sudo to port" << std::endl;
@@ -30,10 +29,10 @@ bool SerialPort::initSerialPort(const char *port_path)
     this->fd = open(port_path, O_RDWR|O_NOCTTY| O_NDELAY);
 //    this->fd = open("/dev/ttyUSB0", O_RDWR|O_NOCTTY| O_NDELAY);
 
-    speed = config["speed"].as<int>();
-    dataBits = config["dataBits"].as<int>();
-    stopBits = config["stopBits"].as<int>();
-    parity = config["parity"].as<char>();
+    speed = config["port"]["speed"].as<int>();
+    dataBits = config["port"]["dataBits"].as<int>();
+    stopBits = config["port"]["stopBits"].as<int>();
+    parity = config["port"]["parity"].as<char>();
 
 //    speed = baud;//=115200
 //    databits = 8;

@@ -174,13 +174,11 @@ add_library(Camera
 
 
 add_library(Image 
-        src/Image/src/Image.cpp
-        src/Image/src/ImageStitch.cpp)
+        src/Image/src/Image.cpp)
 target_link_libraries(Image PUBLIC Camera)
 
 add_library(Locate
         src/Locate/src/CoordinateSystem.cpp
-        src/Locate/src/KRepresent.cpp
         src/Locate/src/Predict.cpp
         src/Locate/src/MapAOV.cpp
 		src/Hero/src/CoordSolver.cpp
@@ -232,14 +230,11 @@ add_executable(calib_main
         src/Radar/test/main.cpp
 		src/Radar/src/Radar.cpp)
 
-add_executable(test_contract_img
-	 src/Radar/test/main_test_contract_img.cpp)
 
 # ament_auto_find_build_dependencies ()
 
 ament_target_dependencies(RadarMain rclcpp interfaces std_msgs cv_bridge sensor_msgs Boost message_filters)
  ament_target_dependencies(calib_main rclcpp interfaces rclpy std_msgs Boost rosbag2 sensor_msgs PCL message_filters)
- ament_target_dependencies(test_contract_img rclcpp interfaces rclpy std_msgs Boost rosbag2 sensor_msgs PCL message_filters)
  ament_target_dependencies(General PUBLIC rclcpp cv_bridge std_msgs interfaces)
 
 
@@ -247,8 +242,6 @@ ament_target_dependencies(RadarMain rclcpp interfaces std_msgs cv_bridge sensor_
 target_link_libraries(RadarMain  
 SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 target_link_libraries(calib_main
-SensorParam Image Locate Net Mouse ByteTrack Port cudart)
-target_link_libraries(test_contract_img  
 SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 
 install(TARGETS

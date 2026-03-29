@@ -15,12 +15,11 @@
 class BYTETracker : private CostMatrix
 {
 public:
-	BYTETracker(OurPattern ourPattern,std::shared_ptr<MatrixCoordinateSystem> CooSystem_ptr);
+	BYTETracker(OurPattern ourPattern,std::shared_ptr<MatrixCoordinateSystem> CooSystem_ptr,std::string config_path);
 	~BYTETracker();
 
 //	vector<STrack> update(const vector<Object>& objects);
 	void clear_cam_accurate();
-	void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<Car> &cars);
 	void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections, vector<STrack> &out);
     void update(vector<STrack> &tracked_stracks, vector<STrack> &lost_stracks, vector<STrack> &lost_predict_stracks,vector<STrack> &detections,
     	vector<STrack> &out,vector<STrack> &to_sentry,interfaces::msg::DetectResult lidar_det,interfaces::msg::LidarEnhance lidar_enhance);

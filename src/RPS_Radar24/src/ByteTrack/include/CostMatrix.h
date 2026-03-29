@@ -33,7 +33,7 @@ public:
     float min_rect_step  = 200 ;     // 位置因素  23m
 
 public:
-    CostMatrix(OurPattern ourPattern);
+    CostMatrix(OurPattern ourPattern,std::string config_path);
     CostMatrix() = default;
 
 //    Eigen::MatrixXd getIouAndDistancetCost(vector<STrack> &atracks, vector<STrack> &btracks, bool isBR);

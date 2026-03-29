@@ -1,16 +1,5 @@
 %YAML:1.0
 ---
-# input:
-#   picture_size:
-#     input_w: 1440       #  输入onnx的宽
-#     input_h: 1088       #  输入onnx的长
-
-#   source_path:
-#     singleImg_path: "../something/1439.jpg"                                                   #  图片路径
-#     picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/shangjiaoR2/"                      #  图片文件夹路径
-#                                                                        #  从文件夹中的第n张图片开始 #
-#     video_path: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-04_16_38_22/shangjiao.mp4"  #  视频路径
-
 general:
   cam_use_saved_T: true
   lidar_use_saved_T: false
@@ -18,17 +7,40 @@ general:
   situation: "rm25"
   is_one_lidar: false
   is_real: true
+  classWithoutCar: 10
 
 save:
-  # save_bag_path: "/media/plusseven/AC83-EF44/record/Resist_wind_in_sky_2/"
   save_bag_path: "/media/thesky/THESKY/bags/"
-#  save_bag_path: "/media/plusseven/KESU/img_DATA/test_dir/"
-  node_name: "mid70"
-
+  lidarTopicName: "/livox/lidar_3JEDM7A00106241 /livox/lidar_3GGDL82001UK381"
 
 port:
-  USB0: "/dev/ttyUSB0"    #  串口路径1
-  USB1: "/dev/ttyUSB1"    #  串口路径2
+  speed: 115200
+  dataBits: 8
+  stopBits: 1
+  parity: 'N'
+
+class_mapping:
+  B1: 0
+  B2: 1
+  B3: 2
+  B4: 3
+  B7: 4
+  R1: 5
+  R2: 6
+  R3: 7
+  R4: 8
+  R7: 9
+
+  0: B1
+  1: B2
+  2: B3
+  3: B4
+  4: B7
+  5: R1
+  6: R2
+  7: R3
+  8: R4
+  9: R7
 
 net:
   isArmor: false
@@ -37,9 +49,9 @@ net:
 #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.trt"         #   engine文件路径
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.onnx"       #   onnx文件路径
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.trt"         #   engine文件路径
-  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.trt"
+  trt_path: "resource/model/e1_4.trt"
   #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"
-  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.onnx"       #   onnx文件路径
+  onnx_path: "resource/model/e1_4.onnx"       #   onnx文件路径
   # 神经网络相关参数
   obj_thres: 0.5        #
   conf_thres: 0.5       #
@@ -59,9 +71,9 @@ net_60:
   #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.trt"         #   engine文件路径
   #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.onnx"       #   onnx文件路径
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.trt"         #   engine文件路径
-  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.trt"
+  trt_path: "resource/model/e1_4.trt"
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"         #   engine文件路径
-  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_4.onnx"       #   onnx文件路径
+  onnx_path: "resource/model/e1_4.onnx"       #   onnx文件路径
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/shuffle.engine"         #   engine文件路径
 #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.trt"         #   engine文件路径
 #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.onnx"       #   onnx文件路径
@@ -82,8 +94,8 @@ net_armor:
   # 神经网络相关参数
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.trt"         #   engine文件路径
 #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e2.trt"         #   engine文件路径
-  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/ra0801.trt"         #   engine文件路径
-  onnx_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/ra0801.onnx"       #   onnx文件路径
+  trt_path: "resource/model/ra0801.trt"         #   engine文件路径
+  onnx_path: "resource/model/ra0801.onnx"       #   onnx文件路径
   obj_thres: 0.2        #
   conf_thres: 0.2       #
   nms_thres: 0.45        #
@@ -93,45 +105,91 @@ net_armor:
   input_w: 224       #  输入onnx的宽
   input_h: 224       #  输入onnx的长
 
-ImageSavePath:
-  disk02: "/home/thesky/bags/2023radarData/"         # 保存图片文件夹路径1
-  ssdgaoyuan: "/home/thesky/bags/img_DATA/radar2023/"    # 保存图片文件夹路径2
-
 map:
-  mapPath: "/home/thesky/RM25_Radar/resource/map_25_national.jpg"                    # 小地图
+  mapPath: "resource/map_25_national.jpg"                    # 小地图
   mapImage_winname: "map"
   map_w: 1920
   map_h: 1039
+
+pnp:
+  left:
+    point_num: 6
+    red:
+      pts_pnp_2d:
+        #      rm25
+        #      - [ 9.08962, 10.8000, 0.80 ]
+        #      - [ 14.22984, 14.86, 0.55 ]
+        #      - [ 24.3000, 15.0000, 0.2]
+        #      - [ 24.33395, 11.04948, 0.73188 ]
+        #      - [ 14.68471, 8.71834, 0.30 ]
+        #      - [ 10.000, 6.7000, 0.30 ]
+        #      rm25 national
+        - [ 7.79730, 10.8000, 0.80 ]
+        - [ 14.22984, 14.86, 0.55 ]
+        - [ 24.3000, 15.0000, 0.2 ]
+        - [ 24.33395, 11.04948, 0.73188 ]
+        - [ 14.68471, 8.71834, 0.30 ]
+        - [ 10.000, 6.7000, 0.30 ]
+
+    blue:
+      pts_pnp_2d:
+        #     rm25
+        #      - [18.91038, 4.2000, 0.80]
+        #      - [13.77016, 0.14, 0.55]
+        #      - [3.7000, 0.0, 0.2]
+        #      - [3.66605, 3.95052, 0.73188]
+        #      - [13.31529, 6.28166, 0.30]
+        #      - [18.000, 8.3, 0.30]
+        #      rm25 national
+        - [ 20.20270, 4.2000, 0.80 ]
+        - [ 13.77016, 0.14, 0.55 ]
+        - [ 3.7000, 0.0, 0.2 ]
+        - [ 3.66605, 3.95052, 0.73188 ]
+        - [ 13.31529, 6.28166, 0.30 ]
+        - [ 18.000, 8.3, 0.30 ]
+
+  right:
+    point_num: 6
+
+    red:
+      pts_pnp_2d:
+        #     rm25
+        #      - [ 7.06806, 3.35, 0.0 ]
+        #      - [ 11.59061, 4.84078, 0.30]
+        #      - [ 18.91038, 4.20, 0.80]
+        #      - [ 22.50194, 5.20127, 0.0]
+        #      - [ 24.97524, 0.0, 0.20]
+        #      - [ 13.77016, 0.14, 0.55]
+        #     rm25 national
+        - [ 7.06806, 3.35, 0.0 ]
+        - [ 11.59061, 4.84078, 0.30 ]
+        - [ 20.20270, 4.20, 0.80 ]
+        - [ 22.82524, 5.19873, 0.0 ]
+        - [ 24.97524, 0.0, 0.20 ]
+        - [ 13.77016, 0.14, 0.55 ]
+
+    blue:
+      pts_pnp_2d:
+        #     rm25
+        #      - [20.93194, 11.65, 0.0]
+        #      - [16.40939, 10.15922, 0.30]
+        #      - [9.08962, 10.8, 0.80]
+        #      - [5.49806, 9.79873, 0.0]
+        #      - [3.02476, 15.0, 0.20]
+        #      - [14.22984, 14.86, 0.55]
+        #     rm25 national
+        - [ 20.93194, 11.65, 0.0 ]
+        - [ 16.40939, 10.15922, 0.30 ]
+        - [ 7.79730, 10.8, 0.80 ]
+        - [ 5.17476, 9.80127, 0.0 ]
+        - [ 3.02476, 15.0, 0.20 ]
+        - [ 14.22984, 14.86, 0.55 ]
 
 test:
   is_test: true
   rect:
     w: 30
     h: 30
-
-Livox:
-  lidarTopicName: "/livox/lidar_3JEDM7A00106241 /livox/lidar_3GGDL82001UK381"
-  init_scripts_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/scripts/codeConfig.sh"
-#  lidarTopicName: "/livox/points"
-  lidarQueueSize: 1                      
-  lidarGetBackgoundVectorSize: 10   
-  lidarGetCompetitionVectorSize: 10
-  paddingu: 0                      # 获得场地深度图时padding u
-  paddingv: 0
-  winname: "livoxDepthPic"
-  mousePointNumber: 6
-
-  picture_size:
-    input_w: 1440       #  输入liovx的宽
-    input_h: 1080       #  输入livox的长
-  extrinsic_Lidar2Cam: !!opencv-matrix
-    rows: 4
-    cols: 4
-    dt: f
-    data: [ -0.312246,  -0.948865 , -0.0464575 , 0.0802189,
-            -0.137648,  0.0935743  ,-0.986051 , 0.0441553,
-            0.939977, -0.301495 , -0.159827  ,0.0552311,
-            0.000000000, 0.000000000, 0.000000000, 1.000000000 ]
 
 
 # 00F26632053
@@ -333,25 +391,25 @@ cost:
 
 
 Mat:
-   perspective_K: !!opencv-matrix
-      rows: 3
-      cols: 3
-      dt: d
-      data: [ 1.3449025802621550e+00, 0., -8.3298577887516103e+00, 0.,
-          1.3490133165271212e+00, -8.4671909246454788e+00, 0., 0., 1. ]
-   H: !!opencv-matrix
-      rows: 3
-      cols: 3
-      dt: d
-      data: [ 1.4029305014692133e+00, 1.1606751963025159e-01,
-          -1.3483729476866583e+03, -7.6786296943075136e-02,
-          1.4153770898342934e+00, -2.0631558910016051e+02,
-          1.4619065094358816e-04, 1.1019309647169338e-04, 1. ]
-   H2: !!opencv-matrix
-      rows: 3
-      cols: 3
-      dt: d
-      data: [ -3.2967433545274266e-01, -7.0479509007261631e-01,
-          1.7740760675152310e+03, -2.4929035989810086e-01,
-          -5.3206714963650881e-01, 1.3399517440639006e+03,
-          -1.8598175821575415e-04, -3.9714511338002537e-04, 1. ]
+  perspective_K: !!opencv-matrix
+    rows: 3
+    cols: 3
+    dt: d
+    data: [ 1.3333333333333333, 0., 0., 0., 1.3333333333333333, 0., 0.,
+            0., 1. ]
+  H: !!opencv-matrix
+    rows: 3
+    cols: 3
+    dt: d
+    data: [ 2.0505482037408318, 0.40594222613905995,
+            -4517.4784359798259, -0.14039992959075431, 2.060491754262594,
+            -410.70753888480783, 0.0004623599834200531,
+            6.6859043038557193e-05, 1. ]
+  H2: !!opencv-matrix
+    rows: 3
+    cols: 3
+    dt: d
+    data: [ 0.47327623396963897, -0.16828148569472953,
+            2144.3895500990134, -0.013599631791623124, 0.97334992122766018,
+            343.17033666673888, -0.00022214997843015351,
+            1.5434951091185001e-05, 1. ]

@@ -12,6 +12,10 @@ PictureSource MyRadar::getPictureSource() {
 MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
     this->node = node;
     after = 1490;bafter = after;int start = 0;
+
+    std::string pkg_share = ament_index_cpp::get_package_share_directory("radar_bringup");
+    config_path = std::filesystem::path(pkg_share) / "config/Config.yaml";
+
     node->declare_parameter<bool>("debug",true);
     node->declare_parameter<int>("dartValue",200);
     for (int i=0;i<5;i++) {
@@ -30,48 +34,41 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
 
     this->MainMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
 
-    this->KRepresent_ptr = std::shared_ptr<KRepresent>(new KRepresent());//疑似没有用到
-    // this->Livox_ptr = std::shared_ptr<Livox>(new Livox());
     //网络相关
-    this->MainCam_Net_ptr   = std::shared_ptr<Net>(new Net("net_60"));
-    this->Armor_Net_ptr   = std::shared_ptr<Net>(new Net("net_armor"));
+    this->MainCam_Net_ptr   = std::shared_ptr<Net>(new Net(config_path,"net_60"));
+    this->Armor_Net_ptr   = std::shared_ptr<Net>(new Net(config_path,"net_armor"));
 
     std::cout << "start_SensorParam" << std::endl;
 
-    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern));
+    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern,config_path));
     // this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("TDT",CamPosition::left,Modes_ptr->ourPattern));
-    //MainCam_ptr->K 将 MainCam_ptr的内参赋值给 K
-    this->Lidar_ptr = std::shared_ptr<SensorParam>(new SensorParam("Livox",MainCam_ptr->K,CamPosition::right,Modes_ptr->ourPattern));
 
-    this->costMatrix_ptr  = std::shared_ptr<CostMatrix>(new CostMatrix(Modes_ptr->ourPattern));
-
+    this->costMatrix_ptr  = std::shared_ptr<CostMatrix>(new CostMatrix(Modes_ptr->ourPattern,this->config_path));
     //获取图像
     this->MainCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60", Modes_ptr->isSave, disk02,
-                      start));
+        new Image(Modes_ptr->application,this->config_path,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60", Modes_ptr->isSave,start));
 
     // this->CoordSolve_ptr  = std::shared_ptr<CoordSolver>(new CoordSolver(Modes_ptr->ourPattern));//英雄吊射？？
 
     if(!is_one_cam){
         this->SecMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
-        this->SecCam_Net_ptr   = std::shared_ptr<Net>(new Net("net"));
+        this->SecCam_Net_ptr   = std::shared_ptr<Net>(new Net(config_path,"net"));
             std::this_thread::sleep_for(std::chrono::milliseconds (10));
-        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern));
+        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern,config_path));
         this->SecCam_Image_ptr = std::shared_ptr<Image>(
-                new Image(Common,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30", Modes_ptr->isSave, disk02,
-                          start));
-        this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(this->MainCam_ptr, this->SecCam_ptr, false));
+                new Image(Common,this->config_path,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30", Modes_ptr->isSave,start));
+        this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(this->MainCam_ptr, this->SecCam_ptr, false,this->config_path));
     }else{
-        this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(Modes_ptr->ourPattern));
+        this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(Modes_ptr->ourPattern,this->config_path));
     }
 
     this->CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem(PretreatObjs_ptr->classWithoutCar));//坐标转换
     this->classWithoutCar=PretreatObjs_ptr->classWithoutCar;
-    this->BYTETracker_ptr = std::shared_ptr<BYTETracker>(new BYTETracker(Modes_ptr->ourPattern,this->CooSystem_ptr));
+    this->BYTETracker_ptr = std::shared_ptr<BYTETracker>(new BYTETracker(Modes_ptr->ourPattern,this->CooSystem_ptr,this->config_path));
 
     //串口
-    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort,node.get()));
-    this->STrackInit(PretreatObjs_ptr->classWithoutCar, Modes_ptr->ourPattern);
+    this->Port_ptr = std::shared_ptr<Port>(new Port(Modes_ptr->ourPattern, PretreatObjs_ptr->half_classWithoutCar, Modes_ptr->Port_isOpen, Modes_ptr->usePort, config_path,node.get()));
+    this->STrackInit(this->classWithoutCar, Modes_ptr->ourPattern);
 
     hero_location1_= Modes_ptr->ourPattern == red? cv::Point3d(17.5392,4.1475,0.0):cv::Point3d(10.4608,10.8525,0.0);
     hero_location2_= Modes_ptr->ourPattern == red? cv::Point3d(18.132,11.349,0.0):cv::Point3d(9.868,3.651,0.0);
@@ -93,10 +90,6 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
     tunnel_slanted_[1]=cv::Point2f(18.101,5.147);
     tunnel_slanted_[2]=cv::Point2f(19.377,4.725);
     tunnel_slanted_[3]=cv::Point2f(17.713,2.217);
-
-    //test
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-    std::string win_name = config["Livox"]["winname"].as<std::string>();
 
     callBackGroup_=node->create_callback_group(rclcpp::CallbackGroupType::Reentrant);//重入（Reentrant：每时刻允许多个线程） 互斥（MutuallyExclusive：每时刻只允许1个线程）
     timerGroup_=node->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -137,6 +130,9 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
 
 MyRadar::MyRadar(rclcpp::Node::SharedPtr node,bool flag){
     this->node = node;
+    std::string pkg_share = ament_index_cpp::get_package_share_directory("radar_bringup");
+    config_path = std::filesystem::path(pkg_share) / "config/Config.yaml";
+
     after = 1490;bafter = after;int start = 0;
 
     this->Modes_ptr = std::shared_ptr<Modes>(new Modes());
@@ -145,16 +141,14 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node,bool flag){
     else if (this->Modes_ptr->camNumber==2) this->is_one_cam=false;
 
     this->MainMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
-    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern));
+    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern,config_path));
     this->MainCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Modes_ptr->application,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60", Modes_ptr->isSave, disk02,
-                      start));
+        new Image(Modes_ptr->application,this->config_path,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60", Modes_ptr->isSave,start));
     if(!is_one_cam){
         this->SecMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
-        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern));
+        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern,config_path));
         this->SecCam_Image_ptr = std::shared_ptr<Image>(
-                new Image(Common,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30", Modes_ptr->isSave, disk02,
-                          start));
+                new Image(Common,this->config_path,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30", Modes_ptr->isSave,start));
     }
 
     this->CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem(10));//坐标转换
@@ -295,7 +289,7 @@ void MyRadar::rectsCallBack(const interfaces::msg::ClusterRect::SharedPtr msg) {
 
     if (index1!=-1&&index2!=-1&&min_gap1<0.2&&min_gap2<0.2) {
         interfaces::msg::ClusterRect lidar_rects;
-        auto net_config = YAML::LoadFile(YAML_NETCONFIC_PATH);
+        auto net_config = YAML::LoadFile(this->config_path);
         for (int j=0;j<msg->rects1.size();j++) {
             double side_length1=1700.0/sqrt(pow(msg->rects1[j].x,2)+pow(msg->rects1[j].y,2)+pow(msg->rects1[j].z,2));
             cv::Point p1,p2;
@@ -693,7 +687,7 @@ void MyRadar::rectsCallBack(const interfaces::msg::ClusterRect::SharedPtr msg) {
                 cluster_target.clusters[cluster_id].cost_matrix[j]+=stracks[0][i].ws_armorConfMatrix(0,j);
             int id=stracks[0][i].cls;
             if (id>=0&&id<=9)
-                putText(img1, net_config[id].as<std::string>(), Point(stracks[0][i].tlbr[0], stracks[0][i].tlbr[1] - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
+                putText(img1, net_config["class_mapping"][id].as<std::string>(), Point(stracks[0][i].tlbr[0], stracks[0][i].tlbr[1] - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
             // else if (id==10)
             //     putText(img1, "car", Point(stracks[0][i].tlbr[0], stracks[0][i].tlbr[1] - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
 
@@ -704,7 +698,7 @@ void MyRadar::rectsCallBack(const interfaces::msg::ClusterRect::SharedPtr msg) {
                 cluster_target.clusters[cluster_id].cost_matrix[j]+=stracks[1][i].ws_armorConfMatrix(0,j);
             int id=stracks[1][i].cls;
             if (id>=0&&id<=9)
-                putText(img2, net_config[id].as<std::string>(), Point(stracks[1][i].sec_rect[0], stracks[1][i].sec_rect[1] - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
+                putText(img2, net_config["class_mapping"][id].as<std::string>(), Point(stracks[1][i].sec_rect[0], stracks[1][i].sec_rect[1] - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
             // else if (id==-1)
             //     putText(img2, "car", Point(stracks[1][i].sec_rect[0], stracks[1][i].sec_rect[1] - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
         }
@@ -721,7 +715,7 @@ void MyRadar::rectsCallBack(const interfaces::msg::ClusterRect::SharedPtr msg) {
                 }else if (id==4||id==10) {
                     continue;
                 }
-                putText(img1, net_config[id].as<std::string>(), Point(armor.x1+lidar_rects.rects1[i].x1, armor.y1+lidar_rects.rects1[i].y1 - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
+                putText(img1, net_config["class_mapping"][id].as<std::string>(), Point(armor.x1+lidar_rects.rects1[i].x1, armor.y1+lidar_rects.rects1[i].y1 - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
             }
         }
         for (int i=0;i<lidar_rects.rects2.size(); i++) {
@@ -734,7 +728,7 @@ void MyRadar::rectsCallBack(const interfaces::msg::ClusterRect::SharedPtr msg) {
                 }else if (id==4||id==10) {
                     continue;
                 }
-                putText(img2, net_config[id].as<std::string>(), Point(armor.x1+lidar_rects.rects2[i].x1, armor.y1+lidar_rects.rects2[i].y1 - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
+                putText(img2, net_config["class_mapping"][id].as<std::string>(), Point(armor.x1+lidar_rects.rects2[i].x1, armor.y1+lidar_rects.rects2[i].y1 - 5),0, 0.6, Scalar(0, 0, 255), 2, LINE_AA);
             }
         }
 
@@ -1164,7 +1158,6 @@ void MyRadar::calib() {
         SecCam_Image_ptr->Init_calib();
     }
     std::vector<cv::Point2d> pts_pnp_2d_main, pts_pnp_2d_sec;
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
     if(MainCam_Image_ptr->is_getPoint2d_mouse_Cam ){
         while(mainCamMat.empty() ){
             spin_some(node);
@@ -1179,7 +1172,7 @@ void MyRadar::calib() {
 
         // ROS_INFO("step1");
         std::cout<<"---step1---"<<std::endl;
-        MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60");
+        MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60",this->config_path);
         CooSystem_ptr->Get2world_matrix(MainCam_ptr->T_2world  ,MainCam_ptr->K ,MainCam_ptr->pts_pnp_2d , MainCam_ptr->pts_pnp_3d);
         std::ofstream fout("/home/thesky/RM25_Radar/resource/main2world.txt");
         if(!fout)
@@ -1223,8 +1216,8 @@ void MyRadar::calib() {
 
         std::cout<<"---step1---"<<std::endl;
 
-        rect =GetRect_mouse(secCamMat,"Hik60");
-        SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60");
+        rect =GetRect_mouse(secCamMat,"Hik60",config_path);
+        SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60",config_path);
         CooSystem_ptr->Get2world_matrix(SecCam_ptr->T_2world  ,SecCam_ptr->K ,SecCam_ptr->pts_pnp_2d , SecCam_ptr->pts_pnp_3d);
         std::ofstream fout("/home/thesky/RM25_Radar/resource/sec2world&rect.txt");
         if(!fout)
@@ -1264,7 +1257,7 @@ void MyRadar::Init(){
     }
 
     std::vector<cv::Point2d> pts_pnp_2d_main, pts_pnp_2d_sec;
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
+    YAML::Node config = YAML::LoadFile(config_path);
     bool use_saved_T = config["general"]["cam_use_saved_T"].as<bool>();
     if(MainCam_Image_ptr->is_getPoint2d_mouse_Cam ){
 
@@ -1309,7 +1302,7 @@ void MyRadar::Init(){
             }
             fin.close();
             if (!use_saved_T) {
-                MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60");
+                MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60",this->config_path);
                 CooSystem_ptr->Get2world_matrix(MainCam_ptr->T_2world  ,MainCam_ptr->K ,MainCam_ptr->pts_pnp_2d , MainCam_ptr->pts_pnp_3d);
                 std::ofstream fout("/home/thesky/RM25_Radar/resource/main2world.txt");
                 if(!fout)
@@ -1325,7 +1318,7 @@ void MyRadar::Init(){
                 }
             }
         }else{
-            MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60");
+            MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60",this->config_path);
             CooSystem_ptr->Get2world_matrix(MainCam_ptr->T_2world  ,MainCam_ptr->K ,MainCam_ptr->pts_pnp_2d , MainCam_ptr->pts_pnp_3d);
             std::ofstream fout("/home/thesky/RM25_Radar/resource/main2world.txt");
             if(!fout)
@@ -1428,8 +1421,8 @@ void MyRadar::Init(){
             }
             fin.close();
             if (!use_saved_T) {
-                rect =GetRect_mouse(secCamMat,"Hik60");
-                SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60");
+                rect =GetRect_mouse(secCamMat,"Hik60",this->config_path);
+                SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60",this->config_path);
                 CooSystem_ptr->Get2world_matrix(SecCam_ptr->T_2world  ,SecCam_ptr->K ,SecCam_ptr->pts_pnp_2d , SecCam_ptr->pts_pnp_3d);
                 std::ofstream fout("/home/thesky/RM25_Radar/resource/sec2world&rect.txt");
                 if(!fout)
@@ -1446,8 +1439,8 @@ void MyRadar::Init(){
                 }
             }
         }else{
-            rect =GetRect_mouse(secCamMat,"Hik60");
-            SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60");
+            rect =GetRect_mouse(secCamMat,"Hik60",this->config_path);
+            SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60",this->config_path);
             CooSystem_ptr->Get2world_matrix(SecCam_ptr->T_2world  ,SecCam_ptr->K ,SecCam_ptr->pts_pnp_2d , SecCam_ptr->pts_pnp_3d);
             std::ofstream fout("/home/thesky/RM25_Radar/resource/sec2world&rect.txt");
             if(!fout)
@@ -1523,9 +1516,9 @@ void MyRadar::Init(){
 
 void MyRadar::Save() {
     if(Modes_ptr->isSave == true_){
-        YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
+        YAML::Node config = YAML::LoadFile(config_path);
         std::string path = config["save"]["save_bag_path"].as<std::string>() + getDate();
-        std::string topics = config["Livox"]["lidarTopicName"].as<std::string>();
+        std::string topics = config["save"]["lidarTopicName"].as<std::string>();
 
         if(Modes_ptr->pictureSource==camera_){
             MainCam_Image_ptr->setSaveMode();
@@ -1841,7 +1834,7 @@ void MyRadar::Spin(){
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 std::cout << "fps_track: " << trackEndTime - trackStartTime<< std::endl;
 
-                this->STrackGuess(PretreatObjs_ptr->classWithoutCar);
+                this->STrackGuess(this->classWithoutCar);
                 // for (auto stack:to_sentry) {
                 //     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "to_sentry: %f ,%f" , stack.vx_3d, stack.vy_3d);
                 // }
@@ -2447,7 +2440,7 @@ void MyRadar::Spin(){
                 auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 std::cout << "fps_track: " << trackEndTime - trackStartTime << std::endl;
 
-                this->STrackGuess(PretreatObjs_ptr->classWithoutCar);
+                this->STrackGuess(this->classWithoutCar);
                 // if(out[6-color_index].cls != -1){
                 //     double pitch = CoordSolve_ptr->dynamicCalcPitchOffset(out[6-color_index].Locate3D.x, out[6-color_index].Locate3D.y, out[6-color_index].Locate3D.z);
                 //     std::cout << "pitch: " << pitch << std::endl;

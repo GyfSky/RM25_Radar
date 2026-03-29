@@ -2,4 +2,4 @@
 source /opt/ros/humble/setup.bash
 
 
-gnome-terminal -- bash -c "cd /home/thesky/ws_livox && colcon build && cd /home/thesky/RM25_Radar && colcon build --parallel-workers 1"
+gnome-terminal -- bash -c "cd .. && colcon build --parallel-workers 1"

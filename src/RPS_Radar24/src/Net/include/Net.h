@@ -1,8 +1,6 @@
 //
 // Created by plusseven on 23-7-15.
 //
-# define YAML_CONFIC_PATH "/home/thesky/RM25_Radar/src/radar_bringup/config/Config.yaml"
-# define YAML_NETCONFIC_PATH "/home/thesky/RM25_Radar/src/radar_bringup/config/net.yaml"
 
 #ifndef RADAR2023_WITHTRT_NET_H
 #define RADAR2023_WITHTRT_NET_H
@@ -21,7 +19,6 @@
 
 class Net {
 private:
-    YAML::Node net_config;
     std::mutex netMutex;
     bool isArmor;
     std::string onnx_path;
@@ -46,7 +43,7 @@ public:
     std::thread netMainloop;
     bool is_netWorking;
     Net() = default;
-    Net(std::string Name = "net");
+    Net(std::string config_path,std::string Name = "net");
     // void NetWork(cv::Mat img ,std::vector<std::vector<TRTInferV1::DetectionObj>> &DetectionObjs);
     std::vector<std::vector<TRTInferV1::DetectionObj>> NetWork_mlt(std::vector<cv::Mat> &frames);
     std::vector<std::vector<TRTInferV1::Object>> NetWork_confs_mlt(std::vector<cv::Mat> &frames);

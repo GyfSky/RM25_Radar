@@ -70,7 +70,7 @@ public:
     int mode;
 
     SerialPort() = default;
-    bool initSerialPort(const char *port_path);
+    bool initSerialPort(const char *port_path,std::string config_path);
     bool get_Mode();
     bool withoutSerialPort();
 

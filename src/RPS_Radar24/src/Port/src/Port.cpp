@@ -4,7 +4,7 @@
 
 #include "../include/Port.h"
 
-Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,rclcpp::Node* node) {
+Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort, std::string config_path,rclcpp::Node* node) {
     this->ourPattern = ourPattern;
     this->mode_num = mode_num;
     port_out.resize(2*this->mode_num);
@@ -99,7 +99,7 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
         this->is_openPort = true;
         this->port_path  = ("/dev/ttyUSB" + std::to_string(usePort)).data();
         this->serialPort_ptr = std::shared_ptr<SerialPort>(new SerialPort());
-        this->serialPort_ptr->initSerialPort(this->port_path);
+        this->serialPort_ptr->initSerialPort(this->port_path,config_path);
         this->fd = this->serialPort_ptr->fd;
         this->map_robot_ptr =
                 std::shared_ptr<Content<MAP_ROBOT_DATA_T>>(new Content<MAP_ROBOT_DATA_T>(fd,24,0x0305));

@@ -26,35 +26,10 @@
 //        Camera_hk.CamMainClose();
 //}
 
-
-/**,
- * @brief 初始化相机
- */
-Camera::Camera(){
-    mainCamFuture_ = mainCamExit_.get_future();
-    std::shared_ptr<Camera_hk::HikCamera> HikCamera_sptr(new Camera_hk::HikCamera());
-    HikCamera_sptr_ = HikCamera_sptr;
+Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, std::string config_path, TF Image_isSave) {
 
     //加载默认主相机配置参数
-    YAML::Node mainCamConfg = YAML::LoadFile(YAML_CONFIC_PATH);
-    CamGain_ = mainCamConfg["Hik30"]["gain"].as<int>();
-    CamExposureTime_ = mainCamConfg["Hik30"]["exposureTime"].as<int>();
-
-    //初始化主相机
-    HikCamera_sptr_->open();
-    HikCamera_sptr_->setGain(CamGain_);
-    HikCamera_sptr_->setExposureTime(CamExposureTime_);
-    HikCamera_sptr->setGamma(CamGamma_);
-    HikCamera_sptr->setFps(CamFps_);
-    HikCamera_sptr_->startGrabImage();
-
-    //    camera.setWhiteBalance();
-}
-
-Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, TF Image_isSave) {
-
-    //加载默认主相机配置参数
-    YAML::Node mainCamConfg = YAML::LoadFile(YAML_CONFIC_PATH);
+    YAML::Node mainCamConfg = YAML::LoadFile(config_path);
     CamGain_ = mainCamConfg[Name]["gain"].as<float>();
     CamExposureTime_ = mainCamConfg[Name]["exposureTime"].as<int>();
     CamGamma_ = mainCamConfg[Name]["gamma"].as<float>();

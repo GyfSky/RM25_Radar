@@ -130,7 +130,7 @@ public:
 //    RADAR_SENF_TO_PLANE_DATA_T radarFlyDataT;
 //    RADAR_DRAW_CAHR_DATA_T radarVulnerablityDataT;
 
-    Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,rclcpp::Node* node);
+    Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort, std::string config_path,rclcpp::Node* node);
     void clearBuff();
     void start();
     void close();

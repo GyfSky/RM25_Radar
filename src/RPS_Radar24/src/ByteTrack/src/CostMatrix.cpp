@@ -6,9 +6,9 @@
 
 
 
-CostMatrix::CostMatrix(OurPattern ourPattern){
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-    this->classWithoutCar = config["net"]["classWithoutCar"].as<int>();
+CostMatrix::CostMatrix(OurPattern ourPattern,std::string config_path){
+    YAML::Node config = YAML::LoadFile(config_path);
+    this->classWithoutCar = config["general"]["classWithoutCar"].as<int>();
     this->half_classWithoutCar = classWithoutCar/2;
     this->w_rectDistance = config["cost"]["w_rectDistance"].as<float>();
     this->rectDistance_thresh = config["cost"]["rectDistance_thresh"].as<float>();
