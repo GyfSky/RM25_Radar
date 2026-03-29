@@ -51,8 +51,8 @@ public:
     int half_classWithoutCar;
     int classWithoutCar;
 
-    PretreatObjs(OurPattern ourPattern);
-    PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr, bool sec_is_left);
+    PretreatObjs(OurPattern ourPattern,std::string config_path);
+    PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr, bool sec_is_left,std::string config_path);
 
     void getW_of_armorConfs(int maxSize);
     void set_windmill_car(std::vector<int> windmill_car);
@@ -97,9 +97,6 @@ public:
             const std::vector<TRTInferV1::Object>& cars,std::vector<std::vector<TRTInferV1::Object>> allDetectionObjs,
             std::vector<std::vector<std::vector<int>>> allLists, std::vector<STrack> &outRestCars,std::vector<TRTInferV1::Object> &armors);
     void getLastCar(std::vector<Armor> &armors,std::vector<Car> &outLastCars);
-    void getLastCar(
-            std::vector<TRTInferV1::Object> &armors,std::vector<std::vector<TRTInferV1::Object>> allDetectionObjs,
-            std::vector<std::vector<int>> armorLists,std::vector<STrack> &outSTracks);
 
     template<typename T>// T Car or Strack
     void update_classfy(T &objs, int num, std::vector<T> &outRedObjs, std::vector<T> &outBlueObjs,std::vector<T> &outRestObjs);
@@ -109,10 +106,6 @@ public:
 
     std::vector<std::vector<STrack>> classfySTrackByCam(
             std::vector<STrack> &STracks, std::vector<std::vector<int>> newLists);
-
-    std::vector<std::vector<STrack>> getSTrackwithArmor(
-            std::vector<TRTInferV1::Object> DetectionObjs, std::vector<std::vector<TRTInferV1::Object>> allDetectionObjs,
-            std::vector<std::vector<int>> list_);
 
     void set_confs_by_locate3D(double &windmill_car_conf, double &startupArea_car_conf);
     void get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::Object> armors);

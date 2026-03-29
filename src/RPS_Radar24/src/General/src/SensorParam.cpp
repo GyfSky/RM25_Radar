@@ -4,79 +4,19 @@
 
 #include "../include/SensorParam.h"
 
-SensorParam::SensorParam(std::string Name,CamPosition camPosition ,OurPattern ourPattern) {
+SensorParam::SensorParam(std::string Name,CamPosition camPosition ,OurPattern ourPattern,std::string config_path) {
     std::cout << "SensorParam 1.0" << std::endl;
 
-    cv::FileStorage cvMatMatrixFile = cv::FileStorage(YAML_CONFIC_PATH, cv::FileStorage::READ);
-
-    if(Name == "Livox"){
-        std::cout << "error with Livox K" << std::endl;
-    }else{
-        cvMatMatrixFile[Name]["K"] >> K;
-        fx = K.at<float>(0,0);
-        fy = K.at<float>(1,1);
-        cx = K.at<float>(0,2);
-        cy = K.at<float>(1,2);
-        cvMatMatrixFile[Name]["picture_size"]["input_w"] >> img_w;
-        cvMatMatrixFile[Name]["picture_size"]["input_h"] >> img_h;
-    }
-
-    cvMatMatrixFile.release();
-    std::string camPos, ourColor;
-
-    std::cout << "SensorParam 1.1" << std::endl;
-
-
-    if(camPosition == CamPosition::left)            camPos = "left";
-    else if(camPosition == CamPosition::right)      camPos = "right";
-    else                                        std::cout << "have error in CamPosition" << std::endl;
-
-    if(ourPattern == OurPattern::red)               ourColor = "red";
-    else if(ourPattern == OurPattern::blue)         ourColor = "blue";
-    else                                        std::cout << "have error in OurPattern" << std::endl;
-
-    YAML::Node config = YAML::LoadFile(YAML_PLACE_CONFIC_PATH);
-    int point_num = config[camPos]["point_num"].as<int>();
-    for(int i = 0;i<point_num;i++){
-        cv::Point3d point =
-                cv::Point3d(config[camPos][ourColor]["pts_pnp_2d"][i][0].as<double>(),
-                            config[camPos][ourColor]["pts_pnp_2d"][i][1].as<double>(),
-                            config[camPos][ourColor]["pts_pnp_2d"][i][2].as<double>());
-
-        this->pts_pnp_3d.push_back(point);
-    }
-
-    // YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-
-
-    std::cout << Name << "\n" << " of pts_pnp_3d is ok" << std::endl;
-}
-
-SensorParam::SensorParam(std::string Name, cv::Mat K,CamPosition camPosition ,OurPattern ourPattern) {
-    cv::FileStorage cvMatMatrixFile = cv::FileStorage(YAML_CONFIC_PATH, cv::FileStorage::READ);
-
-    std::cout << "SensorParam 2.0" << std::endl;
-
-
-    if(Name == "Livox"){
-        cvMatMatrixFile[Name]["extrinsic_Lidar2Cam"] >> T_2MainCam;//lidar 2 maincam
-    }
-    this->K = K;
+    cv::FileStorage cvMatMatrixFile = cv::FileStorage(config_path, cv::FileStorage::READ);
+    cvMatMatrixFile[Name]["K"] >> K;
     fx = K.at<float>(0,0);
     fy = K.at<float>(1,1);
     cx = K.at<float>(0,2);
     cy = K.at<float>(1,2);
-
-    if(this->K.empty()){
-        std::cout << "error in SensorParam about main_K" << std::endl;
-    }
-
-    std::cout << "SensorParam 2.0" << std::endl;
-
-    cvMatMatrixFile.release();
+    cvMatMatrixFile[Name]["picture_size"]["input_w"] >> img_w;
+    cvMatMatrixFile[Name]["picture_size"]["input_h"] >> img_h;
 
     std::string camPos, ourColor;
-
     if(camPosition == CamPosition::left)            camPos = "left";
     else if(camPosition == CamPosition::right)      camPos = "right";
     else                                        std::cout << "have error in CamPosition" << std::endl;
@@ -85,18 +25,17 @@ SensorParam::SensorParam(std::string Name, cv::Mat K,CamPosition camPosition ,Ou
     else if(ourPattern == OurPattern::blue)         ourColor = "blue";
     else                                        std::cout << "have error in OurPattern" << std::endl;
 
-    YAML::Node config = YAML::LoadFile(YAML_PLACE_CONFIC_PATH);
-    int point_num = config[camPos]["point_num"].as<int>();
+    int point_num = cvMatMatrixFile["pnp"][camPos]["point_num"];
     for(int i = 0;i<point_num;i++){
         cv::Point3d point =
-                cv::Point3d(config[camPos][ourColor]["pts_pnp_2d"][i][0].as<double>(),
-                            config[camPos][ourColor]["pts_pnp_2d"][i][1].as<double>(),
-                            config[camPos][ourColor]["pts_pnp_2d"][i][2].as<double>());
-
+                cv::Point3d(cvMatMatrixFile["pnp"][camPos][ourColor]["pts_pnp_2d"][i][0],
+                            cvMatMatrixFile["pnp"][camPos][ourColor]["pts_pnp_2d"][i][1],
+                            cvMatMatrixFile["pnp"][camPos][ourColor]["pts_pnp_2d"][i][2]);
         this->pts_pnp_3d.push_back(point);
     }
+    cvMatMatrixFile.release();
 
-    std::cout << Name << " of pts_pnp_3d is ok" << std::endl;
+    std::cout << Name << "\n" << " of pts_pnp_3d is ok" << std::endl;
 }
 
 void SensorParam::setworld2self_config(cv::Mat T_main2World){

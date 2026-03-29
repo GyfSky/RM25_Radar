@@ -4,11 +4,9 @@
 #include "../../Camera_hk/include/Camera_mlt.h"
 #include "../../General/include/Mouse.h"
 #include "../../General/include/SensorParam.h"
-#include "../../Locate/include/KRepresent.h"
 #include "../../Locate/include/Predict.h"
 #include "../../ByteTrack/include/PretreatObjs.h"
 #include "../../Port/include/Port.h"
-#include "../../Image/include/ImageStitch.h"
 #include "../../Image/include/Image.h"
 #include "../../Hero/include/CoordSolver.h"
 
@@ -21,6 +19,8 @@
 #include <interfaces/msg/drone_location.hpp>
 #include <interfaces/msg/cost_matrix.hpp>
 #include <interfaces/msg/cluster_target.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <filesystem>
 
 double getTimeByRosTime(rclcpp::Time ros_time);
 
@@ -29,6 +29,7 @@ class MyRadar
 {
 private:
     std::string node_name;
+    std::string config_path;
     bool is_first = true;
     // int after_picture=1;
     cv::Mat mainCamMat;
@@ -51,7 +52,6 @@ private:
     std::shared_ptr<BYTETracker> BYTETracker_ptr = nullptr;
 
     std::shared_ptr<MatrixCoordinateSystem> CooSystem_ptr = nullptr;
-    std::shared_ptr<KRepresent> KRepresent_ptr = nullptr;
     // std::shared_ptr<Image> Image_ptr = nullptr;
     // std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
     // std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;

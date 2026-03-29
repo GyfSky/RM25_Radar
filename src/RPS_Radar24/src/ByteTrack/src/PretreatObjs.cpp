@@ -6,10 +6,10 @@
 
 #include <rclcpp/logging.hpp>
 
-PretreatObjs::PretreatObjs(OurPattern ourPattern) {
+PretreatObjs::PretreatObjs(OurPattern ourPattern,std::string config_path) {
     this->ourPattern = ourPattern;
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-    this->classWithoutCar = config["net"]["classWithoutCar"].as<int>();
+    YAML::Node config = YAML::LoadFile(config_path);
+    this->classWithoutCar = config["general"]["classWithoutCar"].as<int>();
     this->half_classWithoutCar = classWithoutCar/2;
     this->isBR = config["pretreatObjs"]["isBR"].as<bool>();
 //    this->isGuess = config["pretreatObjs"]["isGuess"].as<bool>();
@@ -26,9 +26,9 @@ void PretreatObjs::set_windmill_car(std::vector<int> windmill_car){
 }
 
 
-PretreatObjs::PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr, bool sec_is_left){
-    YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-    this->classWithoutCar = config["net"]["classWithoutCar"].as<int>();
+PretreatObjs::PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr, bool sec_is_left,std::string config_path){
+    YAML::Node config = YAML::LoadFile(config_path);
+    this->classWithoutCar = config["general"]["classWithoutCar"].as<int>();
     this->half_classWithoutCar = classWithoutCar/2;
     this->isBR = config["pretreatObjs"]["isBR"].as<bool>();
 //    this->isGuess = config["pretreatObjs"]["isGuess"].as<bool>();
@@ -42,7 +42,7 @@ PretreatObjs::PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_
 
     //2cam
     this->sec_is_left = sec_is_left;
-    cv::FileStorage mats = cv::FileStorage(STITCH_CONFIC_PATH, cv::FileStorage::READ);
+    cv::FileStorage mats = cv::FileStorage(config_path, cv::FileStorage::READ);
     mats["Mat"]["H"] >> H;
     mats["Mat"]["H2"] >> H2;
     mats.release();
@@ -488,128 +488,6 @@ void PretreatObjs::reassign_cls(int num, int &temp_bestcls) {
     }
 }
 
-
-/**
- * @brief 计算armor_w,分配出car
- *
- * @param cars 输入为所有车辆检测框
- * @param outRestCars 输出车的跟踪器
- * @param armors 输入时为所有装甲板，输出时为没有被包含的装甲版（即分配剩下的装甲版）
- */
-std::vector<std::vector<int>> PretreatObjs::getArmors_wconf(
-        const std::vector<TRTInferV1::Object>& cars,std::vector<std::vector<TRTInferV1::Object>> allDetectionObjs,
-        std::vector<std::vector<std::vector<int>>> allLists,std::vector<STrack> &outRestCars,std::vector<TRTInferV1::Object> &armors)
-{
-    std::vector<bool> isOutArmor(armors.size(), false); // 判断该装甲版被车（Car）包含
-    int car_num = 0;
-    for(TRTInferV1::Object car : cars){
-        auto trackStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-//        float carLocate2D[2] = {(car.x1+car.x2)/2, (car.y1+car.y2)/2};
-        double w_getAllArea = 0.0;  // 得到所有在car里面装甲版的总面积
-//        Eigen::MatrixXd ws_armorAreaMatrix = Eigen::MatrixXd::Zero(1,14);
-//        Eigen::MatrixXd ws_armorYMatrix = Eigen::MatrixXd::Zero(1,14);
-        double carY_downLine = car.y1 + car.h * p_carY_downLine;  // 装甲板3/4处（沿y(v)）
-        double carY_upLine = car.y1 + car.h * p_carY_upLine;      // 装甲板1/3处（沿y(v)）
-        std::array<cv::Point2f,25> car_4angle ; // 这里将数组大小定义成10是为了方便调用函数initornot， 实际上大小定义成4就足够了
-        car_4angle[0] = cv::Point2f (float (car.x1),float (car.y1));
-        car_4angle[1] = cv::Point2f (float (car.x2),float (car.y1));
-        car_4angle[2] = cv::Point2f (float (car.x2),float (car.y2));
-        car_4angle[3] = cv::Point2f (float (car.x1),float (car.y2));
-        int i=0;
-
-        std::vector<std::vector<int>>whereIsArmor(this->classWithoutCar);
-        std::vector<double> tempBest_w_armorConf(this->classWithoutCar,0.0);
-        Eigen::MatrixXd car_armorConfMatrix = Eigen::MatrixXd::Zero(1,groupNum * half_classWithoutCar); ////TODO:
-//        std::vector<int> temp_bestindexs_BRN;
-        for(auto &armor : armors){
-            float armorLocate2D[2] = {(armor.x1+armor.x2)/2, (armor.y1+armor.y2)/2};
-            int state = -1;
-            state = initornot(car_4angle,cv::Point (armorLocate2D[0],armorLocate2D[1]),4);
-            if(state == 1 ){
-                isOutArmor[i] = true;
-
-                //area
-                double w_armorArea = armor.w * armor.h;
-                w_getAllArea += w_armorArea;
-                // 1/3y - 3/4y
-                double w_armorY = 1.0 - min_(abs((armorLocate2D[1] - carY_downLine)/(carY_upLine - carY_downLine)),1.0);
-                //add
-                double w_armorConf = w_armorArea * w_armorY * armor.confidence;
-//                Eigen::MatrixXd  car_armorConfMatrix = Eigen::MatrixXd::Zero(1,20); ///TODO:
-                if(half_classWithoutCar==6){                       // G, 1，2，3，4，5
-                    car_armorConfMatrix(0,armor.classId) += w_armorConf;
-                    whereIsArmor[armor.classId].push_back(i);
-                }
-                else if(half_classWithoutCar==7){               // G,1,2,3,4,5,N    //TODO： 装甲版是否为同一车辆计算（通过两个装甲板的2D距离，设置上下阈值）
-                    whereIsArmor[armor.classId].push_back(i);
-                    if((armor.classId+1) % half_classWithoutCar!=0){  // cls != BN/RN
-                        car_armorConfMatrix(0,armor.classId) += w_armorConf;
-                    }else{
-                        w_armorConf =  w_armorConf / aGroupOfArmor;
-                        car_armorConfMatrix.block(0,(armor.classId/half_classWithoutCar)*half_classWithoutCar,1,half_classWithoutCar) += Eigen::MatrixXd::Ones(1,half_classWithoutCar) * w_armorConf;
-                    }
-                } else{
-                    std::cout << "here are error in half_classWithoutCar, please config by yourself" << std::endl;
-                }
-            }
-            i++;
-        }
-
-        int temp_bestcls = -1;  float conf_armor = 0.0;
-        if(w_getAllArea>1e-6) {
-            car_armorConfMatrix /= w_getAllArea; // (conf1*S1*y1 +...+confn*Sn*yn)/(S1+...+Sn)
-        }
-        update_classfy(temp_bestcls, conf_armor,car_armorConfMatrix);
-
-
-//        std::cout << "car_armorConfMatrix:  _" << car_armorConfMatrix << std::endl;
-        // armor
-//        if(temp_bestcls < classWithoutCar){
-//            if(half_classWithoutCar==6){
-//                for(int j=0;j<whereIsArmor[temp_bestcls].size();j++){
-//                    isOutArmor[whereIsArmor[temp_bestcls][j]] = true;
-//                }
-//            }
-//            else if(half_classWithoutCar==7){
-//                int color_N = (temp_bestcls/half_classWithoutCar+1)*half_classWithoutCar-1;
-//                for(int j=0;j<whereIsArmor[color_N].size();j++){
-//                    isOutArmor[whereIsArmor[color_N][j]] = true;
-//                }
-//                if(temp_bestcls%half_classWithoutCar!=6){ // temp_bestcls != BN/RN
-//                    for(int j=0;j<whereIsArmor[temp_bestcls].size();j++){
-//                        isOutArmor[whereIsArmor[temp_bestcls][j]] = true;
-//                    }
-//                }
-//            }
-//        }
-
-//        reassign_cls(num, temp_bestcls);
-        std::vector<int> whereIsCar = allLists[0][car_num];
-        TRTInferV1::Object detectionObj2car = allDetectionObjs[whereIsCar[0]][whereIsCar[1]];
-        std::cout << "car: "  << car.x1 << " " << car.y1 << " " << car.w << " " <<car.h << std::endl;
-        STrack track(car.x1,car.y1,car.w,car.h,temp_bestcls,car.confidence,conf_armor,car_armorConfMatrix);
-        std::cout << "detectionObj2car: "  << detectionObj2car.x1 << " " << detectionObj2car.y1 << " " << detectionObj2car.w << " " <<detectionObj2car.h << std::endl;
-        track.setRectInPrimaryCam(detectionObj2car.x1,detectionObj2car.y1,detectionObj2car.w,detectionObj2car.h,p_car_midpoint);
-        //TODO: setRectInPrimaryCam;
-//        std::cout << "car_armorConfMatrix:::: " << car_armorConfMatrix.size() << std::endl;
-        outRestCars.push_back(track);
-        car_num++;
-        auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        std::cout << "fps_car"<< car_num  << ": " << 1000. / (trackEndTime - trackStartTime) << std::endl;
-    }
-    // armor
-    std::vector<TRTInferV1::Object> temp_armors;
-    std::vector<std::vector<int>> list;
-    for(int j=0;j<isOutArmor.size();j++){
-        if(!isOutArmor[j]){
-            temp_armors.push_back(armors[j]);
-            list.push_back(allLists[1][j]);
-        }
-    }
-    std::swap(temp_armors,armors);
-    return list;
-};
-
 std::vector<std::vector<STrack>> PretreatObjs::classfySTrackByCam(
         vector<STrack> &STracks, std::vector<std::vector<int>> newLists)
 {
@@ -619,79 +497,6 @@ std::vector<std::vector<STrack>> PretreatObjs::classfySTrackByCam(
     }
     return outSTracks;
 }
-
-
-
-
-/**
- *
- * @param DetectionObjs     已经转到主相机坐标系下的所有检测框
- * @param allDetectionObjs  在原本相机坐标系的检测框， e.g. allDetectionObjs[0] 为主相机的检测结果， allDetectionObjs[1] 为副相机的检测结果
- * @param list_             DetectionObjs 与  allDetectionObjs的对应关系 e.g. 若 list[3] = {0,2} 则 DetectionObjs中的第(3+1)个 来自 主相机（0）的第（2+1）个检测结果；
- * @return
- */
-std::vector<std::vector<STrack>> PretreatObjs::getSTrackwithArmor(
-        std::vector<TRTInferV1::Object> DetectionObjs, std::vector<std::vector<TRTInferV1::Object>> allDetectionObjs,
-        std::vector<std::vector<int>> list_)
-{
-    std::vector<STrack> tracked_stracks;
-    std::vector<TRTInferV1::Object> car,armor;
-    std::vector<std::vector<std::vector<int>>> allLists = Car_Armor(DetectionObjs, list_,car,armor);
-//    std::vector<std::vector<int>> armorLists = getArmors_wconf(car,std::move(allDetectionObjs),allLists, tracked_stracks, armor);
-
-    auto trackStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    std::vector<std::vector<int>> armorLists = getArmors_wconf(car,allDetectionObjs,allLists, tracked_stracks, armor);
-    auto trackEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    std::cout << "fps_getArmors_wconf: " << 1000. / (trackEndTime - trackStartTime) << std::endl;
-
-    getLastCar(armor,allDetectionObjs,armorLists,tracked_stracks);
-    std::vector<std::vector<int>> newList;
-    newList.insert(newList.end(),allLists[0].begin(),allLists[0].end());
-    newList.insert(newList.end(),armorLists.begin(),armorLists.end());
-    std::vector<std::vector<STrack>> outStracks = classfySTrackByCam(tracked_stracks, newList);
-    return outStracks;
-}
-
-
-
-/**
- * @brief 根据别筛选后的装甲版生成车辆
- *
- * @param armors 没有被包含的装甲版（即分配剩下的装甲版）
- * @param outLastObjs 根据装甲版生成的车辆
- */
-void PretreatObjs::getLastCar(
-        std::vector<TRTInferV1::Object> &armors,std::vector<std::vector<TRTInferV1::Object>> allDetectionObjs,
-        std::vector<std::vector<int>> armorLists,std::vector<STrack> &outSTracks) {
-    int armor_num = 0;
-    for (auto &armor: armors) {
-        std::vector<int> whereIsCar = armorLists[armor_num];
-        TRTInferV1::Object detectionObj2armor = allDetectionObjs[whereIsCar[0]][whereIsCar[1]];
-        double width, height, cx, cy;
-        width = detectionObj2armor.w;
-        height = detectionObj2armor.h;
-        cx = detectionObj2armor.x1 + width / 2.0;
-        cy = detectionObj2armor.y1 + height / 2.0;
-        int cls = armor.classId;
-        double conf_armor = armor.confidence;
-        double conf = armor.confidence * 0.3;
-        Eigen::MatrixXd  car_armorConfMatrix = Eigen::MatrixXd::Zero(1,half_classWithoutCar * groupNum);
-        if(half_classWithoutCar == 7 && (cls == 6 || cls == 13)){
-            conf_armor =  conf_armor / aGroupOfArmor;
-            car_armorConfMatrix.block(0,(cls/half_classWithoutCar)*half_classWithoutCar,1,half_classWithoutCar) += Eigen::MatrixXd::Ones(1,half_classWithoutCar) * conf_armor;
-        }else{
-            car_armorConfMatrix(0,cls) = conf_armor;
-        }
-//        reassign_cls(num, cls);
-//        car.rect = cv::Rect((cx - 3.0 * height), (cy - 4.0 * height), (6.0 * height), (6.0 * height));
-        STrack car(((armor.x1+armor.x2)/2. - 3.0 * armor.h), ((armor.y1+armor.y2)/2.  - 4.0 * armor.h), (6.0 * armor.h), (6.0 * armor.h),cls, conf,conf_armor,car_armorConfMatrix);
-        car.setRectInPrimaryCam((cx - 3.0 * height), (cy - 4.0 * height), (6.0 * height), (6.0 * height),p_car_midpoint);
-//        }
-//        car.Locate2D = cv::Point2d (cx,car.rect.y + (6.0 * height)*0.95);
-        outSTracks.push_back(car);
-        armor_num++;
-    }
-};
 
 /**
  * @brief 更新obj的conf_armor,cls,对obj进行分类（3类，红色，蓝色，unknown）

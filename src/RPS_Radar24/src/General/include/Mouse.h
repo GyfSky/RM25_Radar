@@ -20,9 +20,6 @@ public:
     int pointNumber;
     //test
     cv::Rect test;
-    bool is_test = false;
-    int w;
-    int h;
     //livox
     int paddingu;
     int paddingv;
@@ -30,13 +27,13 @@ public:
     int num=0;
 
     ~Mouse(){};
-    Mouse (cv::Mat &image, std::string Name);
+    Mouse (cv::Mat &image, std::string Name, std::string config_path);
     Mouse (cv::Mat &image,int pointNumber = 5,std::string winname = "default");
 };
     void onMouse(int event, int x, int y, int flags, void *para);
     void onMouseRect(int event, int x, int y, int flags, void *para);
-    std::vector<cv::Point2d> GetPoint2d_mouse(cv::Mat &imshowMat, std::string Name);
-    cv::Rect GetRect_mouse(cv::Mat &imshowMat, std::string Name);
+    std::vector<cv::Point2d> GetPoint2d_mouse(cv::Mat &imshowMat, std::string Name, std::string config_path);
+    cv::Rect GetRect_mouse(cv::Mat &imshowMat, std::string Name, std::string config_path);
 
 
 #endif //RADAR_GIT_NEW_MOUSE_H

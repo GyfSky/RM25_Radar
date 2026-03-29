@@ -27,7 +27,6 @@ private:
     int input_w;
     int input_h;
     bool Image_issave;
-    std::string Image_savepath;
     std::string image_dir;
     std::string image_path;
     std::string video_path;
@@ -39,7 +38,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_img;
     cv::Mat ros_img;
 //net
-    YAML::Node net_config;
+    YAML::Node config;
         //RADAR
     cv::Mat map_cloneing;
     std::string mapImage_winname;
@@ -66,8 +65,8 @@ public:
     int classWithoutCar;
     cv::Mat Cam_img;
     Image() = default;
-    Image(Application application,PictureSource pictureSource,std::string Name = "Hik30",TF Image_isSave=false_,SaveImagePath saveImagePath=disk02,int serial_number = -1);
-    Image(Application application,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name = "Hik30",TF Image_isSave=false_,SaveImagePath saveImagePath=disk02,int serial_number = -1);
+    Image(Application application,std::string config_path,PictureSource pictureSource,std::string Name = "Hik30",TF Image_isSave=false_,int serial_number = -1);
+    Image(Application application,std::string config_path,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name = "Hik30",TF Image_isSave=false_,int serial_number = -1);
     void Init();
     void Init_calib();
 //    cv::Mat Image_Get(int after_picture = 0);

@@ -39,8 +39,7 @@ public:
 
     //camPosition区分左右相机
     SensorParam() = default;
-    SensorParam(std::string Name, CamPosition camPosition ,OurPattern ourPattern);
-    SensorParam(std::string Name, cv::Mat K, CamPosition camPosition ,OurPattern ourPattern);
+    SensorParam(std::string Name, CamPosition camPosition ,OurPattern ourPattern,std::string config_path);
     void setworld2self_config(cv::Mat T_main2World);
     int change2main(float &x, float &y,
            const double main_fx, const double main_fy, const double main_cx, const double main_cy);
