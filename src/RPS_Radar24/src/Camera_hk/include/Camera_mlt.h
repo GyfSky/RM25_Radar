@@ -31,10 +31,8 @@ private:
     std::promise<void> mainCamExit_;                         // 读取相机线程退出信号
     std::future<void> mainCamFuture_;
 public:
-    Camera(char g_strSerialNumber[64],std::string Name,rclcpp::Node* node, std::string config_path,TF Image_isSave = false_);
+    Camera(char g_strSerialNumber[64],std::string Name,rclcpp::Node* node, std::string config_path);
     void CamMainSet();
-    // void CamMainWork();
-    void CamMainSave();
     void CamMainClose();
 };
 

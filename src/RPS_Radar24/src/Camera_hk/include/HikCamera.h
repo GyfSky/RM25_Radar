@@ -62,11 +62,8 @@ namespace Camera_hk
     public:
         int pic_num = -1;
         int num_frame;
-        std::string save_dir;
         int mCount;
         float mFPS;
-        bool is_always_save = false;
-        bool is_will_always_save = false;
         PixelFormat pixelFormat = BayerRG8;  // default=BayerRG8
         std::chrono::steady_clock::time_point mLastTime;
         cv::Mat mRawImage;
@@ -85,7 +82,7 @@ namespace Camera_hk
         /*
          * @param num_frame 每隔num_frame张图片取一张图片
          * */
-        HikCamera(std::string name,std::string save_root_dir,rclcpp::Node* node,int num_frame = 1,bool is_always_save = true);
+        HikCamera(std::string name,rclcpp::Node* node,int num_frame = 1);
         cv::Mat convertToBGR(cv::Mat image);
         void open();
         void open(char g_strSerialNumber[64]);
@@ -122,7 +119,6 @@ namespace Camera_hk
         rclcpp::Time getTime();
         static void imageCallback(unsigned char *data, MV_FRAME_OUT_INFO_EX *pFrameInfo, void *pUser);
         static void* WorkThread(void* pUser);
-        void setSaveMode();
     };
 
 }

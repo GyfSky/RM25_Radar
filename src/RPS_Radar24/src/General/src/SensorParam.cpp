@@ -4,7 +4,7 @@
 
 #include "../include/SensorParam.h"
 
-SensorParam::SensorParam(std::string Name,CamPosition camPosition ,OurPattern ourPattern,std::string config_path) {
+SensorParam::SensorParam(std::string Name,OurPattern ourPattern,std::string config_path) {
     std::cout << "SensorParam 1.0" << std::endl;
 
     cv::FileStorage cvMatMatrixFile = cv::FileStorage(config_path, cv::FileStorage::READ);
@@ -16,21 +16,18 @@ SensorParam::SensorParam(std::string Name,CamPosition camPosition ,OurPattern ou
     cvMatMatrixFile[Name]["picture_size"]["input_w"] >> img_w;
     cvMatMatrixFile[Name]["picture_size"]["input_h"] >> img_h;
 
-    std::string camPos, ourColor;
-    if(camPosition == CamPosition::left)            camPos = "left";
-    else if(camPosition == CamPosition::right)      camPos = "right";
-    else                                        std::cout << "have error in CamPosition" << std::endl;
+    std::string ourColor;
 
     if(ourPattern == OurPattern::red)               ourColor = "red";
     else if(ourPattern == OurPattern::blue)         ourColor = "blue";
     else                                        std::cout << "have error in OurPattern" << std::endl;
 
-    int point_num = cvMatMatrixFile["pnp"][camPos]["point_num"];
+    int point_num = cvMatMatrixFile[Name]["point_num"];
     for(int i = 0;i<point_num;i++){
         cv::Point3d point =
-                cv::Point3d(cvMatMatrixFile["pnp"][camPos][ourColor]["pts_pnp_2d"][i][0],
-                            cvMatMatrixFile["pnp"][camPos][ourColor]["pts_pnp_2d"][i][1],
-                            cvMatMatrixFile["pnp"][camPos][ourColor]["pts_pnp_2d"][i][2]);
+                cv::Point3d(cvMatMatrixFile[Name][ourColor]["pts_pnp_2d"][i][0],
+                            cvMatMatrixFile[Name][ourColor]["pts_pnp_2d"][i][1],
+                            cvMatMatrixFile[Name][ourColor]["pts_pnp_2d"][i][2]);
         this->pts_pnp_3d.push_back(point);
     }
     cvMatMatrixFile.release();

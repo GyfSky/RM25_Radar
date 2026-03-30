@@ -13,7 +13,6 @@ Modes::Modes(){
 //    Port_isOpen   = TF::false_;                       //串口的开启与否  |q
 //    usePort       = UsePort::USB0;                    //所使用的串口    |
 //    isSave        = TF::true_;                       //是否保存图片    |
-//    saveImagePath = SaveImagePath::disk02;            //保存路径       |z
 
     application   = Application::Radar;
     pictureSource = PictureSource::camera_;    //图片来源          |

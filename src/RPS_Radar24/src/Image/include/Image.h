@@ -26,7 +26,6 @@ private:
     bool Cam_isOpen = false;
     int input_w;
     int input_h;
-    bool Image_issave;
     std::string image_dir;
     std::string image_path;
     std::string video_path;
@@ -65,8 +64,8 @@ public:
     int classWithoutCar;
     cv::Mat Cam_img;
     Image() = default;
-    Image(Application application,std::string config_path,PictureSource pictureSource,std::string Name = "Hik30",TF Image_isSave=false_,int serial_number = -1);
-    Image(Application application,std::string config_path,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name = "Hik30",TF Image_isSave=false_,int serial_number = -1);
+    Image(Application application,std::string config_path,PictureSource pictureSource,std::string Name = "Hik30",int serial_number = -1);
+    Image(Application application,std::string config_path,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name = "Hik30",int serial_number = -1);
     void Init();
     void Init_calib();
 //    cv::Mat Image_Get(int after_picture = 0);
@@ -86,7 +85,6 @@ public:
     void draw_line(std::vector<MapVertex> &vexs);
     void draw_line_calib(std::vector<MapVertex> &vexs);
     cv::Scalar get_color(int idx);
-    void setSaveMode();
     void Close();
 };
 //void draw_rusult(std::vector<Car> &cars,std::vector<Armor> &armors,Image &image,std::map<int,std::string> cls_to_string);

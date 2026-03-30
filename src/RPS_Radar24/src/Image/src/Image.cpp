@@ -4,24 +4,7 @@
 
 #include "../include/Image.h"
 
-// int main(){
-//     Modes modes;
-// //    Image image(modes.application, modes.pictureSource,"Hik30", modes.Image_isSave, modes.saveImagePath);
-//     Image image(Common, camera_,"Hik30",  Hikang, false_, modes.saveImagePath);
-//     image.Init();
-//     int after_picture=1;
-//     while (1){
-//         if(cv::waitKey(1) == 'q'){
-//             break;
-//         }
-//         image.Image_Get(after_picture);
-//         image.Image_Show();
-//     }
-    
-// }
-
-
-Image::Image(Application application,std::string config_path,PictureSource pictureSource,std::string Name ,TF Image_isSave,int serial_number ){
+Image::Image(Application application,std::string config_path,PictureSource pictureSource,std::string Name ,int serial_number ){
     //mode
     this->pictureSource = pictureSource;
     this->application = application;
@@ -49,14 +32,6 @@ Image::Image(Application application,std::string config_path,PictureSource pictu
     }
     else   Cam_isOpen = true;
 }
-{//save image or not and save image_path 
-    if(Image_isSave == TF::true_){
-        Image_issave = true;
-    }
-    else if(Image_isSave == TF::false_){
-        Image_issave = false;
-    }
-}
     Cam_winname = config[Name]["winname"].as<std::string>();
     input_w = config[Name]["picture_size"]["input_w"].as<int>();
     input_h = config[Name]["picture_size"]["input_h"].as<int>();
@@ -71,7 +46,7 @@ Image::Image(Application application,std::string config_path,PictureSource pictu
 }
 
 //带有序列号 g_strSerialNumber
-Image::Image(Application application,std::string config_path,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name,TF Image_isSave,int serial_number){
+Image::Image(Application application,std::string config_path,PictureSource pictureSource,char g_strSerialNumber[64],rclcpp::Node* node,std::string Name,int serial_number){
     ////mode
     this->pictureSource = pictureSource;
     this->application = application;
@@ -99,15 +74,7 @@ Image::Image(Application application,std::string config_path,PictureSource pictu
     }
     else if(this->pictureSource == camera_){
         Cam_isOpen = true;
-        this->Camerahk_prt = std::shared_ptr<Camera>(new Camera(g_strSerialNumber, Name, node,config_path,Image_isSave));
-    }
-}
-{//save image or not and save image_path
-    if(Image_isSave == TF::true_){
-        Image_issave = true;
-    }
-    else if(Image_isSave == TF::false_){
-        Image_issave = false;
+        this->Camerahk_prt = std::shared_ptr<Camera>(new Camera(g_strSerialNumber, Name, node,config_path));
     }
 }
     Cam_winname = config[Name]["winname"].as<std::string>();
@@ -304,9 +271,6 @@ void Image::Image_Show(){
     cv::waitKey(1);
 }
 
-void Image::setSaveMode() {
-    Camerahk_prt->CamMainSave();
-}
 
 void Image::Close(){
     if(pictureSource==camera_){

@@ -40,13 +40,13 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
 
     std::cout << "start_SensorParam" << std::endl;
 
-    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern,config_path));
+    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",Modes_ptr->ourPattern,config_path));
     // this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("TDT",CamPosition::left,Modes_ptr->ourPattern));
 
     this->costMatrix_ptr  = std::shared_ptr<CostMatrix>(new CostMatrix(Modes_ptr->ourPattern,this->config_path));
     //获取图像
     this->MainCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Modes_ptr->application,this->config_path,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60", Modes_ptr->isSave,start));
+        new Image(Modes_ptr->application,this->config_path,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60",start));
 
     // this->CoordSolve_ptr  = std::shared_ptr<CoordSolver>(new CoordSolver(Modes_ptr->ourPattern));//英雄吊射？？
 
@@ -54,9 +54,9 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node){
         this->SecMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
         this->SecCam_Net_ptr   = std::shared_ptr<Net>(new Net(config_path,"net"));
             std::this_thread::sleep_for(std::chrono::milliseconds (10));
-        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern,config_path));
+        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",Modes_ptr->ourPattern,config_path));
         this->SecCam_Image_ptr = std::shared_ptr<Image>(
-                new Image(Common,this->config_path,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30", Modes_ptr->isSave,start));
+                new Image(Common,this->config_path,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30",start));
         this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(this->MainCam_ptr, this->SecCam_ptr, false,this->config_path));
     }else{
         this->PretreatObjs_ptr = std::shared_ptr<PretreatObjs>(new PretreatObjs(Modes_ptr->ourPattern,this->config_path));
@@ -141,14 +141,14 @@ MyRadar::MyRadar(rclcpp::Node::SharedPtr node,bool flag){
     else if (this->Modes_ptr->camNumber==2) this->is_one_cam=false;
 
     this->MainMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
-    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",CamPosition::left,Modes_ptr->ourPattern,config_path));
+    this->MainCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik60",Modes_ptr->ourPattern,config_path));
     this->MainCam_Image_ptr = std::shared_ptr<Image>(
-        new Image(Modes_ptr->application,this->config_path,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60", Modes_ptr->isSave,start));
+        new Image(Modes_ptr->application,this->config_path,Modes_ptr->pictureSource, "DA0926631",node.get(), "Hik60",start));
     if(!is_one_cam){
         this->SecMapGraph_ptr = std::shared_ptr<MapGraphMtx>(new MapGraphMtx(Modes_ptr->ourPattern));
-        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",CamPosition::right,Modes_ptr->ourPattern,config_path));
+        this->SecCam_ptr = std::shared_ptr<SensorParam>(new SensorParam("Hik30",Modes_ptr->ourPattern,config_path));
         this->SecCam_Image_ptr = std::shared_ptr<Image>(
-                new Image(Common,this->config_path,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30", Modes_ptr->isSave,start));
+                new Image(Common,this->config_path,Modes_ptr->pictureSource, "00F26632053",node.get(), "Hik30",start));
     }
 
     this->CooSystem_ptr = std::shared_ptr<MatrixCoordinateSystem>(new MatrixCoordinateSystem(10));//坐标转换
@@ -1174,7 +1174,7 @@ void MyRadar::calib() {
         std::cout<<"---step1---"<<std::endl;
         MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60",this->config_path);
         CooSystem_ptr->Get2world_matrix(MainCam_ptr->T_2world  ,MainCam_ptr->K ,MainCam_ptr->pts_pnp_2d , MainCam_ptr->pts_pnp_3d);
-        std::ofstream fout("/home/thesky/RM25_Radar/resource/main2world.txt");
+        std::ofstream fout("resource/main2world.txt");
         if(!fout)
             RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
         else {
@@ -1219,7 +1219,7 @@ void MyRadar::calib() {
         rect =GetRect_mouse(secCamMat,"Hik60",config_path);
         SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60",config_path);
         CooSystem_ptr->Get2world_matrix(SecCam_ptr->T_2world  ,SecCam_ptr->K ,SecCam_ptr->pts_pnp_2d , SecCam_ptr->pts_pnp_3d);
-        std::ofstream fout("/home/thesky/RM25_Radar/resource/sec2world&rect.txt");
+        std::ofstream fout("resource/sec2world&rect.txt");
         if(!fout)
             RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
         else {
@@ -1274,7 +1274,7 @@ void MyRadar::Init(){
         // ROS_INFO("step1");
         std::cout<<"---step1---"<<std::endl;
         if(use_saved_T){
-            std::ifstream fin("/home/thesky/RM25_Radar/resource/main2world.txt");
+            std::ifstream fin("resource/main2world.txt");
             if (!fin) {
                 RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
                 RCLCPP_ERROR(node->get_logger(),"use mautually!!!");
@@ -1304,7 +1304,7 @@ void MyRadar::Init(){
             if (!use_saved_T) {
                 MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60",this->config_path);
                 CooSystem_ptr->Get2world_matrix(MainCam_ptr->T_2world  ,MainCam_ptr->K ,MainCam_ptr->pts_pnp_2d , MainCam_ptr->pts_pnp_3d);
-                std::ofstream fout("/home/thesky/RM25_Radar/resource/main2world.txt");
+                std::ofstream fout("resource/main2world.txt");
                 if(!fout)
                     RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
                 else {
@@ -1320,7 +1320,7 @@ void MyRadar::Init(){
         }else{
             MainCam_ptr->pts_pnp_2d = GetPoint2d_mouse(mainCamMat,"Hik60",this->config_path);
             CooSystem_ptr->Get2world_matrix(MainCam_ptr->T_2world  ,MainCam_ptr->K ,MainCam_ptr->pts_pnp_2d , MainCam_ptr->pts_pnp_3d);
-            std::ofstream fout("/home/thesky/RM25_Radar/resource/main2world.txt");
+            std::ofstream fout("resource/main2world.txt");
             if(!fout)
                 RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
             else {
@@ -1392,7 +1392,7 @@ void MyRadar::Init(){
         // ROS_INFO("step1");
         std::cout<<"---step1---"<<std::endl;
         if(use_saved_T){
-            std::ifstream fin("/home/thesky/RM25_Radar/resource/sec2world&rect.txt");
+            std::ifstream fin("resource/sec2world&rect.txt");
             if (!fin) {
                 RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
                 RCLCPP_ERROR(node->get_logger(),"use mautually!!!");
@@ -1424,7 +1424,7 @@ void MyRadar::Init(){
                 rect =GetRect_mouse(secCamMat,"Hik60",this->config_path);
                 SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60",this->config_path);
                 CooSystem_ptr->Get2world_matrix(SecCam_ptr->T_2world  ,SecCam_ptr->K ,SecCam_ptr->pts_pnp_2d , SecCam_ptr->pts_pnp_3d);
-                std::ofstream fout("/home/thesky/RM25_Radar/resource/sec2world&rect.txt");
+                std::ofstream fout("resource/sec2world&rect.txt");
                 if(!fout)
                     RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
                 else {
@@ -1442,7 +1442,7 @@ void MyRadar::Init(){
             rect =GetRect_mouse(secCamMat,"Hik60",this->config_path);
             SecCam_ptr->pts_pnp_2d = GetPoint2d_mouse(secCamMat,"Hik60",this->config_path);
             CooSystem_ptr->Get2world_matrix(SecCam_ptr->T_2world  ,SecCam_ptr->K ,SecCam_ptr->pts_pnp_2d , SecCam_ptr->pts_pnp_3d);
-            std::ofstream fout("/home/thesky/RM25_Radar/resource/sec2world&rect.txt");
+            std::ofstream fout("resource/sec2world&rect.txt");
             if(!fout)
                 RCLCPP_ERROR(node->get_logger(),"file cant open!!!");
             else {
@@ -1521,13 +1521,11 @@ void MyRadar::Save() {
         std::string topics = config["save"]["lidarTopicName"].as<std::string>();
 
         if(Modes_ptr->pictureSource==camera_){
-            MainCam_Image_ptr->setSaveMode();
             this->save_main_dir = config["save"]["save_bag_path"].as<std::string>() + getDate() + "main";
             topics+=" /cam/";
             topics+=MainCam_Image_ptr->Cam_winname;
             mkdir((this->save_main_dir).c_str(), S_IRWXU);
             if(!is_one_cam){
-                SecCam_Image_ptr->setSaveMode();
                 this->save_sec_dir = config["save"]["save_bag_path"].as<std::string>() + getDate() + "sec";
                 topics+=" /cam/";
                 topics+=SecCam_Image_ptr->Cam_winname;

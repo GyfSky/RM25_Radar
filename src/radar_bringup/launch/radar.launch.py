@@ -111,7 +111,7 @@ def generate_launch_description():
 
         return np.array(matrix_data)
 
-    cali_matrix = read_matrix_from_file("/home/thesky/RM25_Radar/resource/lidar2world.txt")
+    cali_matrix = read_matrix_from_file(os.getcwd()+"/resource/lidar2world.txt")
         
     
     # 创建节点描述

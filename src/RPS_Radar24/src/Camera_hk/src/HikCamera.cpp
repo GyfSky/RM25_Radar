@@ -124,32 +124,11 @@ namespace Camera_hk
 
 }
 
-Camera_hk::HikCamera::HikCamera(std::string name,std::string save_root_dir,rclcpp::Node* node,int num_frame,  bool is_always_save) {
+Camera_hk::HikCamera::HikCamera(std::string name,rclcpp::Node* node,int num_frame) {
     std::cerr << "\033[35m" << "if Fps > 120+, save img mode will make your fps down !!!!" << "\033[0m" << std::endl;
-    this->is_will_always_save = is_always_save;
     this->num_frame = num_frame;
     this->node=node;
     img_pub=this->node->create_publisher<sensor_msgs::msg::CompressedImage>("/cam/"+name,rclcpp::SensorDataQoS());
-//    this->deviceModel = getDeviceModel();
-    if(is_always_save){
-        char now[64];
-        std::time_t tt;
-        struct tm *ttime;
-        tt = time(nullptr);
-        ttime = localtime(&tt);
-        strftime(now, 64, "%Y-%m-%d_%H_%M_%S", ttime);
-        std::string now_string(now);
-        this->save_dir = save_root_dir + "/" + now_string + "_n=" + std::to_string(num_frame);
-        int flag = mkdir((this->save_dir).c_str(), S_IRWXU);
-        std::this_thread::sleep_for(std::chrono::milliseconds (10));
-
-        if(flag != -1){
-            std::cout << "SAVE IS OK, img will be save in" << this->save_dir << std::endl;
-        }else{
-            std::cerr << "\033[33m" << "WARRING[self]: Image SAVE FAIL, please check your save root dir path" << "\033[0m" << std::endl;
-        }
-    }
-
 }
 
 Camera_hk::HikCamera::HikCamera(){
@@ -545,9 +524,3 @@ void Camera_hk::HikCamera::getDeviceModel() {
         std::cerr <<  "\033[35m"  << "WARRING[self]：pixelFormat is default" <<  "\033[0m"  << std::endl;
     }
 }
-
-void Camera_hk::HikCamera::setSaveMode() {
-    this->is_always_save = this->is_will_always_save;
-}
-
-

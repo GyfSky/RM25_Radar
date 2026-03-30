@@ -16,9 +16,6 @@ private:
     std::shared_ptr<CostMatrix> costMatrix_ptr = std::shared_ptr<CostMatrix>(new CostMatrix());
     OurPattern ourPattern;
     int allCam = 2;
-    bool isBR = false;
-//    bool isGuess = false;
-    int maxSize;
     int aGroupOfArmor = 6;
     int groupNum = 2;
     std::vector<std::vector<double>> W_of_armorConfs;
@@ -54,7 +51,6 @@ public:
     PretreatObjs(OurPattern ourPattern,std::string config_path);
     PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr, bool sec_is_left,std::string config_path);
 
-    void getW_of_armorConfs(int maxSize);
     void set_windmill_car(std::vector<int> windmill_car);
     bool check_color(cv::Mat armor,int cls);
 

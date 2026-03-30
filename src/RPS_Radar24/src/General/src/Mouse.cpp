@@ -43,7 +43,7 @@ Mouse::Mouse(cv::Mat &image, std::string Name, std::string config_path){
     YAML::Node config = YAML::LoadFile(config_path);
     this->image = image;
     this->flag_num = 0;
-    this->pointNumber = config[Name]["mousePointNumber"].as<int>();
+    this->pointNumber = config[Name]["point_num"].as<int>();
     this->winname = config[Name]["winname"].as<std::string>();
     if(Name == "Livox"){
         this->paddingu = config[Name]["paddingu"].as<int>();

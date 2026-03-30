@@ -17,7 +17,6 @@ Modes::Modes(){
     usePort       = UsePort::USB0;                    //所使用的串口    |
     isSave        = TF::true_;                       //是否保存图片    |
     camNumber     = 2;
-//    saveImagePath = SaveImagePath::disk02;            //保存路径       |z
 
 //compititon
     // application   = Application::Radar;

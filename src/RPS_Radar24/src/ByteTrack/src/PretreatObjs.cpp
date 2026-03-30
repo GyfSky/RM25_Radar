@@ -11,13 +11,6 @@ PretreatObjs::PretreatObjs(OurPattern ourPattern,std::string config_path) {
     YAML::Node config = YAML::LoadFile(config_path);
     this->classWithoutCar = config["general"]["classWithoutCar"].as<int>();
     this->half_classWithoutCar = classWithoutCar/2;
-    this->isBR = config["pretreatObjs"]["isBR"].as<bool>();
-//    this->isGuess = config["pretreatObjs"]["isGuess"].as<bool>();
-    this->maxSize = config["pretreatObjs"]["maxSize"].as<int>();
-
-
-//    std::cout << "isGuess   " << this->isGuess << std::endl;
-//    getW_of_armorConfs(maxSize);
 }
 
 void PretreatObjs::set_windmill_car(std::vector<int> windmill_car){
@@ -30,9 +23,6 @@ PretreatObjs::PretreatObjs(std::shared_ptr<SensorParam> MainCam_ptr,std::shared_
     YAML::Node config = YAML::LoadFile(config_path);
     this->classWithoutCar = config["general"]["classWithoutCar"].as<int>();
     this->half_classWithoutCar = classWithoutCar/2;
-    this->isBR = config["pretreatObjs"]["isBR"].as<bool>();
-//    this->isGuess = config["pretreatObjs"]["isGuess"].as<bool>();
-    this->maxSize = config["pretreatObjs"]["maxSize"].as<int>();
 
     redLower=Scalar(10, 105, 105);
     redUpper=Scalar(30, 155, 255);
@@ -970,24 +960,4 @@ void PretreatObjs::getLastCar(std::vector<Armor> &armors,std::vector<Car> &outLa
         car.Locate2D = cv::Point2d (cx,car.rect.y + (6.0 * height)*0.95);
         outLastCars.push_back(car);
     }
-};
-
-
-/**
- * @brief 获取多帧状态下装甲版s的权重 //maybe is useless
- * @note 权重计算公式； 当有n帧的数据时, 第x帧的权重为 [3^(n-x)*2^(x-1)]/[（3^n - 2^n）]
- *
- * @param maxSize 需要加权的装甲板一共是几帧的
- * @return 多帧状态下装甲版s的权重()
- */
-void PretreatObjs::getW_of_armorConfs(int maxSize){
-    for(int n=1;n < maxSize+1; n++){
-        std::vector<double> w_of_armorConf;
-        for(int x=1;x<=n;x++){
-            double w = (pow(3,(n-x))*pow(2,(x-1)))/(pow(3,n)-pow(2,n));
-            w_of_armorConf.push_back(w);
-        }
-        W_of_armorConfs.push_back(w_of_armorConf);
-    }
 }
-

@@ -46,10 +46,7 @@ enum PictureSource {picture_dir,single_picture,video,camera_,ros};
 enum Detection      {netDetection, jsonRect, unityRect};//？？
 // enum Cameras       {DahangHikang,Dahang,Hikang,Hikang30,Hikang31,Hikang60};
 enum OurPattern    {red = 0,blue = 1};
-enum CamPosition   {right,left};
 enum UsePort       {USB0 = 0,USB1 = 1, USB2 = 2};
-enum SaveImagePath {disk02,ssdgaoyuan};
-
 
 class Modes {
 //private:
@@ -66,7 +63,7 @@ public:
     Detection detectionMode;
     OurPattern ourPattern;              //己方颜色
     TF Port_isOpen;UsePort usePort;     //串口的开启与否，所使用的串口
-    TF isSave;TF Mid70_isSave;SaveImagePath saveImagePath;   //是否保存图片，保存路径
+    TF isSave;TF Mid70_isSave;
     int camNumber;
     Modes();
 
