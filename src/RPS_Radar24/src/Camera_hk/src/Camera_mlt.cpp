@@ -1,16 +1,14 @@
 #include "../include/Camera_mlt.h"
 
 Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, std::string config_path) {
-
     //加载默认主相机配置参数
     YAML::Node mainCamConfg = YAML::LoadFile(config_path);
     CamGain_ = mainCamConfg[Name]["gain"].as<float>();
     CamExposureTime_ = mainCamConfg[Name]["exposureTime"].as<int>();
     CamGamma_ = mainCamConfg[Name]["gamma"].as<float>();
     CamFps_ = mainCamConfg[Name]["fps"].as<float>();
-    CamNum_ = mainCamConfg[Name]["camNum"].as<int>();
     mainCamFuture_ = mainCamExit_.get_future();
-    std::shared_ptr<Camera_hk::HikCamera> HikCamera_sptr(new Camera_hk::HikCamera(Name,node,CamNum_));
+    std::shared_ptr<HikCamera> HikCamera_sptr(new HikCamera(Name,node));
     HikCamera_sptr_ = HikCamera_sptr;
 
     //初始化主相机
@@ -27,18 +25,15 @@ Camera::Camera(char *g_strSerialNumber, std::string Name,rclcpp::Node* node, std
     //    camera.setWhiteBalance();
 }
 
-
 /**
  * @brief 动态设置相机相关参数
  */
 void Camera::CamMainSet(){
     //  调节窗口  
     cv::namedWindow("trackbars",(360,240));
-    // cv::createTrackbar("Gain","trackbars",&CamGain_,24);
     cv::createTrackbar("ExposureTime","trackbars",&CamExposureTime_,12000);
     while (is_MainCamSet){
         cv::Mat imgMain = HikCamera_sptr_->getImage();
-        // cv::waitKey(1);  //if exist the case that img is not empty but can't cv::imshow, please add this sentence.
         if(cv::waitKey(1) == 'n'){
             is_MainCamWork = true;
             break;

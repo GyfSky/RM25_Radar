@@ -1,7 +1,3 @@
-//
-// Created by plusseven on 24-4-26.
-//
-
 #ifndef SRC_PORT_H
 #define SRC_PORT_H
 #include "serialport.h"
@@ -12,9 +8,6 @@
 #include "../../ByteTrack//include/STrack.h"
 #include "interfaces/msg/to_plane.hpp"
 enum Judgment    {self_dart,rival_dart,self_buff,self_offense,rival_offense,time_3_55,time_1_40};
-
-//enum UsePort       {USB0 = 0,USB1 = 1, USB2 = 2};
-//enum TF {true_,false_};
 
 inline std::string getDate(){
     char now[64];
@@ -33,9 +26,8 @@ private:
     const char *port_path;
     std::shared_ptr<SerialPort> serialPort_ptr = nullptr ;
     std::shared_ptr<Content<MAP_ROBOT_DATA_T>> map_robot_ptr = nullptr;
-    std::shared_ptr<Content<MAP_ROBOT_DATA_T_OLD>> map_old_robot_ptr = nullptr;
     std::shared_ptr<Content<RADAR_DECISION_DATA_T>> radar_decision_ptr = nullptr;
-    std::shared_ptr<Content<RADAR_SENF_TO_PLANE_DATA_T>> radar_plane_ptr = nullptr;
+    std::shared_ptr<Content<RADAR_SEND_TO_PLANE_DATA_T>> radar_plane_ptr = nullptr;
     std::shared_ptr<Content<RADAR_SEND_TO_SENTRY_DATA_T>> radar_sentry_ptr = nullptr;
 
     uint16_t sender_id;// 自己（雷达）id
@@ -83,7 +75,7 @@ public:
     unsigned int drone_location_x_;
 
     std::mutex radarPlaneDataT_times_lock;
-    RADAR_SENF_TO_PLANE_DATA_T radarPlaneDataT;
+    RADAR_SEND_TO_PLANE_DATA_T radarPlaneDataT;
 
     std::mutex radarSentryDataT_lock;
     RADAR_SEND_TO_SENTRY_DATA_T radarSentryDataT;
@@ -127,7 +119,7 @@ public:
     std::mutex eventDataT_lock;
     EVENT_DATA_T eventDataT;
 
-//    RADAR_SENF_TO_PLANE_DATA_T radarFlyDataT;
+//    RADAR_SEND_TO_PLANE_DATA_T radarFlyDataT;
 //    RADAR_DRAW_CAHR_DATA_T radarVulnerablityDataT;
 
     Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort, std::string config_path,rclcpp::Node* node);
@@ -142,7 +134,6 @@ public:
     void updataDroneData(unsigned int x);
     void updateGameTime(double &time);
     void sendSTrackData();
-    void sendOldSTrackData();
     void makeSentryData();
     void sendSentryData();
     void makePlaneData();

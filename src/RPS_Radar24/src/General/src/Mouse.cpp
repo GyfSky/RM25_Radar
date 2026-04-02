@@ -1,42 +1,4 @@
-//
-// Created by plusseven on 23-7-16.
-//
-
 #include "../include/Mouse.h"
-
-
-//e.g 1
-// test main
-// int main(){
-//     Mouse mouse;
-//     mouse.flag_num = 0;
-//     mouse.flag_back = 0;
-//     mouse.pointNumber = 5;
-//     mouse.camera_winname = "window_radar";
-//     mouse.image = cv::imread("/home/plusseven/桌面/RPSradar2023/something/1439.jpg");
-//     cv::namedWindow(mouse.camera_winname);
-////key
-//     while (true){
-//         cv::setMouseCallback("window_radar", onMouse, &mouse);
-//         cv::imshow("window_radar", mouse.image);
-//         cv::waitKey(1);
-//     }
-
-//     std::cout << mouse.point2d_mouse_xy[0][0];
-//     return 0;
-// }
-
-//e.g.  2
-// std::vector<cv::Point2d> Livox::GetPoint2d_mouse_liovx(){
-//     Mouse mouse(imshowDepthBackgoundMat,"livox");
-//     while (mouse.point2d_mouse_xy.size() != mouse.pointNumber){
-//         cv::setMouseCallback(mouse.winname, onMouse, &mouse);
-//         cv::imshow(mouse.winname, mouse.image);
-//         cv::waitKey(1);
-//     }
-//     std::cout << "over mouse_livox:" + std::to_string(mouse.point2d_mouse_xy[0].x) << std::endl;
-//     return mouse.point2d_mouse_xy;
-// }
 
 Mouse::Mouse(cv::Mat &image, std::string Name, std::string config_path){
     this->Name = Name;
@@ -45,18 +7,6 @@ Mouse::Mouse(cv::Mat &image, std::string Name, std::string config_path){
     this->flag_num = 0;
     this->pointNumber = config[Name]["point_num"].as<int>();
     this->winname = config[Name]["winname"].as<std::string>();
-    if(Name == "Livox"){
-        this->paddingu = config[Name]["paddingu"].as<int>();
-        this->paddingv = config[Name]["paddingv"].as<int>();
-    }
-
-}
-
-Mouse::Mouse (cv::Mat &image,int pointNumber/* = 5*/, std::string winname/* = "default"*/){
-    this->image = image;
-    this->flag_num = 0;
-    this->pointNumber = pointNumber;
-    this->winname = winname;
 }
 
 std::vector<cv::Point2d> GetPoint2d_mouse(cv::Mat &imshowMat, std::string Name, std::string config_path){
@@ -82,22 +32,7 @@ cv::Rect GetRect_mouse(cv::Mat &imshowMat, std::string Name, std::string config_
     return cv::Rect(mouse.rect_points.front().x,mouse.rect_points.front().y,w,h);
 }
 
-// cv::Rect GetPoint2d_mouse(cv::Mat &imshowMat,std::string Name){
-//     YAML::Node config = YAML::LoadFile(YAML_CONFIC_PATH);
-//     std::string win_name = config[Name]["winname"].as<std::string>();
-//     Mouse mouse(imshowMat,1,win_name);
-//     cv::setMouseCallback(mouse.winname, onMouse, &mouse);
-    
-//     cv::imshow(mouse.winname, mouse.image);
-//     cv::waitKey(1);
-//     std::cout << "over mouse_livox:" + std::to_string(mouse.point2d_mouse_xy[0].x) << std::endl;
-//     return mouse.point2d_mouse_xy;
-// }
-
-
-//----------------鼠标回调函数---------------------------------
 void onMouse(int event, int x, int y, int flags, void *para){
-//    mouse.image = *((cv::Mat*)para);
     Mouse &mouse = *((Mouse*)para);
     if(event==cv::EVENT_LBUTTONDOWN) {   //左键按下
         if(mouse.flag_num<mouse.pointNumber){
@@ -113,7 +48,6 @@ void onMouse(int event, int x, int y, int flags, void *para){
             cv::imshow(mouse.winname, mouse.image);
         
             mouse.flag_num = mouse.flag_num + 1;
-            // mouse.flag_back = 1;
         }
     }
     if(event==cv::EVENT_RBUTTONDOWN) {   //右键按下

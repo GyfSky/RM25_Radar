@@ -47,8 +47,8 @@ net:
   nms_thres: 0.3        #
   batch_size: 1         #
   num_class: 1         #
-  input_w: 1440       #  输入onnx的宽
-  input_h: 1088       #  输入onnx的长
+  input_w: 800       #  输入onnx的宽
+  input_h: 800       #  输入onnx的长
 
 net_60:
   isArmor: false
@@ -60,8 +60,8 @@ net_60:
   nms_thres: 0.3        #
   batch_size: 1         #
   num_class: 1         #
-  input_w: 2464       #  输入onnx的宽
-  input_h: 2048       #  输入onnx的长
+  input_w: 800       #  输入onnx的宽
+  input_h: 800       #  输入onnx的长
 
 net_armor:
   isArmor: true
@@ -94,7 +94,6 @@ Hik30:
   exposureTime: 10000
   gamma: 0.9
   fps: 80
-  camNum: 1
   winname: "Hik30"
 
   K: !!opencv-matrix # 30
@@ -154,7 +153,6 @@ Hik30:
 # DA1521302
 Hik60:
   gain: 23.9
-  camNum: 1
   exposureTime: 10000
   gamma: 0.6
   fps: 40

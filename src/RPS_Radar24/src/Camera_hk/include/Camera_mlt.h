@@ -1,6 +1,3 @@
-//
-// Created by plusseven on 23-10-0?.
-//
 #ifndef RM_RADARDEMO24_SRC_CAMERA_MLT_INCLUDE_CAMERA_MLT_H
 #define RM_RADARDEMO24_SRC_CAMERA_MLT_INCLUDE_CAMERA_MLT_H
 #pragma once
@@ -15,7 +12,7 @@ public:
     bool is_MainCamSet = false;
     bool is_MainCamWork = true;
     cv::Mat imgMainWait;                                     // 主模组线程缓冲图像
-    std::shared_ptr<Camera_hk::HikCamera> HikCamera_sptr_;   // 主相机地址
+    std::shared_ptr<HikCamera> HikCamera_sptr_;   // 主相机地址
     rclcpp::Node* node;
 
 private:
@@ -24,7 +21,6 @@ private:
     int CamWhiteBalance_;                                // 相机白平衡
     float CamGamma_;                                       // 相机伽马平衡
     int CamFps_;                                         // 相机最高帧率
-    int CamNum_;                                         // 相机每间隔CamNum_抽取一张图片
     std::future<void> clockFuture_;                          // 与promise关联的future对象
     std::mutex mainCamMutex_;                                // 相机读取锁
     std::thread mainCamThread_;                              // 读取相机线程

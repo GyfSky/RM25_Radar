@@ -19,8 +19,7 @@
 #define CMD_ID_RADAR_INFO_T               0x020E   // 雷达自主决策信息同步，固定以1Hz 频率发送
 
 
-typedef enum
-{
+typedef enum{
     GAME_STATE_ID                      =0x0001,// 比赛状态数据：0x0001。发送频率：1Hz
     GAME_RESULT_ID                     =0x0002,//比赛结果数据：0x0002。发送频率：比赛结束后发送
     GAME_ROBOT_SURVIVORS_ID            =0x0003,//机器人存活数据：0x0003。发送频率：1Hz
@@ -54,42 +53,12 @@ typedef enum
     CMD_SENTRY_RADAR_T                 =0x02FD //哨兵2雷达的子内容cmd_id
 } judge_data_cmd_id_e;
 
-
-
-//typedef struct
-//{
-//    uint8_t figure_name[3];
-//    uint32_t operate_tpye:3;
-//    uint32_t figure_tpye:3;
-//    uint32_t layer:4;
-//    uint32_t color:4;
-//    uint32_t details_a:9;
-//    uint32_t details_b:9;
-//    uint32_t width:10;
-//    uint32_t start_x:11;
-//    uint32_t start_y:11;
-//    uint32_t details_c:10;
-//    uint32_t details_d:11;
-//    uint32_t details_e:11;
-//}interaction_figure_t;
-
-//union InteractionFigureUnion {
-//    interaction_figure_t data;
-//    uint8_t bytes[sizeof(interaction_figure_t)];
-//};
-
-
-
-
 #pragma pack(1) // #pragma pack(1)指令确保结构体成员之间紧凑地排列，没有填充字节。
 
-
-typedef union
-{
+typedef union{
     uint16_t data;
     unsigned char u_char8[2];
 } uint16_t_uchar;
-
 
 typedef union {
     struct {
@@ -98,9 +67,7 @@ typedef union {
         uint16_t receiver_id;
     }data;
     unsigned char u_char8[6];
-
 }CHLID_FRAME_HEADER;
-
 
 typedef union {
     struct {
@@ -112,18 +79,6 @@ typedef union {
     unsigned char u_char8[5];
 
 }FRAME_HEADER;
-
-//-----------------------------------------------
-
-typedef union{
-    struct {
-        uint16_t target_robot_ID;
-        float target_position_x;
-        float target_position_y;
-    }data;
-    unsigned char u_char8[10];
-}MAP_ROBOT_DATA_T_OLD;
-
 
 typedef union{
     struct{
@@ -153,54 +108,21 @@ typedef union{
     unsigned char  u_char8[sizeof(data)];
 }RADAR_DECISION_DATA_T;
 
-
-typedef struct
-{
-    uint8_t figure_name[3];
-    uint32_t operate_tpye:3;
-    uint32_t figure_tpye:3;
-    uint32_t layer:4;
-    uint32_t color:4;
-    uint32_t details_a:9;
-    uint32_t details_b:9;
-    uint32_t width:10;
-    uint32_t start_x:11;
-    uint32_t start_y:11;
-    uint32_t details_c:10;
-    uint32_t details_d:11;
-    uint32_t details_e:11;
-}interaction_figure_t;
-
 typedef union {
     struct {
         uint16_t data_cmd_id;
         uint16_t sender_id;
         uint16_t receiver_id;
-//        uint8_t user_data[45];
-        interaction_figure_t interactionFigure;
-        uint8_t char_data[30];
-    } data;
-    unsigned char  u_char8[sizeof(data)];
-}RADAR_DRAW_CAHR_DATA_T;
-
-
-typedef union {
-    struct {
-        uint16_t data_cmd_id;
-        uint16_t sender_id;
-        uint16_t receiver_id;
-//        uint8_t user_data[45];
         uint8_t char_data[13];
     } data;
     unsigned char  u_char8[sizeof(data)];
-}RADAR_SENF_TO_PLANE_DATA_T;
+}RADAR_SEND_TO_PLANE_DATA_T;
 
 typedef union {
     struct {
         uint16_t data_cmd_id;
         uint16_t sender_id;
         uint16_t receiver_id;
-        //        uint8_t user_data[45];
         uint16_t position[10];
         int16_t speed[10];
     } data;
@@ -212,26 +134,14 @@ typedef union {
         uint16_t data_cmd_id;
         uint16_t sender_id;
         uint16_t receiver_id;
-        //        uint8_t user_data[45];
         float char_data[10];
     } data;
     unsigned char  u_char8[sizeof(data)];
 }RADAR_RECIEVE_SENTRY_DATA_T;
 
-//typedef union{
-//    struct
-//    {
-//        interaction_figure_t interactionFigure;
-//        uint8_t char_data[30];
-//    } data;
-//    uint8_t bytes[sizeof(data)]; // 45
-//}RADAR_DRAW_CAHR_DATA_T;
-//------------read------------------------------
-
 //cmd_id 0x0105
 typedef union {
-    struct
-    {
+    struct{
         uint8_t dart_remaining_time;
         uint16_t new_hit_target:3;
         uint16_t cumulative_hit_time:3;
@@ -243,8 +153,7 @@ typedef union {
 
 // cmd_id 0x020C
 typedef union {
-    struct
-    {
+    struct{
         uint8_t mark_hero_progress:1;
         uint8_t mark_engineer_progress:1;
         uint8_t mark_standard_3_progress:1;
@@ -255,11 +164,9 @@ typedef union {
     unsigned char u_char8[1];
 }RADAR_MARK_DATA_T;
 
-
 // 0x020E
 typedef union {
-    struct
-    {
+    struct{
         uint8_t radar_info:2;
         uint8_t dacideing:1;
         uint8_t else_:5;
@@ -275,12 +182,10 @@ typedef union{
         uint8_t user_data[1];
     }data;
     unsigned char u_char8[7];
-}VULNERABILITY_DATA_T;       //TODO:
-
+}VULNERABILITY_DATA_T;
 
 typedef union {
-    struct
-    {
+    struct{
         uint8_t game_type : 4;
         uint8_t game_progress : 4;
         uint16_t stage_remain_time;
@@ -289,10 +194,8 @@ typedef union {
     unsigned char u_char8[11];
 }GAME_STATUS_T;
 
-
 typedef union {
-    struct
-    {
+    struct{
         uint16_t red_1_robot_HP;
         uint16_t red_2_robot_HP;
         uint16_t red_3_robot_HP;
@@ -314,8 +217,7 @@ typedef union {
 }GAME_ROBOT_HP_T;
 
 typedef union {
-    struct
-    {
+    struct{
         uint32_t supply_not_overlap:1;
         uint32_t supply_overlap:1;
         uint32_t supply_area:1;
@@ -336,21 +238,6 @@ typedef union {
     }data;
     unsigned char u_char8[4];
 }EVENT_DATA_T;
-
-//
-//// 0x020C read
-//typedef union {
-//     struct {
-//        uint8_t mark_hero_progress;
-//        uint8_t mark_engineer_progress;
-//        uint8_t mark_standard_3_progress;
-//        uint8_t mark_standard_4_progress;
-//        uint8_t mark_standard_5_progress;
-//        uint8_t mark_sentry_progress;
-//    } data;
-//    unsigned char u_char8[6];
-//}RADAR_MARK_DATA_T;
-
 
 #pragma pack()
 

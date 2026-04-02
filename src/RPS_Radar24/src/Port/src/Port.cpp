@@ -1,7 +1,3 @@
-//
-// Created by plusseven on 24-4-26.
-//
-
 #include "../include/Port.h"
 
 Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort, std::string config_path,rclcpp::Node* node) {
@@ -103,15 +99,12 @@ Port::Port(OurPattern ourPattern, int mode_num, TF is_openPort, UsePort usePort,
         this->fd = this->serialPort_ptr->fd;
         this->map_robot_ptr =
                 std::shared_ptr<Content<MAP_ROBOT_DATA_T>>(new Content<MAP_ROBOT_DATA_T>(fd,24,0x0305));
-        this->map_old_robot_ptr =
-                std::shared_ptr<Content<MAP_ROBOT_DATA_T_OLD >>(new Content<MAP_ROBOT_DATA_T_OLD>(fd,10,0x0305));
         this->radar_decision_ptr =
                 std::shared_ptr<Content<RADAR_DECISION_DATA_T>>(new Content<RADAR_DECISION_DATA_T>(fd,7,CMD_ROBOT_INTERACTION));
 
         initVulnerabilityData();
-//        makeDrawFlyData(1);
         this->radar_plane_ptr =
-                std::shared_ptr<Content<RADAR_SENF_TO_PLANE_DATA_T >>(new Content<RADAR_SENF_TO_PLANE_DATA_T>(fd,19,CLIENT_GRAPHIC_DRAW_ID));
+                std::shared_ptr<Content<RADAR_SEND_TO_PLANE_DATA_T >>(new Content<RADAR_SEND_TO_PLANE_DATA_T>(fd,19,CLIENT_GRAPHIC_DRAW_ID));
         this->radar_sentry_ptr =
                 std::shared_ptr<Content<RADAR_SEND_TO_SENTRY_DATA_T >>(new Content<RADAR_SEND_TO_SENTRY_DATA_T>(fd,46,CMD_ROBOT_INTERACTION));
     }else{
@@ -129,7 +122,6 @@ void Port::start() {
     std::function<void()> getData_ = std::bind(&Port::getData, this);
     std::function<void()> sendIVCData_ = std::bind(&Port::sendIVCData, this);  // IVC 定义: 车辆间通信 - Inter-Vehicle Communications
     std::function<void()> sendSTrackData_ = std::bind(&Port::sendSTrackData, this);
-//    std::function<void()> sendSTrackData_ = std::bind(&Port::sendOldSTrackData, this);
     this->timer.addTimer(getData_, 1000./20); // 每隔20hz触发一次回调函数
     this->timer.addTimer(sendSTrackData_, 1000./5); // 每隔5hz触发一次回调函数
     this->timer.addTimer(sendIVCData_, 1000./30); // 每隔30hz触发一次回调函数
@@ -237,17 +229,6 @@ void Port::sendSTrackData() {
     if (checkPosition(this->port_out[color_index+4].Locate3D))
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),"port_out 7 location: %d,%d",uint16_t(this->port_out[color_index+4].Locate3D.x*100),uint16_t(this->port_out[color_index+4].Locate3D.y*100));
     map_robot_ptr->OutputData(mapRobotDataT);
-    STrack_lock.unlock();
-    std::this_thread::sleep_for(std::chrono::milliseconds (5));
-}
-
-
-
-void Port::sendOldSTrackData() {
-    STrack_lock.lock();
-    MAP_ROBOT_DATA_T_OLD mapRobotDataT{
-            {4,0,0}};
-    map_old_robot_ptr->OutputData(mapRobotDataT);
     STrack_lock.unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds (5));
 }
@@ -437,44 +418,26 @@ void Port::getData() {
     unsigned char buff[5000] = {0};
     int inputSize = read(fd, buff, 5000);
     // RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "inputSize: %d", inputSize);
-    std::cout << "inputSize: " << inputSize << std::endl;
     int ptr=0;
-    while(ptr < inputSize)
-    {
-        if(buff[ptr] == SOF)
-        {
-//            std::cout << "ptr: " << ptr << std::endl;
+    while(ptr < inputSize){
+        if(buff[ptr] == SOF){
             FRAME_HEADER temp_frameHeader;
             memcpy(temp_frameHeader.u_char8,buff+ptr,FRAME_HEADER_LEN);
             int size = FRAME_HEADER_LEN + CMD_LEN + temp_frameHeader.data.data_length + CRC16_LEN;
-            if(Verify_CRC8_Check_Sum(temp_frameHeader.u_char8, FRAME_HEADER_LEN)&&Verify_CRC16_Check_Sum(&buff[ptr], size))  // && Verify_CRC16_Check_Sum(&buff[ptr], size)
-            {
+            if(Verify_CRC8_Check_Sum(temp_frameHeader.u_char8, FRAME_HEADER_LEN)&&Verify_CRC16_Check_Sum(&buff[ptr], size)){  // && Verify_CRC16_Check_Sum(&buff[ptr], size)
                 ptr += FRAME_HEADER_LEN;
                 uint16_t_uchar temp_cmd_id;
                 memcpy(temp_cmd_id.u_char8, buff + ptr, CMD_LEN);
-                // std::cout << "temp_cmd_id: " << temp_cmd_id.data << std::endl;    //514
                 ptr += CMD_LEN;
                 switch (temp_cmd_id.data)
                 {
-//                    case CMD_ROBOT_INTERACTION:
-//                    {
-//                        CHLID_FRAME_HEADER temp_chlidFrameHeader;
-//                        memcpy(temp_chlidFrameHeader.u_char8, buff + ptr, 6);
-//                        ptr += 6;
-////
-////                        switch (temp_chlidFrameHeader.data.data_cmd_id)
-////                        {
-////                        }
-////
-////                        break;
-//                    }
                     case GAME_STATE_ID:
                     {
                         gameStatusT_times_lock.lock();
                         memcpy(this->gameStatusT.u_char8, buff + ptr, temp_frameHeader.data.data_length);
 
-                        RCLCPP_ERROR(rclcpp::get_logger("judge"), "game_progress: %d", gameStatusT.data.game_progress);
-                        std::cout << "game_progress: " << std::to_string(gameStatusT.data.game_progress) << std::endl;
+                        // RCLCPP_ERROR(rclcpp::get_logger("judge"), "game_progress: %d", gameStatusT.data.game_progress);
+                        // std::cout << "game_progress: " << std::to_string(gameStatusT.data.game_progress) << std::endl;
                         if (int(gameStatusT.data.game_progress)==4&&!time_init) {
                             time_init=true;
                             game_start_time=rclcpp::Clock().now();
@@ -525,8 +488,8 @@ void Port::getData() {
                     {
                         vulnerability_times_lock.lock();
                         memcpy(vulnerability_times.u_char8, buff + ptr, temp_frameHeader.data.data_length );
-                        RCLCPP_ERROR(rclcpp::get_logger("judge"), "vulnerability_times: %d", vulnerability_times.data.radar_info);
-                        RCLCPP_ERROR(rclcpp::get_logger("judge"), "dacideing: %d", vulnerability_times.data.dacideing);
+                        // RCLCPP_ERROR(rclcpp::get_logger("judge"), "vulnerability_times: %d", vulnerability_times.data.radar_info);
+                        // RCLCPP_ERROR(rclcpp::get_logger("judge"), "dacideing: %d", vulnerability_times.data.dacideing);
                         vulnerability_times_lock.unlock();
                     }break;
                     case DART_INFO_DATA_ID:
@@ -534,7 +497,7 @@ void Port::getData() {
                         dartInfo_lock.lock();
                         memcpy(dartInfo.u_char8, buff + ptr, temp_frameHeader.data.data_length);
                         target = dartInfo.data.target;
-                        RCLCPP_ERROR(rclcpp::get_logger("judge"),"dart target: %d", target);
+                        // RCLCPP_ERROR(rclcpp::get_logger("judge"),"dart target: %d", target);
                         dartInfo_lock.unlock();
                     }break;
                     case ROBOT_INTERACTIVE_DATA_ID:
@@ -558,7 +521,6 @@ void Port::getData() {
         ptr++;
     }
     autoDecisionMaking();
-
 }
 
 void Port::makePlaneData() {
@@ -664,20 +626,6 @@ void Port::makeDecisionData() {
 
 void Port::sendDecisionData(){
     radarDecisionDataT_times_lock.lock();
-    // vulnerability_times_lock.lock();
-    // gameStatusT_times_lock.lock();
-    // dartInfo_lock.lock();
-    // if(gameStatusT.data.game_progress == 4){
-    //     //int(this->vulnerability_times.data.radar_info) > 0 有触发双倍易伤的次数
-    //     if(int(this->vulnerability_times.data.radar_info) > 0  && this->target > dacision_time){
-    //         dacision_time = uint8_t(1) + dacision_time;
-    //     }
-    // } else{
-    //     dacision_time = 0;
-    // }
-    // vulnerability_times_lock.unlock();
-    // gameStatusT_times_lock.unlock();
-    // dartInfo_lock.unlock();
     makeDecisionData();
     std::cout << "dacision_time: " << std::to_string(dacision_time) << std::endl;
     radar_decision_ptr->OutputData(this->radarDecisionDataT);
@@ -758,27 +706,6 @@ void Port::makeSentryData(){
         this->radarSentryDataT.data.speed[8] = 0;
         this->radarSentryDataT.data.speed[9] = 0;
     }
-    // this->radarSentryDataT.data.position[0] = uint16_t(this->sentry_out[color_index+0].Locate3D.x*100);
-    // this->radarSentryDataT.data.position[1] = uint16_t(this->sentry_out[color_index+0].Locate3D.y*100);
-    // this->radarSentryDataT.data.position[2] = uint16_t(this->sentry_out[color_index+1].Locate3D.x*100);
-    // this->radarSentryDataT.data.position[3] = uint16_t(this->sentry_out[color_index+1].Locate3D.y*100);
-    // this->radarSentryDataT.data.position[4] = uint16_t(this->sentry_out[color_index+2].Locate3D.x*100);
-    // this->radarSentryDataT.data.position[5] = uint16_t(this->sentry_out[color_index+2].Locate3D.y*100);
-    // this->radarSentryDataT.data.position[6] = uint16_t(this->sentry_out[color_index+3].Locate3D.x*100);
-    // this->radarSentryDataT.data.position[7] = uint16_t(this->sentry_out[color_index+3].Locate3D.y*100);
-    // this->radarSentryDataT.data.position[8] = uint16_t(this->sentry_out[color_index+4].Locate3D.x*100);
-    // this->radarSentryDataT.data.position[9] = uint16_t(this->sentry_out[color_index+4].Locate3D.y*100);
-
-    // this->radarSentryDataT.data.speed[0] = int16_t(this->sentry_out[color_index+0].vx_3d*100);
-    // this->radarSentryDataT.data.speed[1] = int16_t(this->sentry_out[color_index+0].vy_3d*100);
-    // this->radarSentryDataT.data.speed[2] = int16_t(this->sentry_out[color_index+1].vx_3d*100);
-    // this->radarSentryDataT.data.speed[3] = int16_t(this->sentry_out[color_index+1].vy_3d*100);
-    // this->radarSentryDataT.data.speed[4] = int16_t(this->sentry_out[color_index+2].vx_3d*100);
-    // this->radarSentryDataT.data.speed[5] = int16_t(this->sentry_out[color_index+2].vy_3d*100);
-    // this->radarSentryDataT.data.speed[6] = int16_t(this->sentry_out[color_index+3].vx_3d*100);
-    // this->radarSentryDataT.data.speed[7] = int16_t(this->sentry_out[color_index+3].vy_3d*100);
-    // this->radarSentryDataT.data.speed[8] = int16_t(this->sentry_out[color_index+4].vx_3d*100);
-    // this->radarSentryDataT.data.speed[9] = int16_t(this->sentry_out[color_index+4].vy_3d*100);
 }
 
 void Port::sendSentryData(){
@@ -802,8 +729,7 @@ void Port::sendIVCData(){
         //发送是否触发双倍易伤
         sendDecisionData();
         IVC_out_init++;
-    }
-    else if(IVC_out_init==1){
+    }else if(IVC_out_init==1){
         //给云台手发预警信息
         sendPlaneData();
         IVC_out_init++;
@@ -824,113 +750,3 @@ void Port::setWarring(std::vector<bool> isWarring) {
     if(isWarring[5])  rival_offense_num = 9;
     radarPlaneDataT_times_lock.unlock();
 }
-
-//
-//void Port::makeSTrackData(std::vector<STrack> &out, int classWithoutCar){
-//    out.resize(classWithoutCar);
-//    // TODO: 需要跟据yaml的改变而改变
-//    out[0 ] = *new STrack(-1,25.80,8.0); //B1
-//    out[1 ] = *new STrack(-1,20.00,4.0); //B2
-//    out[2 ] = *new STrack(-1,26.75,7.5); //B3
-//    out[3 ] = *new STrack(-1,26.75,7.5); //B4
-//    out[4 ] = *new STrack(-1,26.75,7.5); //B5
-//    out[5 ] = *new STrack(-1,23.00,7.5); //B7
-//
-//    out[6 ] = *new STrack(-1,2.20,7.0); //R1
-//    out[7 ] = *new STrack(-1,8.00,11.); //R2
-//    out[8 ] = *new STrack(-1,1.25,7.5); //R3
-//    out[9 ] = *new STrack(-1,1.25,7.5); //R4
-//    out[10] = *new STrack(-1,1.25,7.5); //R5
-//    out[11] = *new STrack(-1,5.00,7.5); //R7
-//
-//
-//    out[0 ] = *new STrack(-1,0.1,0.1); //B1
-//    out[1 ] = *new STrack(-1,0.1,0.1); //B2
-//    out[2 ] = *new STrack(-1,0.1,0.1); //B3
-//    out[3 ] = *new STrack(-1,0.1,0.1); //B4
-//    out[4 ] = *new STrack(-1,0.1,0.1); //B5
-//    out[5 ] = *new STrack(-1,23.00,7.5); //B7
-//
-//    out[6 ] = *new STrack(-1,0.1,0.1); //R1
-//    out[7 ] = *new STrack(-1,0.1,0.1); //R2
-//    out[8 ] = *new STrack(-1,0.1,0.1); //R3
-//    out[9 ] = *new STrack(-1,0.1,0.1); //R4
-//    out[10] = *new STrack(-1,0.1,0.1); //R5
-//    out[11] = *new STrack(-1,5.00,7.5); //R7
-//
-//}
-
-
-//
-//void Port::makeDrawFlyData(uint8_t operate_tpye) {
-//    this->radarFlyDataT.data.data_cmd_id = 0x0110;  //TODO:
-//    this->radarFlyDataT.data.sender_id   = this->sender_id;
-//    this->radarFlyDataT.data.receiver_id = this->flyPlayer_id;
-//
-////    InteractionFigureUnion first_char;
-//    this->radarFlyDataT.data.interactionFigure.figure_name[0] = 'F';
-//    this->radarFlyDataT.data.interactionFigure.figure_name[1] = 'L';
-//    this->radarFlyDataT.data.interactionFigure.figure_name[2] = 'Y ';
-//
-//    this->radarFlyDataT.data.interactionFigure.operate_tpye = operate_tpye;
-//    this->radarFlyDataT.data.interactionFigure.figure_tpye  = 7;
-//    this->radarFlyDataT.data.interactionFigure.layer        = 9;
-//    this->radarFlyDataT.data.interactionFigure.color        = 3;
-//    this->radarFlyDataT.data.interactionFigure.details_a    = 45;
-//    this->radarFlyDataT.data.interactionFigure.details_b    = 5;
-//    this->radarFlyDataT.data.interactionFigure.width        = 5;
-//    this->radarFlyDataT.data.interactionFigure.start_x      = 840;
-//    this->radarFlyDataT.data.interactionFigure.start_y      = 970;
-//
-//    this->radarFlyDataT.data.char_data[0]                   = 'F';
-//    this->radarFlyDataT.data.char_data[1]                   = 'L';
-//    this->radarFlyDataT.data.char_data[2]                   = 'Y';
-//    this->radarFlyDataT.data.char_data[3]                   = '!';
-//    this->radarFlyDataT.data.char_data[4]                   = '!';
-//
-//}
-//
-//
-//
-//void Port::makeDrawVulnerabilityData(uint8_t operate_tpye) {
-//    this->radarVulnerabilityDataT.data.data_cmd_id = 0x0110;  //TODO:
-//    this->radarVulnerabilityDataT.data.sender_id   = this->sender_id;
-//    this->radarVulnerabilityDataT.data.receiver_id = this->flyPlayer_id;
-//
-////    InteractionFigureUnion first_char;
-//    this->radarVulnerabilityDataT.data.interactionFigure.figure_name[0] = 'V';
-//    this->radarVulnerabilityDataT.data.interactionFigure.figure_name[1] = 'U';
-//    this->radarVulnerabilityDataT.data.interactionFigure.figure_name[2] = 'L ';
-//
-//    this->radarVulnerabilityDataT.data.interactionFigure.operate_tpye = operate_tpye;
-//    this->radarVulnerabilityDataT.data.interactionFigure.figure_tpye  = 7;
-//    this->radarVulnerabilityDataT.data.interactionFigure.layer        = 9;
-//    this->radarVulnerabilityDataT.data.interactionFigure.color        = 3;
-//    this->radarVulnerabilityDataT.data.interactionFigure.details_a    = 30;
-//    this->radarVulnerabilityDataT.data.interactionFigure.details_b    = 1;
-//    this->radarVulnerabilityDataT.data.interactionFigure.width        = 3;
-//    this->radarVulnerabilityDataT.data.interactionFigure.start_x      = 1800;
-//    this->radarVulnerabilityDataT.data.interactionFigure.start_y      = 970;
-//
-//    this->radarVulnerabilityDataT.data.char_data[0]                   = this->vulnerability_times.data.radar_info;
-//
-//}
-//
-//
-//
-//
-//void Port::sendFly() {
-//    if(fly_num > 0){
-//        this->makeDrawFlyData(1); //add
-//        radar_fly_ptr->OutputData(this->radarFlyDataT);
-//        std::this_thread::sleep_for(std::chrono::milliseconds (5));
-//        radar_fly_ptr->OutputData(this->radarFlyDataT);
-//        fly_num--;
-//    }else{   // 3 delete
-//        this->makeDrawFlyData(3); // 3 delete
-//        radar_fly_ptr->OutputData(this->radarFlyDataT);
-//        std::this_thread::sleep_for(std::chrono::milliseconds (5));
-//        radar_fly_ptr->OutputData(this->radarFlyDataT);
-//        fly_num = 0;
-//    }
-//}

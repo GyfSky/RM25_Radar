@@ -1,14 +1,10 @@
-// #include "../../General/include/General.h"
 #include "../../Net/include/Net.h"
-// #include "../../Livox/include/Mid70ros1.h"
 #include "../../Camera_hk/include/Camera_mlt.h"
 #include "../../General/include/Mouse.h"
 #include "../../General/include/SensorParam.h"
-#include "../../Locate/include/Predict.h"
 #include "../../ByteTrack/include/PretreatObjs.h"
 #include "../../Port/include/Port.h"
 #include "../../Image/include/Image.h"
-#include "../../Hero/include/CoordSolver.h"
 
 #include <interfaces/msg/detect_frame.hpp>
 #include <interfaces/msg/net_detect.hpp>
@@ -24,59 +20,36 @@
 
 double getTimeByRosTime(rclcpp::Time ros_time);
 
-// class MyRadar : public Livox
-class MyRadar 
+class MyRadar
 {
 private:
     std::string node_name;
     std::string config_path;
     bool is_first = true;
-    // int after_picture=1;
     cv::Mat mainCamMat;
     cv::Mat secCamMat;
     int save_count=0;
 
-    //test
     TRTInferV1::TRTInfer myInfer;
-
 
     std::shared_ptr<SensorParam> MainCam_ptr = nullptr;
     std::shared_ptr<SensorParam> SecCam_ptr = nullptr;
     std::shared_ptr<SensorParam> Lidar_ptr = nullptr;
-
     std::shared_ptr<Modes> Modes_ptr = nullptr;
-
-
-    std::shared_ptr<Predict> Predict_ptr = nullptr;
     std::shared_ptr<PretreatObjs> PretreatObjs_ptr = nullptr;
     std::shared_ptr<BYTETracker> BYTETracker_ptr = nullptr;
-
     std::shared_ptr<MatrixCoordinateSystem> CooSystem_ptr = nullptr;
-    // std::shared_ptr<Image> Image_ptr = nullptr;
-    // std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
-    // std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
-
-    // std::shared_ptr<Livox> Livox_ptr = nullptr;
     std::shared_ptr<Net> MainCam_Net_ptr = nullptr;
     std::shared_ptr<Net> SecCam_Net_ptr = nullptr;
     std::shared_ptr<Net> Armor_Net_ptr = nullptr;
     std::shared_ptr<Mouse> Mouse_ptr = nullptr;
-
-
     std::shared_ptr<CostMatrix> costMatrix_ptr = nullptr;
-    std::shared_ptr<CoordSolver> CoordSolve_ptr = nullptr;
-
     std::shared_ptr<Port> Port_ptr = nullptr; //
 
     //二维数组，第一维是相机数/输入图片数量，第二维是检测物体个数
     std::vector<std::vector<TRTInferV1::DetectionObj>> DetectionObjs;
-
-
-//    std::vector<std::vector<TRTInferV1::Object>> Objects;
-
     std::vector<Car> cars;
     std::vector<Armor> armors;
-
     std::vector<cv::Mat> frames;
     std::vector<STrack> tracked_stracks, lost_stracks, lost_predict_stracks,out,out_init,to_sentry;
     std::vector<int> windmill_car;
@@ -84,7 +57,6 @@ private:
     std::vector<cv::Point2d> dart_center;
     rclcpp::Time dart_time;
     bool dart_flag=false;
-
     std::vector<Car> redCars,blueCars,restCars,lastCars;
 
     int after = 0;//图片序号
@@ -99,6 +71,8 @@ private:
     double game_time_=0;
 
 public:
+    std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
+    std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
     std::shared_ptr<MapGraphMtx> MainMapGraph_ptr = nullptr;
     std::shared_ptr<MapGraphMtx> SecMapGraph_ptr = nullptr;
     bool is_one_cam = false;
@@ -159,8 +133,6 @@ public:
     void lidarDetCallBack(const interfaces::msg::DetectResult::SharedPtr msg);
     void droneCallBack(const interfaces::msg::DroneLocation::SharedPtr msg);
 
-    std::shared_ptr<Image> MainCam_Image_ptr = nullptr;
-    std::shared_ptr<Image> SecCam_Image_ptr  = nullptr;
     void Init();
     void calib();
     void STrackInit(int classWithoutCar, OurPattern ourPattern);

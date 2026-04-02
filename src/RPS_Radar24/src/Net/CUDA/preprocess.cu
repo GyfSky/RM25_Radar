@@ -4,8 +4,7 @@ __global__ void warpaffine_kernel(
     uint8_t *src, int src_line_size, int src_width,
     int src_height, float *dst, int dst_width,
     int dst_height, uint8_t const_value_st,
-    AffineMatrix d2s, int edge)
-{
+    AffineMatrix d2s, int edge){
     int position = blockDim.x * blockIdx.x + threadIdx.x;
     if (position >= edge)
         return;
@@ -23,15 +22,12 @@ __global__ void warpaffine_kernel(
     float src_y = m_x2 * dx + m_y2 * dy + m_z2 + 0.5f;
     float c0, c1, c2;
 
-    if (src_x <= -1 || src_x >= src_width || src_y <= -1 || src_y >= src_height)
-    {
+    if (src_x <= -1 || src_x >= src_width || src_y <= -1 || src_y >= src_height){
         // out of range
         c0 = const_value_st;
         c1 = const_value_st;
         c2 = const_value_st;
-    }
-    else
-    {
+    }else{
         int y_low = floorf(src_y);
         int x_low = floorf(src_x);
         int y_high = y_low + 1;
@@ -48,8 +44,7 @@ __global__ void warpaffine_kernel(
         uint8_t *v3 = const_value;
         uint8_t *v4 = const_value;
 
-        if (y_low >= 0)
-        {
+        if (y_low >= 0){
             if (x_low >= 0)
                 v1 = src + y_low * src_line_size + x_low * 3;
 
@@ -57,8 +52,7 @@ __global__ void warpaffine_kernel(
                 v2 = src + y_low * src_line_size + x_high * 3;
         }
 
-        if (y_high < src_height)
-        {
+        if (y_high < src_height){
             if (x_low >= 0)
                 v3 = src + y_high * src_line_size + x_low * 3;
 
@@ -94,8 +88,7 @@ __global__ void warpaffine_kernel(
 void preprocess_kernel_img(
     uint8_t *src, int src_width, int src_height,
     float *dst, int dst_width, int dst_height,
-    cudaStream_t stream)
-{
+    cudaStream_t stream){
     AffineMatrix s2d, d2s;
     float scale = std::min(dst_height / (float)src_height, dst_width / (float)src_width);
 

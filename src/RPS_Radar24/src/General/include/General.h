@@ -1,7 +1,3 @@
-//
-// Created by plusseven on 23-7-16.
-//
-
 #ifndef SRC_RPS_RADAR24_SRC_GENERAL_INCLUDE_GENERAK_H
 #define SRC_RPS_RADAR24_SRC_GENERAL_INCLUDE_GENERAK_H
 
@@ -27,7 +23,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include <complex>
-// #include <mathcalls.h>
 #include <algorithm>
 #include <unistd.h>
 #include <thread>
@@ -36,20 +31,14 @@
 #include <queue>
 #include <chrono>
 
-// #include "Mouse.h"
-
-
-
 enum Application{Radar,Common};
 enum TF {true_,false_};
 enum PictureSource {picture_dir,single_picture,video,camera_,ros};
 enum Detection      {netDetection, jsonRect, unityRect};//？？
-// enum Cameras       {DahangHikang,Dahang,Hikang,Hikang30,Hikang31,Hikang60};
 enum OurPattern    {red = 0,blue = 1};
 enum UsePort       {USB0 = 0,USB1 = 1, USB2 = 2};
 
 class Modes {
-//private:
 public:
 
 //-------------------------------------------------------------------------------------------------------//
@@ -57,7 +46,6 @@ public:
 //------------------------------------------------------------------------------------------------------//
     Application application;
     PictureSource pictureSource;        //图片来源
-    // Cameras useCamera;  //相机的开启与否，所使用的相机
     TF isOpenMid70;
     TF isUseMid70;
     Detection detectionMode;
@@ -66,7 +54,6 @@ public:
     TF isSave;TF Mid70_isSave;
     int camNumber;
     Modes();
-
 };
 
 class Armor{
@@ -98,7 +85,6 @@ public:
         Locate2D =  cv::Point2f ((x1+x2)/2,(y1+y2)/2);
     }
     Armor() = default;
-
 };
 
 
@@ -126,26 +112,12 @@ public:
         Locate2D = cv::Point2d ((x1+x2)/2,y1 +(y2-y1)*0.95);
     }
     Car() = default;
+};
 
-    };
-
-
-// template <typename T>
-// T min_(T a,T b);
-//double min_(double a,double b);
-//double max_(double a,double b);
-//double get2Ddistance(double x1,double y1, double x2, double y2);
 int initornot(std::array<cv::Point2f,25> predict2d ,cv::Point2d xy, int pointNum);
-int initornot3D(std::array<Eigen::Matrix<double, 3, 1>,25>  points_reality_3d ,cv::Point3d &xyz, int pointNum);
-
 double getAngle180(double x, double y);
-double getAngle360(double x, double y);
-
 double line2line_distance(double p1_x, double p1_y,double p2_x,double p2_y,double len,
                           double p1_x_,double p1_y_,double p2_x_,double p2_y_,double len_ );
-
-//void eigenMat2VecVec(Eigen::MatrixXd &eigen,std::vector<std::vector<double>> &vecVec)
-//void eigenMat2VecVec(Eigen::MatrixXd &eigen,std::vector<std::vector<float>> &vecVec);
 
 template <typename T>
 void eigenMat2VecVec(Eigen::MatrixXd &eigen,std::vector<std::vector<T>> &vecVec){
@@ -159,16 +131,15 @@ void eigenMat2VecVec(Eigen::MatrixXd &eigen,std::vector<std::vector<T>> &vecVec)
     }
 }
 
- template <typename T>
- T min_(T a,T b){
-     return (a<b?a:b);
- }
+template <typename T>
+T min_(T a,T b){
+    return (a<b?a:b);
+}
 
 template <typename T>
 T max_(T a,T b){
     return (a<b?b:a);
 }
-
 
 inline double get2Ddistance(double x1,double y1, double x2, double y2){
     double x = x1-x2, y = y1-y2;

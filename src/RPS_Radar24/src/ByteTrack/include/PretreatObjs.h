@@ -1,10 +1,5 @@
-//
-// Created by plusseven on 23-12-20.
-//
-
 #ifndef JSONCPP_TEST_PRETREATOBJS_H
 #define JSONCPP_TEST_PRETREATOBJS_H
-//#include "STrack.h"
 #include "../../Net/include/Inference.h"
 #include "../../General/include/SensorParam.h"
 #include "interfaces/msg/rect.hpp"
@@ -25,14 +20,11 @@ private:
     float p_carY_downLine = 3./4;
     float p_carY_upLine = 1./3;
 
-    // 2cam
     int tx, ty, result_w, result_h, img1_w, img1_h, img2_w, img2_h;
     int sec2main_w = 1920,  sec2main_h = 1440;
     bool sec_is_left;
 
-    //
     std::vector<int> windmill_car;
-    // double sum_windmill_car_conf = 0.84;
     double sum_windmill_car_conf = 0.56;
     double startupArea_car_conf = 0.6;
     double windmill_car_conf;
@@ -57,57 +49,13 @@ public:
     TRTInferV1::DetectionObj objs2newMainObjs(TRTInferV1::DetectionObj objs, cv::Mat obj2Main);
     TRTInferV1::DetectionObj objs2newMainObjs(interfaces::msg::Rect objs, cv::Mat obj2Main);
 
-    TRTInferV1::DetectionObj allObjs2newMainObjs(TRTInferV1::DetectionObj mainObjs, TRTInferV1::DetectionObj secObjs,
-         cv::Mat &img1, cv::Mat &img2);
-
-    std::vector<TRTInferV1::DetectionObj> secObjs2mainObjs(
-            std::vector<TRTInferV1::DetectionObj> mainObjs,std::vector<TRTInferV1::DetectionObj> secObjs,
-            std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr,
-            float match_thresh,std::vector<std::vector<int>> &list_);
-
-    std::vector<TRTInferV1::Object> secObjs2mainObjs(
-            std::vector<TRTInferV1::Object> mainObjs,std::vector<TRTInferV1::Object> secObjs,
-            std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr,
-            float match_thresh,std::vector<std::vector<int>> &list_);
-
-    TRTInferV1::DetectionObj secObjs2mainObjs(TRTInferV1::DetectionObj secObjs,
-            std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr);
-
-    TRTInferV1::Object secObjs2mainObjs(TRTInferV1::Object secObjs,
-            std::shared_ptr<SensorParam> MainCam_ptr,std::shared_ptr<SensorParam> SecCam_ptr);
-
-    void Car_Armor(
-            std::vector<TRTInferV1::DetectionObj> &DetectionObjs,
-            std::vector<Car> &cars,std::vector<Armor> &armors);
-
-    std::vector<std::vector<std::vector<int>>>  Car_Armor(
-            std::vector<TRTInferV1::Object> DetectionObjs,std::vector<std::vector<int>> list_,
-            std::vector<TRTInferV1::Object> &cars,std::vector<TRTInferV1::Object> &armors);
-
-
-    void ArmorInCar(std::vector<Car> &cars,std::vector<Armor> &armors);
-    std::vector<STrack> ArmorInCar(std::vector<TRTInferV1::Object> &cars,std::vector<TRTInferV1::Object> &armors);
-
-    void getArmors_wconf(std::vector<Car> &cars,std::vector<Car> &outRedCars,std::vector<Car> &outBlueCars,std::vector<Car> &outRestCars,std::vector<Armor> &armors);
-    std::vector<std::vector<int>>  getArmors_wconf(
-            const std::vector<TRTInferV1::Object>& cars,std::vector<std::vector<TRTInferV1::Object>> allDetectionObjs,
-            std::vector<std::vector<std::vector<int>>> allLists, std::vector<STrack> &outRestCars,std::vector<TRTInferV1::Object> &armors);
-    void getLastCar(std::vector<Armor> &armors,std::vector<Car> &outLastCars);
-
     template<typename T>// T Car or Strack
     void update_classfy(T &objs, int num, std::vector<T> &outRedObjs, std::vector<T> &outBlueObjs,std::vector<T> &outRestObjs);
     void update_classfy(int &temp_bestcls,float &conf_armor ,Eigen::MatrixXd &car_armorConfMatrix);
 
-    void reassign_cls(int num, int &temp_bestcls);
-
-    std::vector<std::vector<STrack>> classfySTrackByCam(
-            std::vector<STrack> &STracks, std::vector<std::vector<int>> newLists);
-
     void set_confs_by_locate3D(double &windmill_car_conf, double &startupArea_car_conf);
-    void get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::Object> armors);
     bool get_Armors_w_conf_Double_net(STrack &car, std::vector<TRTInferV1::DetectionObj> armors,cv::Mat &car_img);
 
-    //    void updataStrack_ws_confMatrixs(STrack &sTrack);
 };
 
 

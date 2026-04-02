@@ -5,27 +5,13 @@
 
 namespace TRTInferV1
 {
-    struct DetectionObj
-    {
+    struct DetectionObj{
         int classId;
         float confidence;
         float x1;
         float y1;
         float x2;
         float y2;
-    };
-
-    struct Object
-    {
-        int classId;
-        float confidence;
-//        std::vector<float> confidences;
-        float x1;
-        float y1;
-        float x2;
-        float y2;
-        float w;
-        float h;
     };
 
     /**
@@ -41,7 +27,6 @@ namespace TRTInferV1
         int num_classes = -1;
         int input_size = 0;
 
-    private:
         TRTLogger gLogger;
         IRuntime *runtime;
         ICudaEngine *engine;
@@ -58,7 +43,7 @@ namespace TRTInferV1
         int num_stride = 0;
         const int num_stride_640 = 3;
         const int num_stride_1280 = 4;
-        
+
 
         const float anchors_640[3][6] = {{10.0, 13.0, 16.0, 30.0, 33.0, 23.0},
                                          {30.0, 61.0, 62.0, 45.0, 59.0, 119.0},
@@ -70,31 +55,17 @@ namespace TRTInferV1
                                           {436, 615, 739, 380, 925, 792}};
 
         float *anchors;
-
-    private:
         int inter_frame_compensation = 0;
         bool _is_inited = false;
 
-    private:
         void nms(std::vector<DetectionObj> &input_boxes, float &nms_threshold);
         void decodeout(std::vector<DetectionObj> &res, cv::Mat &frame, float *pdata, float &confidence_threshold);
-        void postprocess(std::vector<std::vector<DetectionObj>> &batch_res, std::vector<cv::Mat> &frames, float &obj_threshold, float &confidence_threshold, float &nms_threshold,int flag);
-        void decode_output(std::vector<DetectionObj> &res, cv::Mat &frame, float *pdata, float &obj_threshold, float &confidence_threshold, float &nms_threshold);
-        //changes
-        void nms(std::vector<Object> &input_boxes, float &nms_threshold);
-        void decode_output(std::vector<Object> &res, cv::Mat &frame, float *pdata, float &obj_threshold, float &confidence_threshold, float &nms_threshold);
-        void postprocess(std::vector<std::vector<Object>> &batch_res, std::vector<cv::Mat> &frames, float &obj_threshold, float &confidence_threshold, float &nms_threshold);
+        void postprocess(std::vector<std::vector<DetectionObj>> &batch_res, std::vector<cv::Mat> &frames,float &confidence_threshold, float &nms_threshold);
 
     public:
-        /**
-         * @brief 构造函数
-         * @param device
-         * 使用的GPU索引
-         */
         TRTInfer(const int device);
         TRTInfer();
         ~TRTInfer();
-
         void getDevice(const int device);
 
         /**
@@ -107,9 +78,6 @@ namespace TRTInferV1
          * num_classes设定值，类别数量
          */
         bool initModule(const std::string engine_file_path, const int batch_size, const int num_classes);
-        /**
-         * @brief 反初始化TRT模型，释放显存
-         */
         void unInitModule();
         /**
          * @brief 保存engine文件至指定路径
@@ -119,6 +87,7 @@ namespace TRTInferV1
          * engine文件保存路径
          */
         void saveEngineFile(IHostMemory *data, const std::string engine_file_path);
+
         /**
          * @brief 执行推理
          * @param frames
@@ -130,29 +99,8 @@ namespace TRTInferV1
          * @param nms_threshold
          * 非极大值抑制阈值
          */
-        std::vector<std::vector<DetectionObj>> doInference(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold,int flag);
-        // changes
-        std::vector<std::vector<Object>> doInference_confs(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold);
-        /**
-         * @brief 计算帧内时间补偿
-         * @param limited_fps
-         * 目标FPS设定值，将根据此设定值计算时间补偿，配合doInferenceLimitFPS使用
-         */
-        void calculate_inter_frame_compensation(const int limited_fps);
-        /**
-         * @brief 执行推理(帧限制)
-         * @param frames
-         * 需要推理的图像序列，图像数量决定推理时batch_size，不可大于初始化模型时指定的batch_size
-         * @param obj_threshold
-         * box置信度阈值
-         * @param confidence_threshold
-         * 置信度阈值
-         * @param nms_threshold
-         * 非极大值抑制阈值
-         * @param limited_fps
-         * 目标FPS设定值，推理过程的帧数将尝试限定在目标值附近，若运行帧率大于设定值，实际帧数将会接近并稳定下来，指定帧数越高，实际帧数偏差越大，帧数稳定性为+1~-2FPS
-         */
-        std::vector<std::vector<DetectionObj>> doInferenceLimitFPS(std::vector<cv::Mat> &frames, float obj_threshold, float confidence_threshold, float nms_threshold, const int limited_fps);
+        std::vector<std::vector<DetectionObj>> doInference(std::vector<cv::Mat> &frames, float confidence_threshold, float nms_threshold);
+
         /**
          * @brief 构建engine
          * @param onnx_path
@@ -165,15 +113,6 @@ namespace TRTInferV1
          * Tensor输入图像尺寸 w
          */
         IHostMemory *createEngine(const std::string onnx_path, unsigned int maxBatchSize, int input_h, int input_w);
-
-        /**
-         *@brief 获取输入大小W
-         */
-        int getInputW();
-        /**
-         *@brief 获取输入大小H
-         */
-        int getInputH();
     };
 }
 

@@ -1,13 +1,8 @@
-//
-// Created by plusseven on 24-6-30.
-//
-
 #ifndef SRC_TIMER_H
 #define SRC_TIMER_H
 
 #include <iostream>
 #include <thread>
-// #include <mutex>
 #include <atomic>
 #include <functional>
 #include <vector>

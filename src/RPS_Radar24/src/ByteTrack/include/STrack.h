@@ -9,9 +9,7 @@ using namespace std;
 enum TrackState { New = 0, Tracked, Lost, Removed, LostCopy, LostCopy_PredictOver };
 enum PlaceType_special { flySlope, hole, ordinary, four, windmill, is_windmill,holeWarring, startupArea,steps,stepsWarring };
 
-//class STrack : public Car
-class STrack
-{
+class STrack{
 public:
     STrack(int cls, float x, float y);
 	STrack();
@@ -20,9 +18,7 @@ public:
 	STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar);
     STrack(float x1, float y1, float w, float h, float conf,int classWithoutCar,int cluster_id);
     void init_track(int cls, float conf_armor, Eigen::MatrixXd car_armorConfMatrix);
-    void updataSTrack(OurPattern ourPattern);
     void setRectInPrimaryCam(float x1, float y1, float w, float h, float p);
-//    void setRectInPrimaryCam(float p);
 
 	vector<float> static tlbr_to_tlwh(vector<float> &tlbr);
     void updataStrack_ws_confMatrixs(double new_armorConf,Eigen::MatrixXd &ws_confMatrix ,Eigen::MatrixXd &ws_armorConfMatrix);
@@ -32,12 +28,8 @@ public:
 	void static_tlbr();
 	void static_3D_velocity();
 	vector<float> tlwh_to_xyah(vector<float> tlwh_tmp);
-	vector<float> to_xyah();
 	void mark_lost();
 	void mark_lostCopy();
-	void mark_removed();
-	int next_id();
-	int end_frame();
 
 	void activate(byte_kalman::KalmanFilter &kalman_filter, int frame_id, int &num,bool is3D = true);
 	void re_activate(STrack &new_track, int frame_id,  OurPattern ourPattern, std::vector<int> windmill_car,bool new_id = false, bool is3D = true);
@@ -47,24 +39,13 @@ public:
     void push_front_vexSerialNum(int serialNum);
     void push_front_change_Locate3D_and_distance(cv::Point3d Locate3D);
 
-//    void update_lose_track();
-
 public:
-// car
-// public:
-//    //param
     float conf=0.0;//车辆的置信度（第一层网络）
 	float conf_armor=0.0;//装甲板的置信度（第二层网络）
-//    x1=0.0,y1=0.0,x2=0.0,y2=0.0;
     cv::Point2d Locate2D;
     cv::Point3d Locate3D;
-//    std::vector<Armor> ArmorsInCar; //TODO: del
-//    bool isGuess= false;    // TODO：del
-    // Eigen::MatrixXd  ws_armorConfMatrix = Eigen::MatrixXd::Zero(1,12);  //TODO:？？
 	Eigen::MatrixXd  ws_armorConfMatrix = Eigen::MatrixXd::Zero(1,10);
     Eigen::MatrixXd  ws_armorConfMatrix_BR = Eigen::MatrixXd::Zero(1,6);
-//    cv::Rect rect;
-//车辆编号？
     int cls = -1;
 
 	bool is_activated;

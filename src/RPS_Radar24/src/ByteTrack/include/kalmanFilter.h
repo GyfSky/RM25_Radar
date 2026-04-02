@@ -10,7 +10,6 @@ namespace byte_kalman
 		static const double chi2inv95[10];
         KalmanFilter(double dt = 1.0/3,bool is3D = true);
 
-    // common
     public:
 		KAL_DATA initiate(const DETECTBOX& measurement);
 		void predict(KAL_MEAN& mean, KAL_COVA& covariance);
@@ -19,19 +18,12 @@ namespace byte_kalman
 			const KAL_COVA& covariance,
 			const DETECTBOX& measurement);
 
-		Eigen::Matrix<float, 1, -1> gating_distance(
-			const KAL_MEAN& mean,
-			const KAL_COVA& covariance,
-			const std::vector<DETECTBOX>& measurements,
-			bool only_position = false);
-
 	private:
 		Eigen::Matrix<float, 8, 8, Eigen::RowMajor> _motion_mat;
         Eigen::Matrix<float, 4, 8, Eigen::RowMajor> _update_mat;
 		float _std_weight_position;
 		float _std_weight_velocity;
 
-   // add 3d
     public:
         KAL_DATA_3d initiate(const DETECTBOX_Z & measurement);
         void predict(KAL_MEAN_3d & mean, KAL_COVA_3d& covariance);

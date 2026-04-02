@@ -1,13 +1,9 @@
-//
-// Created by plusseven on 24-6-30.
-//
-
 #include "../include/Timer.h"
 
 void Timer::start() {
     is_running = true;
     for(auto& timer : timers){
-            timer.lastTime = std::chrono::steady_clock::now();
+        timer.lastTime = std::chrono::steady_clock::now();
         std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 小睡10毫秒
     }
     while (is_running){

@@ -1,7 +1,3 @@
-//
-// Created by plusseven on 24-4-8.
-//
-
 #include "../include/SensorParam.h"
 
 SensorParam::SensorParam(std::string Name,OurPattern ourPattern,std::string config_path) {
@@ -54,33 +50,5 @@ void SensorParam::setworld2self_config(cv::Mat T_main2World){
      tz = world2self.at<float>(2, 3);
 
      cv::cv2eigen(T_main2World.inv(), Rt);
-//     std::cout << "Rt: " << Rt << std::endl;
-
      is_setworld2self_config = true;
-}
-
-
-int SensorParam::change2main(float &x, float &y,
-         const double main_fx, const double main_fy, const double main_cx, const double main_cy){
-
-    double A, B, X, Y, Z;
-    double Hight = 0.0; //TODO
-    A = (x - cx) / fx;
-    B = (y - cy) / fy;
-
-    Z = (a - A * g) * (e - B * h) - (d - B * g) * (b - A * h);
-    if (Z == 0) {
-        std::cout << "have one error in change2mainCam" << std::endl;
-        return -1;
-    }
-
-    X = ((((A * i - c) * Hight + (A * tz - tx)) * (e - B * h) - ((B * i - f) * Hight + (B * tz - ty)) * (b - A * h)) / Z);
-    Y = (((a - A * g) * ((B * i - f) * Hight + (B * tz - ty)) - (d - B * g) * ((A * i - c) * Hight + (A * tz - tx))) / Z);
-    std::cout << "XY: " << X << ", " << Y << std::endl;
-    Eigen::Vector4d temp_reality_3d(X,Y,Hight, 1);
-    Eigen::Vector4d pc = Rt * temp_reality_3d;
-    std::cout << "pc: " << pc<< std::endl;
-    x = main_fx * pc[0] / pc[2] + main_cx;
-    y = main_fy * pc[1] / pc[2] + main_cy;
-    return 1;
 }
