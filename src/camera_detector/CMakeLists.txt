@@ -1,7 +1,7 @@
  #=================cmakelist 最低版本==================
 cmake_minimum_required(VERSION 3.14.4)
 #=================  =====设置变量=======================
-project(rps_radar24)
+project(camera_detector)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -142,7 +142,7 @@ add_library(Port
 		src/Port/src/Timer.cpp
 )
 
-add_executable(RadarMain
+add_executable(camera_main
         src/Radar/src/Radar.cpp
         src/Radar/src/main.cpp)
 
@@ -153,18 +153,18 @@ add_executable(calib_main
 
 # ament_auto_find_build_dependencies ()
 
-ament_target_dependencies(RadarMain rclcpp interfaces std_msgs cv_bridge sensor_msgs Boost message_filters)
+ament_target_dependencies(camera_main rclcpp interfaces std_msgs cv_bridge sensor_msgs Boost message_filters)
 ament_target_dependencies(calib_main rclcpp interfaces rclpy std_msgs Boost rosbag2 sensor_msgs message_filters)
 ament_target_dependencies(General PUBLIC rclcpp cv_bridge std_msgs interfaces)
 
 
-target_link_libraries(RadarMain  
+target_link_libraries(camera_main
 SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 target_link_libraries(calib_main
 SensorParam Image Locate Net Mouse ByteTrack Port cudart)
 
 install(TARGETS
-		RadarMain
+		camera_main
 		calib_main
 		DESTINATION lib/${PROJECT_NAME}
 )

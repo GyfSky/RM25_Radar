@@ -121,8 +121,8 @@ def generate_launch_description():
                                     foxglove_node
                                    )
     camera_detector = Node(
-        package="rps_radar24",
-        executable="RadarMain"
+        package="camera_detector",
+        executable="camera_main"
     )
 
     return LaunchDescription([

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>rps_radar24</name>
+  <name>camera_detector</name>
   <version>0.0.0</version>
   <description>The ROS device driver for Livox 3D LiDARs and Livox Hub</description>
 

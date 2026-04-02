@@ -5,8 +5,8 @@ from launch.actions import Shutdown
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='rps_radar24',
-            executable='RadarMain',
+            package='camera_detector',
+            executable='camera_main',
             output='both',
             emulate_tty=True,
             respawn=True,
