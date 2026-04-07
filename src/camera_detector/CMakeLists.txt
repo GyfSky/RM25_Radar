@@ -51,7 +51,7 @@ if(POLICY CMP0146)
     cmake_policy(SET CMP0146 OLD)
 endif()  # 里面有find_package(CUDA)
 
-find_package(OpenCV 4.8.0 REQUIRED)
+find_package(OpenCV REQUIRED)
 target_link_libraries(General PUBLIC ${OpenCV_LIBRARIES})
 
 # HikCamera

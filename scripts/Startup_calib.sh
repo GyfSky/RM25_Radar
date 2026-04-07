@@ -6,4 +6,4 @@ cd ..
 
 source install/setup.bash
 
-ros2 run rps_radar24 calib_main
+ros2 run camera_detector calib_main
