@@ -225,6 +225,7 @@ namespace upc_radar{
                 }
             }
         }
+        sort(remove_index.begin(),remove_index.end(),std::greater<>());
         for (auto index:remove_index)
             KFs.erase(KFs.begin()+index);
     }

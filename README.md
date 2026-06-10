@@ -34,6 +34,7 @@
 ├─ livox_preprocessed       //相机-激光雷达联合标定结果
 │
 ├─ resource
+│  ├─ model                 //yolo模型onnx及trt
 │  ├─ lidar2world.txt       //激光雷达外参
 │  ├─ main2world.txt        //主相机外参
 │  ├─ sec2world&rect.txt    //副相机外参及飞镖舱门位置
@@ -44,20 +45,7 @@
 │  └─ ... 
 │
 ├─ src
-│  ├─ fusion       
-│  │  └─kalman_filter       //点云聚类跟踪及数据融合(核心)
-│  │
-│  ├─ interfaces            //自定义消息接口
-│  │
-│  ├─ lidar
-│  │  ├─ cluster            //点云聚类(弃用)
-│  │  ├─ dynamic_cloud      //点云背景过滤
-│  │  └─ lidar_registration //激光雷达外参标定
-│  │
-│  ├─ radar_bringup         //配置文件及launch文件
-│  │
-│  ├─ RPS_Radar24
-│  │  ├─ model              //onnx及trt文件
+│  ├─ camera_detector
 │  │  ├─ src
 │  │  │  ├─ ByteTrack       //轨迹跟踪相关
 │  │  │  ├─ Camera_hk       //相机驱动相关
@@ -69,14 +57,29 @@
 │  │  │  ├─ Port            //串口相关
 │  │  │  ├─ Radar           
 │  │  │  │  ├─ src          //主函数相关(核心)
-│  │  │  │  └─ test         //相机外参标定
+│  │  │  │  └─ calib        //相机外参标定
 │  │  │  │
 │  │  │  └─ ...
 │  │  │
 │  │  └─ ...
 │  │
-│  └─ utils        
+│  ├─ fusion       
+│  │  └─kalman_filter       //点云聚类跟踪及数据融合(核心)
+│  │
+│  ├─ interfaces            //自定义消息接口
+│  │
+│  ├─ lidar
+│  │  ├─ cluster            //点云聚类(弃用)
+│  │  ├─ dynamic_cloud      //点云背景过滤
+│  │  └─ lidar_registration //激光雷达外参标定
+│  │
+│  ├─ livox_driver          //激光雷达驱动
+│  │
+│  ├─ radar_bringup         //配置文件及launch文件
+│  │
+│  └─ tools        
 │     ├─ calib_multi_lidar  //多激光雷达联合标定
+│     ├─ calib_two_cam      //双相机联合标定
 │     ├─ direct_visual_lidar_calibration 
 │     │                     //相机-激光雷达联合标定
 │     ├─ prepare_calib_cam_lidar      
@@ -108,7 +111,7 @@
 ```
 
 ## 运行
-更改[src/main.cpp](src/RPS_Radar24/src/Radar/src/main.cpp)、[test/main.cpp](src/RPS_Radar24/src/Radar/test/main.cpp)中红蓝方参数
+更改[src/main.cpp](src/camera_detector/src/Radar/src/main.cpp)、[test/main.cpp](src/camera_detector/src/Radar/calib/main.cpp)中红蓝方参数
     
 ```
 ./Startup_calib.sh #启动外参标定，每场仅标定一次

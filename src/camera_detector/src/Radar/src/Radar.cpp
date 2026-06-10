@@ -577,6 +577,7 @@ void MyRadar::rectsCallBack(const interfaces::msg::ClusterRect::SharedPtr msg) {
                 bool flag=PretreatObjs_ptr->get_Armors_w_conf_Double_net(stracks[cam][i],Armors[i+car_num],car_imgs[i+car_num]);
                 if (flag) remove_lists.push_back(i);
             }
+            sort(remove_lists.begin(),remove_lists.end(),std::greater<>());
             for (auto i:remove_lists) {
                 stracks[cam].erase(stracks[cam].begin()+i);
                 if (cam==0)
@@ -1525,6 +1526,7 @@ void MyRadar::Spin(){
                         bool flag=PretreatObjs_ptr->get_Armors_w_conf_Double_net(stracks[cam][i],Armors[i+car_num],car_imgs[i+car_num]);
                         if (flag) remove_lists.push_back(i);
                     }
+                    sort(remove_lists.begin(),remove_lists.end(),std::greater<>());
                     for (auto i:remove_lists)
                         stracks[cam].erase(stracks[cam].begin()+i);
                     car_num += cam_cars_num;
@@ -1654,8 +1656,14 @@ void MyRadar::Spin(){
                 MainCam_Net_ptr->Spin(main_frames);
                 SecCam_Net_ptr->Spin(sec_frames);
                 netLock.unlock();
-                DetectionObjs.push_back( MainCam_Net_ptr->futureObjs.get()[0]);
-                DetectionObjs.push_back( SecCam_Net_ptr->futureObjs.get()[0]);
+
+                auto result=MainCam_Net_ptr->futureObjs.get();
+                if (result.empty()) return;
+                DetectionObjs.push_back( result[0]);
+
+                result=SecCam_Net_ptr->futureObjs.get();
+                if (result.empty()) return;
+                DetectionObjs.push_back( result[0]);
 
                 auto netStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 std::vector<cv::Mat> car_imgs;
