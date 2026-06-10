@@ -2,11 +2,6 @@
 ---
 general:
   cam_use_saved_T: true
-  lidar_use_saved_T: false
-  lidar_use_prepoints: true
-  situation: "rm25"
-  is_one_lidar: false
-  is_real: true
   classWithoutCar: 10
 
 save:
@@ -44,56 +39,33 @@ class_mapping:
 
 net:
   isArmor: false
-  #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_238.trt"         #   engine文件路径
-#  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_238.onnx"       #   onnx文件路径
-#  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.trt"         #   engine文件路径
-#  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_1080X1440.onnx"       #   onnx文件路径
-#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_1440.trt"         #   engine文件路径
   trt_path: "resource/model/e1_4.trt"
-  #  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"
-  onnx_path: "resource/model/e1_4.onnx"       #   onnx文件路径
+  onnx_path: "resource/model/e1_4.onnx"
   # 神经网络相关参数
   obj_thres: 0.5        #
   conf_thres: 0.5       #
   nms_thres: 0.3        #
   batch_size: 1         #
   num_class: 1         #
-  classWithoutCar: 10
-  input_w: 1440       #  输入onnx的宽
-  input_h: 1088       #  输入onnx的长
+  input_w: 800       #  输入onnx的宽
+  input_h: 800       #  输入onnx的长
 
 net_60:
   isArmor: false
-  #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_238_60.trt"         #   engine文件路径
-#  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_238_60.onnx"       #   onnx文件路径
-#  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_2024X2448.trt"         #   engine文件路径
-#  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/5_24_2024X2448.onnx"       #   onnx文件路径
-  #  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.trt"         #   engine文件路径
-  #  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_car_from_old.onnx"       #   onnx文件路径
-#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_2464.trt"         #   engine文件路径
   trt_path: "resource/model/e1_4.trt"
-#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e1_1.trt"         #   engine文件路径
   onnx_path: "resource/model/e1_4.onnx"       #   onnx文件路径
-#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/shuffle.engine"         #   engine文件路径
-#  trt_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.trt"         #   engine文件路径
-#  onnx_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/model/best_2048X2464_723.onnx"       #   onnx文件路径
-
   # 神经网络相关参数
   obj_thres: 0.25        #
   conf_thres: 0.5       #
   nms_thres: 0.3        #
   batch_size: 1         #
   num_class: 1         #
-  classWithoutCar: 10
-  input_w: 2464       #  输入onnx的宽
-  input_h: 2048       #  输入onnx的长
-#  input_w: 640       #  输入onnx的宽
-#  input_h: 640       #  输入onnx的长
+  input_w: 800       #  输入onnx的宽
+  input_h: 800       #  输入onnx的长
+
 net_armor:
   isArmor: true
   # 神经网络相关参数
-#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/best_armor_1.trt"         #   engine文件路径
-#  trt_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/model/e2.trt"         #   engine文件路径
   trt_path: "resource/model/ra0801.trt"         #   engine文件路径
   onnx_path: "resource/model/ra0801.onnx"       #   onnx文件路径
   obj_thres: 0.2        #
@@ -101,7 +73,6 @@ net_armor:
   nms_thres: 0.45        #
   batch_size: 1         #
   num_class: 10         #
-  classWithoutCar: 10
   input_w: 224       #  输入onnx的宽
   input_h: 224       #  输入onnx的长
 
@@ -111,86 +82,11 @@ map:
   map_w: 1920
   map_h: 1039
 
-pnp:
-  left:
-    point_num: 6
-    red:
-      pts_pnp_2d:
-        #      rm25
-        #      - [ 9.08962, 10.8000, 0.80 ]
-        #      - [ 14.22984, 14.86, 0.55 ]
-        #      - [ 24.3000, 15.0000, 0.2]
-        #      - [ 24.33395, 11.04948, 0.73188 ]
-        #      - [ 14.68471, 8.71834, 0.30 ]
-        #      - [ 10.000, 6.7000, 0.30 ]
-        #      rm25 national
-        - [ 7.79730, 10.8000, 0.80 ]
-        - [ 14.22984, 14.86, 0.55 ]
-        - [ 24.3000, 15.0000, 0.2 ]
-        - [ 24.33395, 11.04948, 0.73188 ]
-        - [ 14.68471, 8.71834, 0.30 ]
-        - [ 10.000, 6.7000, 0.30 ]
-
-    blue:
-      pts_pnp_2d:
-        #     rm25
-        #      - [18.91038, 4.2000, 0.80]
-        #      - [13.77016, 0.14, 0.55]
-        #      - [3.7000, 0.0, 0.2]
-        #      - [3.66605, 3.95052, 0.73188]
-        #      - [13.31529, 6.28166, 0.30]
-        #      - [18.000, 8.3, 0.30]
-        #      rm25 national
-        - [ 20.20270, 4.2000, 0.80 ]
-        - [ 13.77016, 0.14, 0.55 ]
-        - [ 3.7000, 0.0, 0.2 ]
-        - [ 3.66605, 3.95052, 0.73188 ]
-        - [ 13.31529, 6.28166, 0.30 ]
-        - [ 18.000, 8.3, 0.30 ]
-
-  right:
-    point_num: 6
-
-    red:
-      pts_pnp_2d:
-        #     rm25
-        #      - [ 7.06806, 3.35, 0.0 ]
-        #      - [ 11.59061, 4.84078, 0.30]
-        #      - [ 18.91038, 4.20, 0.80]
-        #      - [ 22.50194, 5.20127, 0.0]
-        #      - [ 24.97524, 0.0, 0.20]
-        #      - [ 13.77016, 0.14, 0.55]
-        #     rm25 national
-        - [ 7.06806, 3.35, 0.0 ]
-        - [ 11.59061, 4.84078, 0.30 ]
-        - [ 20.20270, 4.20, 0.80 ]
-        - [ 22.82524, 5.19873, 0.0 ]
-        - [ 24.97524, 0.0, 0.20 ]
-        - [ 13.77016, 0.14, 0.55 ]
-
-    blue:
-      pts_pnp_2d:
-        #     rm25
-        #      - [20.93194, 11.65, 0.0]
-        #      - [16.40939, 10.15922, 0.30]
-        #      - [9.08962, 10.8, 0.80]
-        #      - [5.49806, 9.79873, 0.0]
-        #      - [3.02476, 15.0, 0.20]
-        #      - [14.22984, 14.86, 0.55]
-        #     rm25 national
-        - [ 20.93194, 11.65, 0.0 ]
-        - [ 16.40939, 10.15922, 0.30 ]
-        - [ 7.79730, 10.8, 0.80 ]
-        - [ 5.17476, 9.80127, 0.0 ]
-        - [ 3.02476, 15.0, 0.20 ]
-        - [ 14.22984, 14.86, 0.55 ]
-
 test:
   is_test: true
   rect:
     w: 30
     h: 30
-
 
 # 00F26632053
 Hik30:
@@ -198,9 +94,6 @@ Hik30:
   exposureTime: 10000
   gamma: 0.9
   fps: 80
-  camNum: 1
-#  save_root_dir: "/media/plusseven/KESU/img_DATA/test_dir"
-  save_root_dir: "/media/thesky/THESKY/camera/3C05-B1C5/record"
   winname: "Hik30"
 
   K: !!opencv-matrix # 30
@@ -210,62 +103,49 @@ Hik30:
     data: [ 1703.57857839016,0.0,776.621431609538,
             0.0,1698.69114037183,558.752840063006,
             0.0, 0.0, 1.0 ]
-#    data: [ 2241.14722575626,0.0,748.890180749303,
-#            0.0,2241.55696902824,575.037210590473,
-#            0.0, 0.0, 1.0 ]
-    # data: [ 1848.38327601930,0,1238.62124710176,
-    # 0,1847.93808069488,1062.16331555885,
-    # 0.0, 0.0, 1.0 ]
 
-  mousePointNumber: 6
+  point_num: 6
+
+  red:
+    pts_pnp_2d:
+      #     rm25
+      #      - [ 7.06806, 3.35, 0.0 ]
+      #      - [ 11.59061, 4.84078, 0.30]
+      #      - [ 18.91038, 4.20, 0.80]
+      #      - [ 22.50194, 5.20127, 0.0]
+      #      - [ 24.97524, 0.0, 0.20]
+      #      - [ 13.77016, 0.14, 0.55]
+      #     rm25 national
+      - [ 7.06806, 3.35, 0.0 ]
+      - [ 11.59061, 4.84078, 0.30 ]
+      - [ 20.20270, 4.20, 0.80 ]
+      - [ 22.82524, 5.19873, 0.0 ]
+      - [ 24.97524, 0.0, 0.20 ]
+      - [ 13.77016, 0.14, 0.55 ]
+
+  blue:
+    pts_pnp_2d:
+      #     rm25
+      #      - [20.93194, 11.65, 0.0]
+      #      - [16.40939, 10.15922, 0.30]
+      #      - [9.08962, 10.8, 0.80]
+      #      - [5.49806, 9.79873, 0.0]
+      #      - [3.02476, 15.0, 0.20]
+      #      - [14.22984, 14.86, 0.55]
+      #     rm25 national
+      - [ 20.93194, 11.65, 0.0 ]
+      - [ 16.40939, 10.15922, 0.30 ]
+      - [ 7.79730, 10.8, 0.80 ]
+      - [ 5.17476, 9.80127, 0.0 ]
+      - [ 3.02476, 15.0, 0.20 ]
+      - [ 14.22984, 14.86, 0.55 ]
+
   picture_size:
     input_w: 1440       #  输入onnx的宽
     input_h: 1080       #  输入onnx的长
   source_path:
     singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/HiKCA.jpg"                                                   #  图片路径
-#    singleImg_path: "/media/plusseven/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/1300.jpg"                                                   #  图片路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/EA61-A1AF/datasets/record/I_Hiter/2024-05-24_16_25_09sec/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/AC83-EF44/record/Adaptability/2024-08-02_13_37_23_sec/images/"                      #  图片文件夹路径
     picture_dir: "/home/thesky/camera/AC83-EF44/record/Born_of_Fire_1/2024-08-02_19_48_20sec/"                      #  图片文件夹路径
-#    picture_dir: "/home/plusseven/图片/1111/2024-05-25_12_40_58sec/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/shangjiaoR2/images/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-05_21_21_08/"                      #  图片文件夹路径
-    picture_dir_start: 1200                                                                   #  从文件夹中的第n张图片开始 #
-    video_path: "/home/thesky/camera/KESU/img_DATA/radar2023/Record_2023-08-05-21-28-07.mp4"  #  视频路径
-
-
-Hik31:
-  gain: 12
-  camNum: 1
-  save_root_dir: "/home/thesky/camera/KESU/img_DATA/test_dir"
-  exposureTime: 5000
-  gamma: 0.6
-  fps: 165
-
-  winname: "Hik31"
-
-  K: !!opencv-matrix # 30
-    rows: 3
-    cols: 3
-    dt: f
-    data: [ 1703.57857839016,0.0,776.621431609538,
-            0.0,1698.69114037183,558.752840063006,
-            0.0, 0.0, 1.0 ]
-    # data: [ 1848.38327601930,0,1238.62124710176,
-    #     0,1847.93808069488,1062.16331555885,
-    #     0.0, 0.0, 1.0 ]
-
-
-  mousePointNumber: 6
-  picture_size:
-    input_w: 1440       #  输入onnx的宽
-    input_h: 1080       #  输入onnx的长
-  source_path:
-    singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/8.jpg"                                                   #  图片路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/shangjiaoR2/images/"                      #  图片文件夹路径
-    picture_dir: "/home/thesky/camera/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-05_21_21_08/"                      #  图片文件夹路径
     picture_dir_start: 1200                                                                   #  从文件夹中的第n张图片开始 #
     video_path: "/home/thesky/camera/KESU/img_DATA/radar2023/Record_2023-08-05-21-28-07.mp4"  #  视频路径
 
@@ -273,9 +153,6 @@ Hik31:
 # DA1521302
 Hik60:
   gain: 23.9
-  camNum: 1
-#  save_root_dir: "/media/plusseven/KESU/img_DATA/test_dir"
-  save_root_dir: "/media/thesky/THESKY/camera/3C05-B1C5/record"
   exposureTime: 10000
   gamma: 0.6
   fps: 40
@@ -288,107 +165,39 @@ Hik60:
     data: [ 2291.14722575626,0.0,1103.67246,
             0.0,2291.55696902824,1086.45687,
             0.0, 0.0, 1.0 ]
-#    data: [ 1848.38327601930,0,1238.62124710176,
-#            0,1847.93808069488,1062.16331555885,
-#            0.0, 0.0, 1.0 ]
 
-  mousePointNumber: 6
+  point_num: 6
+  red:
+    pts_pnp_2d:
+      #      rm25
+      #      - [ 9.08962, 10.8000, 0.80 ]
+      #      - [ 14.22984, 14.86, 0.55 ]
+      #      - [ 24.3000, 15.0000, 0.2]
+      #      - [ 24.33395, 11.04948, 0.73188 ]
+      #      - [ 14.68471, 8.71834, 0.30 ]
+      #      - [ 10.000, 6.7000, 0.30 ]
+      #      rm25 national
+      - [ 7.79730, 10.8000, 0.80 ]
+      - [ 14.22984, 14.86, 0.55 ]
+      - [ 24.3000, 15.0000, 0.2 ]
+      - [ 24.33395, 11.04948, 0.73188 ]
+      - [ 14.68471, 8.71834, 0.30 ]
+      - [ 10.000, 6.7000, 0.30 ]
+
   picture_size:
     input_w: 2448       #  输入onnx的宽
     input_h: 2048       #  输入onnx的长
   source_path:
     singleImg_path: "/opt/MVS/bin/Temp/Data/Image_20250511200502989.bmp"                                                   #  图片路径
-#    singleImg_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/doc/7.jpg"                                                   #  图片路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/EA61-A1AF/datasets/record/I_Hiter/2024-05-24_16_25_09main/"                      #  图片文件夹路径
     picture_dir: "/home/thesky/camera/AC83-EF44/record/Born_of_Fire_1/2024-08-02_19_48_20main/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/AC83-EF44/record/Adaptability/2024-08-02_13_37_23_main/"                      #  图片文件夹路径
-    #    picture_dir: "/home/plusseven/图片/1111/2024-05-25_12_40_58main/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-05_21_21_08/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/EA61-A1AF/datasets/record/I_Hiter/2024-05-23_16_52_59_n=1/"                      #  图片文件夹路径
-
     picture_dir_start: 1200                                                                   #  从文件夹中的第n张图片开始 #
     video_path: "/media/thesky/THESKY/dataset/test1.mp4"  #  视频路径
-
-TDT:
-  gain: 20
-  camNum: 1
-#  save_root_dir: "/media/plusseven/KESU/img_DATA/test_dir"
-  save_root_dir: "/home/thesky/camera/3C05-B1C5/record"
-  exposureTime: 10000
-  gamma: 0.6
-  fps: 40
-  winname: "TDT"
-
-  K: !!opencv-matrix # 
-    rows: 3
-    cols: 3
-    dt: f
-    data: [ 3574.7899975395749,0.0,2035.5162216399472,
-            0.0,3570.1522168951046,1512.3941063924631,
-            0.0, 0.0, 1.0 ]
-#    data: [ 1848.38327601930,0,1238.62124710176,
-#            0,1847.93808069488,1062.16331555885,
-#            0.0, 0.0, 1.0 ]
-
-  mousePointNumber: 6
-  picture_size:
-    input_w: 4096       #  输入onnx的宽
-    input_h: 3000       #  输入onnx的长
-  source_path:
-    singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/HiKCS.jpg"                                                   #  图片路径
-#    singleImg_path: "/home/plusseven/下载/RM_radardemo24/src/RPS_Radar24/doc/7.jpg"                                                   #  图片路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/EA61-A1AF/datasets/record/I_Hiter/2024-05-24_16_25_09main/"                      #  图片文件夹路径
-    picture_dir: "/home/thesky/camera/AC83-EF44/record/Born_of_Fire_1/2024-08-02_19_48_20main/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/AC83-EF44/record/Adaptability/2024-08-02_13_37_23_main/"                      #  图片文件夹路径
-    #    picture_dir: "/home/plusseven/图片/1111/2024-05-25_12_40_58main/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-05_21_21_08/"                      #  图片文件夹路径
-#    picture_dir: "/media/plusseven/EA61-A1AF/datasets/record/I_Hiter/2024-05-23_16_52_59_n=1/"                      #  图片文件夹路径
-
-    picture_dir_start: 1200                                                                   #  从文件夹中的第n张图片开始 #
-    video_path: "/home/thesky/KESU/img_DATA/radar2023/Record_2023-08-05-21-28-07.mp4"  #  视频路径
-
-
-SecondCam:
-  gain: 2
-  exposureTime: 5000
-  gamma: 0.6
-  fps: 165
-  winname: "SecondCam"
-  mousePointNumber: 6
-  picture_size:
-    input_w: 1440       #  输入onnx的宽
-    input_h: 1080       #  输入onnx的长
-
-  source_path:
-    singleImg_path: "/home/thesky/RM25_Radar/src/RPS_Radar24/doc/32.jpg"                                                   #  图片路径
-    picture_dir: "/home/thesky/camera/KESU/img_DATA/2023radarData/2023-06-12_01_10_45/"                      #  图片文件夹路径
-    #    picture_dir: "/media/plusseven/KESU/img_DATA/radar2023/2023-08-05_21_21_08/"                      #  图片文件夹路径
-    picture_dir_start: 1200                                                                   #  从文件夹中的第n张图片开始 #
-    video_path: "/home/thesky/camera/KESU/img_DATA/radar2023/Record_2023-08-05-21-28-07.mp4"  #  视频路径
-
-tempKRepresent:
-  back_range_thresh: 0.5
-  new_range_thresh: 0.4
-  cluster_thresh: 0.01
-  cluster_times: 100
-
-json:
-  jsonPathDir: "/home/thesky/camera/KESU/img_DATA/2023radarData/2023-06-12_01_10_45_data/"
-  random: false
-
-pretreatObjs:
-  isBR: false
-#  isGuess: false
-  maxSize: 12  # 需要加权的装甲板一共是几帧的
 
 cost:
   w_rectDistance: 0.35
   rectDistance_thresh: 140  # normal
   w_3dDistance: 0.4
   distance_thresh: 3.0
-
 
 Mat:
   perspective_K: !!opencv-matrix

@@ -111,7 +111,7 @@ def generate_launch_description():
 
         return np.array(matrix_data)
 
-    cali_matrix = read_matrix_from_file("/home/thesky/RM25_Radar/resource/lidar2world.txt")
+    cali_matrix = read_matrix_from_file(os.getcwd()+"/resource/lidar2world.txt")
         
     
     # 创建节点描述
@@ -137,8 +137,8 @@ def generate_launch_description():
                                     foxglove_node
                                    )
     camera_detector = Node(
-        package="rps_radar24",
-        executable="RadarMain",
+        package="camera_detector",
+        executable="camera_main",
         output='both',
         emulate_tty=True,
         respawn=True,

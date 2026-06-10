@@ -46,8 +46,7 @@ class PrepareCalib : public rclcpp::Node {
         if (!bag_start) {
             if (delay_time>10) {
                 bag_start=true;
-                std::string path="/home/thesky/RM25_Radar/livox/test";
-                std::string cmd_str = "gnome-terminal -x bash -c 'cd livox && ros2 bag record -o "+path+" "+"/livox/lidar_3JEDM7A00106241 /image /camera_info"+" '" + "&";
+                std::string cmd_str = "gnome-terminal -x bash -c 'ros2 bag record -o livox/test /livox/lidar_3JEDM7A00106241 /image /camera_info '&";
                 int ret = system(cmd_str.c_str());
                 std::cout << "cmd_str: " << cmd_str << std::endl;
                 if(ret != 0){

@@ -48,18 +48,18 @@ namespace upc_radar{
         net_pub=this->create_publisher<sensor_msgs::msg::PointCloud2>("/net_3D", 10);
         pc_pub= this->create_publisher<sensor_msgs::msg::PointCloud2>("/pc_3D", 10);
 
-        show_img1=cv::imread("/home/thesky/RM25_Radar/resource/img/cam1.jpg");
+        show_img1=cv::imread("resource/img/cam1.jpg");
         cv::namedWindow("cam1",0);
         cv::resizeWindow("cam1",640,480);
         cv::imshow("cam1",show_img1);
 
-        show_img2=cv::imread("/home/thesky/RM25_Radar/resource/img/cam2.jpg");
+        show_img2=cv::imread("resource/img/cam2.jpg");
         cv::namedWindow("cam2",0);
         cv::resizeWindow("cam2",640,480);
         cv::imshow("cam2",show_img2);
 
         std::shared_ptr<open3d::geometry::TriangleMesh> mesh_ori;
-        mesh_ori = open3d::io::CreateMeshFromFile("/home/thesky/RM25_Radar/" + get_parameter("mesh.mesh_ori").as_string());
+        mesh_ori = open3d::io::CreateMeshFromFile(get_parameter("mesh.mesh_ori").as_string());
         if (!mesh_ori) {
             RCLCPP_ERROR(get_logger(), "mesh_ori is null");
             return;
@@ -225,6 +225,7 @@ namespace upc_radar{
                 }
             }
         }
+        sort(remove_index.begin(),remove_index.end(),std::greater<>());
         for (auto index:remove_index)
             KFs.erase(KFs.begin()+index);
     }

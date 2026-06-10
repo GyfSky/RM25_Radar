@@ -384,7 +384,7 @@ namespace upc_radar{
         auto init_translate_v = get_parameter("mesh.init_translate").as_double_array();
         Eigen::Vector3d init_translate(init_translate_v[0], init_translate_v[1], init_translate_v[2]);
 
-        mesh_ori = open3d::io::CreateMeshFromFile("/home/thesky/RM25_Radar/" + get_parameter("mesh.mesh_ori").as_string());
+        mesh_ori = open3d::io::CreateMeshFromFile(get_parameter("mesh.mesh_ori").as_string());
         if (!mesh_ori) {
             RCLCPP_ERROR(get_logger(), "mesh_ori is null");
             return;
@@ -395,7 +395,7 @@ namespace upc_radar{
         mesh_ori->Translate(init_translate);
 
 
-        std::string mesh_filename = "/home/thesky/RM25_Radar/" + get_parameter("mesh.mesh_filter").as_string();
+        std::string mesh_filename =get_parameter("mesh.mesh_filter").as_string();
         RCLCPP_INFO(get_logger(), "mesh_filter: %s", mesh_filename.c_str());
         mesh_filter = open3d::io::CreateMeshFromFile(mesh_filename);
         if (!mesh_filter) {
